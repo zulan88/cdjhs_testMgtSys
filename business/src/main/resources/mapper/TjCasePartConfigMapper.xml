@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjCasePartConfigMapper">
+
+
+    <select id="getCasePartNum" resultType="net.wanji.business.domain.dto.CaseConfigDto">
+        SELECT
+            case_id,
+            SUM( CASE WHEN participant_role = 'av' THEN 1 ELSE 0 END ) AS avNum,
+            SUM( CASE WHEN participant_role = 'mvSimulation' THEN 1 ELSE 0 END ) AS simulationNum,
+            SUM( CASE WHEN participant_role = 'sp' THEN 1 ELSE 0 END ) AS pedestrianNum,
+            SUM( CASE WHEN participant_role NOT IN ( 'av', 'mvSimulation', 'sp' ) THEN 1 ELSE 0 END ) AS otherNum
+        FROM
+            tj_case_part_config
+        WHERE
+            case_id = #{caseId};
+    </select>
+
+    <update id="updateRole">
+        update tj_case_part_config
+        set participant_role = #{participantRole},device_id = null
+        where id = #{id}
+    </update>
+
+    <update id="updateDevice">
+        update tj_case_part_config
+        set device_id = #{deviceId}
+        where id = #{id}
+    </update>
+</mapper>

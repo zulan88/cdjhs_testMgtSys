@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjTaskDcMapper">
+
+
+    <select id="selectDcByTaskId" resultType="net.wanji.business.domain.vo.TaskDcVo">
+        SELECT
+            td.id,
+            td.task_id,
+            td.dc_id,
+            td.weight,
+            td.score,
+            td.time,
+            dc.NAME,
+            dc.type
+        FROM
+            tj_task_dc td
+                INNER JOIN tj_diadynamic_criteria dc ON dc.id = td.dc_id
+        WHERE
+            td.task_id = #{taskId}
+    </select>
+</mapper>

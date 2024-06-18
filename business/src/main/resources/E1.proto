@@ -1,0 +1,18 @@
+//使用 proto3 语法 ,未指定则使用proto2
+syntax = "proto3";
+
+//生成 proto 文件所在包路径
+package com.wxw.notes.protobuf.proto;
+
+//生成 proto 文件所在包路径
+option java_package = "net.wanji.common.proto";
+
+//生成 proto 文件名
+option java_outer_classname="E1FrameProto";
+
+message E1 {
+  //自身属性
+  string timestampType = 1;
+  string value = 2;
+  string timestamp = 3;
+}

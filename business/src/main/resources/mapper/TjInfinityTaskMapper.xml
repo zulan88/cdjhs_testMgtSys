@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjInfinityMapper">
+
+    <select id="selectCountByStatus" resultType="java.util.Map">
+        select
+        CASE
+        WHEN tt.plan_date &lt;= CURRENT_DATE AND tt.status = 'waiting' THEN 'past_due'
+        ELSE tt.`status`
+        END as status
+        from tj_infinity_task tt
+        LEFT JOIN (
+        SELECT
+        dc.task_id,
+        dd.device_id,
+        dd.device_type as object_type,
+        dd.device_name as brand,
+        dd.ip as plate_number,
+        dd.service_address as sign
+        FROM tj_task_data_config dc
+        LEFT JOIN tj_device_detail dd ON dd.device_id = dc.device_id
+        WHERE dc.type = 'av'
+        ) a ON a.task_id = tt.id
+        <where>
+            <if test="taskCode != null and taskCode != ''">
+                AND tt.order_number LIKE CONCAT('%', #{taskCode}, '%')
+            </if>
+            <if test="plateNumber != null and plateNumber != ''">
+                AND a.plate_number LIKE CONCAT('%', #{plateNumber}, '%')
+            </if>
+            <if test="sign != null and sign != ''">
+                AND a.sign LIKE CONCAT('%', #{sign}, '%')
+            </if>
+            <if test="client != null and client != ''">
+                AND tt.entrust_org LIKE CONCAT('%', #{client}, '%')
+            </if>
+            <if test="startCreateTime != null">
+                AND tt.created_date &gt;= #{startCreateTime}
+            </if>
+            <if test="endCreateTime != null">
+                AND tt.created_date &lt;= #{endCreateTime}
+            </if>
+            <if test="startPlanDate != null">
+                AND tt.plan_date &gt;= #{startPlanDate}
+            </if>
+            <if test="endPlanDate != null">
+                AND tt.plan_date &lt;= #{endPlanDate}
+            </if>
+            <if test="objectType != null and objectType != ''">
+                AND a.object_type = #{objectType}
+            </if>
+            <if test="status != null and status != ''">
+                AND tt.status = #{status}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND tt.created_by = #{createdBy}
+            </if>
+        </where>
+        ORDER BY tt.plan_date DESC
+    </select>
+
+    <select id="getPageList" resultType="java.util.Map">
+        SELECT
+        tt.id,
+        tt.entrust_org,
+        tt.entruster,
+        tt.entruster_contact,
+        tt.order_number,
+        tt.plan_date,
+        tt.plan_test_time,
+        tt.case_id,
+        tt.case_name,
+        tt.status,
+        tt.main_plan_file,
+        tt.selected_record_id as selectedRecordId
+        FROM tj_infinity_task tt
+        <where>
+            <if test="taskCode != null and taskCode != ''">
+                AND tt.order_number LIKE CONCAT('%', #{taskCode}, '%')
+            </if>
+            <if test="client != null and client != ''">
+                AND tt.entrust_org LIKE CONCAT('%', #{client}, '%')
+            </if>
+            <if test="startCreateTime != null">
+                AND tt.created_date &gt;= #{startCreateTime}
+            </if>
+            <if test="endCreateTime != null">
+                AND tt.created_date &lt;= #{endCreateTime}
+            </if>
+            <if test="startPlanDate != null">
+                AND tt.plan_date &gt;= #{startPlanDate}
+            </if>
+            <if test="endPlanDate != null">
+                AND tt.plan_date &lt;= #{endPlanDate}
+            </if>
+            <if test="status != null and status != ''">
+                AND tt.status = #{status}
+            </if>
+            <if test="id != null and id != ''">
+                AND tt.id = #{id}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND tt.created_by = #{createdBy}
+            </if>
+        </where>
+        order by tt.plan_date desc, tt.created_date desc
+
+    </select>
+
+    <insert id="saveTask" parameterType="java.util.Map" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO `tj_infinity_task` (
+            `order_number`,`plan_date`, `plan_test_time`, `test_start_time`, `test_end_time`,
+            `case_id`, `case_name`, `tested_type`, `tested_name`, `entrust_org`,
+            `entruster`, `entruster_contact`, `entrust_content`, `status`,
+            `route_file`, `main_plan_file`, `created_by`, `created_date`,
+            `updated_by`, `updated_date`
+        ) VALUES (
+                     #{orderNumber}, #{planDate}, #{planTestTime}, #{testStartTime}, #{testEndTime},
+                     #{caseId}, #{caseName}, #{testedType}, #{testedName}, #{entrustOrg},
+                     #{entruster}, #{entrusterContact}, #{entrustContent}, #{status},
+                     #{routeFile}, #{mainPlanFile}, #{createdBy}, #{createdDate},
+                     #{updatedBy}, #{updatedDate}
+                 )
+
+    </insert>
+
+    <insert id="saveCustomScenarioWeight">
+        INSERT INTO tj_task_custom_scenario_weights (
+            `task_id`,
+            `weights`,
+            `weights_type`
+        )
+        VALUES
+            (
+                #{taskId},
+                #{weights},
+                #{weightsType}
+            );
+    </insert>
+
+</mapper>

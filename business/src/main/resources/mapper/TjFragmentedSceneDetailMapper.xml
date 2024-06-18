@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjFragmentedSceneDetailMapper">
+
+    <select id="selectByCondition" resultType="net.wanji.business.domain.vo.FragmentedScenesDetailVo">
+        SELECT
+            sd.*,
+            rd.name as resourcesName,
+            rd.field_img_path as resourcesImgPath,
+            rd.geo_json_path as geoJsonPath
+        FROM tj_fragmented_scene_detail sd
+        LEFT JOIN tj_atlas_venue rd ON rd.id = sd.map_id
+        <where>
+            <if test="fragmentedSceneId != null and fragmentedSceneId > 0 ">
+                AND sd.fragmented_scene_id=#{fragmentedSceneId}
+            </if>
+            <if test="fragmentedSceneIds != null and fragmentedSceneIds.size() > 0 ">
+                AND sd.fragmented_scene_id in
+                <foreach collection="fragmentedSceneIds" item="fragmentedSceneId" open="(" separator="," close=")">
+                    #{fragmentedSceneId}
+                </foreach>
+            </if>
+            <if test="hazardIndex != null and hazardIndex > 0 ">
+                AND sd.hazard_index=#{hazardIndex}
+            </if>
+            <if test="mapId != null and mapId != '' ">
+                AND sd.map_id in
+                <foreach collection="mapId.split(',')" item="detailId" open="(" separator="," close=")">
+                    #{detailId}
+                </foreach>
+            </if>
+            <if test="sceneType != null and sceneType != '' ">
+                AND sd.scene_type =#{sceneType}
+            </if>
+            <if test="sceneComplexity != null and sceneComplexity != '' ">
+                AND sd.scene_complexity in
+                <foreach collection="sceneComplexity.split(',')" item="sc" open="(" separator="," close=")">
+                    #{sc}
+                </foreach>
+            </if>
+            <if test="trafficFlowStatus != null and trafficFlowStatus != '' ">
+                AND sd.traffic_flow_status in
+                <foreach collection="trafficFlowStatus.split(',')" item="tfs" open="(" separator="," close=")">
+                    #{tfs}
+                </foreach>
+            </if>
+            <if test="roadType != null and roadType != '' ">
+                AND sd.road_type in
+                <foreach collection="roadType.split(',')" item="rt" open="(" separator="," close=")">
+                    #{rt}
+                </foreach>
+            </if>
+            <if test="weather != null and weather != '' ">
+                AND sd.weather in
+                <foreach collection="weather.split(',')" item="wt" open="(" separator="," close=")">
+                    #{wt}
+                </foreach>
+            </if>
+            <if test="roadCondition != null and roadCondition != '' ">
+                AND sd.road_condition in
+                <foreach collection="roadCondition.split(',')" item="rc" open="(" separator="," close=")">
+                    #{rc}
+                </foreach>
+            </if>
+            <if test="collectStatus != null ">
+                AND sd.collect_status=#{collectStatus}
+            </if>
+            <if test="finished != null ">
+                AND sd.finished=#{finished}
+            </if>
+        </where>
+        ORDER BY sd.created_date DESC, sd.finished DESC
+    </select>
+
+    <select id="selectUsingResources" resultType="java.lang.Integer">
+        select distinct map_id
+        from tj_fragmented_scene_detail
+    </select>
+
+    <delete id="deleteBySceneIds">
+        delete from tj_fragmented_scene_detail
+        where fragmented_scene_id in
+        <foreach collection="sceneIds" item="sceneId" open="(" separator="," close=")">
+            #{sceneId}
+        </foreach>
+    </delete>
+
+    <sql id="selectTjFragmentedSceneDetailVo">
+        select id, fragmented_scene_id, number, lane_num, map_id, map_file, scene_source, img_url, scene_type, scene_complexity, traffic_flow_status, road_type, weather, road_condition, finished, collect_status, label, trajectory_info, route_file, road_way_type, hazard_index, trajectory_info_time, reference_point, simu_type, test_scene_desc, created_by, created_date, updated_by, updated_date, scene_status from tj_fragmented_scene_detail
+    </sql>
+
+    <select id="selectTjFragmentedSceneDetailList" parameterType="net.wanji.business.domain.vo.SceneDetailVo" resultType="net.wanji.business.domain.vo.SceneDetailVo">
+        SELECT
+        tfsd.id,
+        tfsd.fragmented_scene_id,
+        tfsd.number,
+        tfsd.lane_num,
+        tfsd.map_id,
+        tfsd.map_file,
+        tfsd.scene_source,
+        tfsd.img_url,
+        tfsd.scene_type,
+        tfsd.scene_complexity,
+        tfsd.traffic_flow_status,
+        tfsd.road_type,
+        tfsd.weather,
+        tfsd.road_condition,
+        tfsd.finished,
+        tfsd.collect_status,
+        tfsd.label,
+        tfsd.trajectory_info,
+        tfsd.route_file,
+        tfsd.road_way_type,
+        tfsd.hazard_index,
+        tfsd.trajectory_info_time,
+        tfsd.reference_point,
+        tfsd.simu_type,
+        tfsd.test_scene_desc,
+        tfsd.created_by,
+        tfsd.created_date,
+        tfsd.updated_by,
+        tfsd.updated_date,
+        tfsd.scene_status,
+        tfsd.all_stage_label,
+        COUNT(tgs.scene_id) AS count
+        FROM
+        tj_fragmented_scene_detail tfsd
+        LEFT JOIN
+        tj_generalize_scene tgs ON tfsd.id = tgs.scene_id
+        <where>
+            <if test="fragmentedSceneId != null "> and tfsd.fragmented_scene_id = #{fragmentedSceneId}</if>
+            <if test="number != null  and number != ''"> and tfsd.number = #{number}</if>
+            <if test="sceneSource != null  and sceneSource != ''"> and tfsd.scene_source = #{sceneSource}</if>
+            <if test="sceneType != null  and sceneType != ''"> and tfsd.scene_type = #{sceneType}</if>
+            <if test="finished != null "> and tfsd.finished = #{finished}</if>
+            <if test="sceneStatus != null "> and tfsd.scene_status = #{sceneStatus}</if>
+            <if test="collectStatus != null "> and tfsd.collect_status = #{collectStatus}</if>
+            <if test="labels != null  and labels != ''"> and FIND_IN_SET(#{labels},tfsd.all_stage_label)</if>
+            <if test="startDate != null and startDate != '' and endDate != null"> and tfsd.created_date between #{startDate} and #{endDate}</if>
+            <if test="updatedDate != null "> and tfsd.updated_date = #{updatedDate}</if>
+            <if test="createdBy != null and createdBy != '' "> and tfsd.created_by = #{createdBy}</if>
+        </where>
+        GROUP BY tfsd.id
+        order by created_date desc
+    </select>
+
+    <select id="selectTjSceneDetailListBylabels" resultType="net.wanji.business.domain.vo.SceneDetailVo">
+        <include refid="selectTjFragmentedSceneDetailVo"/>
+        <where>
+            <foreach collection="lists" item="items" separator = " and " >
+                <foreach collection="items" item="val" open="(" separator = " or " close=")" >
+                    FIND_IN_SET(#{val},all_stage_label)
+                </foreach>
+            </foreach>
+        </where>
+    </select>
+
+    <select id="selectTjSceneDetailListAnd" resultType="net.wanji.business.domain.vo.SceneDetailVo">
+        <include refid="selectTjFragmentedSceneDetailVo"/>
+        <where>
+            <foreach collection="labellist" item="item" separator = " and " >
+                FIND_IN_SET(#{item},all_stage_label)
+            </foreach>
+            <if test="fragmentedSceneId != null "> and fragmented_scene_id = #{fragmentedSceneId}</if>
+        </where>
+    </select>
+
+    <select id="selectTjSceneDetailListOr" resultType="net.wanji.business.domain.vo.SceneDetailVo">
+        <include refid="selectTjFragmentedSceneDetailVo"/>
+        <where>
+            <foreach collection="labellist" item="item" open="(" separator = " or " close=")" >
+                FIND_IN_SET(#{item},all_stage_label)
+            </foreach>
+            <if test="fragmentedSceneId != null "> and fragmented_scene_id = #{fragmentedSceneId}</if>
+        </where>
+    </select>
+
+</mapper>

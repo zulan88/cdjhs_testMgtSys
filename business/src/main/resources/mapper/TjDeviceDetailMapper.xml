@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjDeviceDetailMapper">
+
+    <select id="selectByCondition" resultType="net.wanji.business.domain.vo.DeviceDetailVo">
+        SELECT d.*
+        FROM tj_device_detail d
+        <where>
+            <if test="deviceId != null and deviceId > 0">
+                AND d.device_id = #{deviceId}
+            </if>
+            <if test="deviceName != null and deviceName !='' ">
+                AND d.device_name LIKE concat('%', #{deviceName}, '%')
+            </if>
+            <if test="deviceType != null and deviceType != '' ">
+                AND d.device_type = #{deviceType}
+            </if>
+            <if test="supportRoles != null and supportRoles != '' ">
+                AND d.support_roles = #{supportRoles}
+            </if>
+            <if test="status != null">
+                AND d.status = #{status}
+            </if>
+            <if test="attribute2 != null and attribute2 != ''">
+                AND d.attribute2 = #{attribute2}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND d.created_by = #{createdBy}
+            </if>
+            <if test="deviceIds != null and deviceIds.size()>0">
+                AND d.device_id IN
+                <foreach collection="deviceIds" item="deviceId" open="(" separator="," close=")">
+                    #{deviceId}
+                </foreach>
+            </if>
+            <if test="isInner != null">
+                AND d.is_inner = #{isInner}
+            </if>
+        </where>
+        ORDER BY d.created_date DESC
+    </select>
+
+
+</mapper>

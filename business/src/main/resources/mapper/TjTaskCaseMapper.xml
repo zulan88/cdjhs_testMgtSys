@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjTaskCaseMapper">
+
+    <resultMap id="BaseResultMap" type="net.wanji.business.entity.TjTaskCase">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="taskId" column="task_id" jdbcType="INTEGER"/>
+        <result property="caseId" column="case_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="create_time"
+                jdbcType="TIMESTAMP"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="passingRate" column="passing_rate"
+                jdbcType="VARCHAR"/>
+        <result property="startTime" column="start_time" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        <result property="testTotalTime" column="test_total_time"
+                jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,task_id,case_id,
+        create_time,status,passing_rate,
+        start_time,end_time,test_total_time,connect_info
+    </sql>
+    <select id="selectByCondition"
+            resultType="net.wanji.business.domain.vo.TaskCaseVo">
+        select a.id,
+        a.task_id ,
+        a.case_id,
+        a.sort,
+        a.create_time,
+        a.status,
+        a.passing_rate,
+        a.start_time,
+        a.end_time,
+        a.test_total_time ,
+        a.test_total_time,
+        a.connect_info,
+        a.detail_info,
+        a.route_file,
+        b.case_number,
+        b.tree_id,
+        b.map_id,
+        b.map_file
+        from tj_task_case a
+        left join tj_case b on a.case_id = b.id
+        <where>
+            <if test="taskId != null and taskId != ''">
+                and a.task_id = #{taskId}
+            </if>
+            <if test="caseId != null and caseId != ''">
+                and a.case_id = #{caseId}
+            </if>
+        </where>
+        order by a.sort
+    </select>
+
+    <resultMap id="TaskCaseInfoResult" type="net.wanji.business.domain.bo.TaskCaseInfoBo">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="sort" column="sort"/>
+        <result property="detailInfo" column="detail_info"/>
+        <result property="routeFile" column="route_file"/>
+        <result property="status" column="status"/>
+        <result property="caseNumber" column="case_number"/>
+        <result property="sceneName" column="scene_name"/>
+        <result property="allStageLabel" column="all_stage_label"/>
+        <result property="zipPath" column="zip_path"/>
+        <result property="xodrPath" column="xodr_path"/>
+        <result property="xoscPath" column="xosc_path"/>
+        <collection property="records" ofType="net.wanji.business.entity.TjTaskCaseRecord"
+                    select="selectTaskCaseRecordInfo" column="{taskId= task_id,caseId= case_id}"/>
+        <collection property="dataConfigs" ofType="net.wanji.business.domain.bo.TaskCaseConfigBo"
+                    select="selectTaskCaseConfigInfo" column="{taskId= task_id,caseId= case_id}"/>
+    </resultMap>
+
+    <resultMap id="TaskCaseRecordResult" type="net.wanji.business.entity.TjTaskCaseRecord">
+        <id property="id" column="id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="detailInfo" column="detail_info"/>
+        <result property="routeFile" column="route_file"/>
+        <result property="status" column="status"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="recordId" column="record_id"/>
+    </resultMap>
+
+    <resultMap id="TaskCaseConfigResult" type="net.wanji.business.domain.bo.TaskCaseConfigBo">
+        <id property="id" column="config_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="type" column="type"/>
+        <result property="participatorId" column="participator_id"/>
+        <result property="participatorName" column="participator_name"/>
+        <result property="deviceId" column="device_id"/>
+        <result property="deviceName" column="device_name"/>
+        <result property="deviceType" column="device_type"/>
+        <result property="supportRoles" column="support_roles"/>
+        <result property="ip" column="ip"/>
+        <result property="serviceAddress" column="service_address"/>
+        <result property="dataChannel" column="data_channel"/>
+        <result property="commandChannel" column="command_channel"/>
+        <result property="status" column="device_status"/>
+        <result property="lastOnlineDate" column="last_online_date"/>
+        <result property="attribute1" column="attribute1"/>
+        <result property="attribute2" column="attribute2"/>
+    </resultMap>
+
+    <select id="selectTaskCaseByCondition" resultMap="TaskCaseInfoResult">
+        SELECT
+            ttc.id,
+            ttc.task_id,
+            ttc.case_id,
+            ttc.sort,
+            ttc.`status`,
+            ttc.`detail_info`,
+            ttc.`route_file`,
+            ttc.zip_path,
+            ttc.xodr_path,
+            ttc.xosc_path,
+            a.case_number,
+            a.scene_name,
+            a.all_stage_label
+        FROM
+            tj_task_case ttc
+        INNER JOIN (
+            SELECT
+                tc.id,
+                tc.case_number,
+                sd.`name` AS scene_name,
+                sd.all_stage_label
+            FROM
+                tj_case tc
+            INNER JOIN (
+                SELECT
+                    fsd.id,
+                    fs.NAME,
+                    fsd.all_stage_label
+                FROM
+                    tj_fragmented_scene_detail fsd
+                LEFT JOIN tj_fragmented_scenes fs ON fsd.fragmented_scene_id = fs.id
+            ) sd ON sd.id = tc.scene_detail_id
+        ) a ON a.id = ttc.case_id
+        <where>
+            <if test="taskId != null and taskId > 0">
+                and ttc.task_id = #{taskId}
+            </if>
+            <if test="caseId != null and caseId > 0">
+                and ttc.case_id = #{caseId}
+            </if>
+            <if test="id != null and id > 0 ">
+                and ttc.id = #{id}
+            </if>
+        </where>
+        ORDER BY ttc.sort
+    </select>
+
+    <select id="selectTaskCaseConfigInfo" resultMap="TaskCaseConfigResult">
+        SELECT dc.id       AS config_id,
+               dc.task_id,
+               dc.case_id,
+               dc.type,
+               dc.participator_id,
+               dc.participator_name,
+               dc.device_id,
+               dd.device_name,
+               dd.device_type,
+               dd.support_roles,
+               dd.ip,
+               dd.service_address,
+               dd.data_channel,
+               dd.command_channel,
+               dd.`status` AS device_status,
+               dd.last_online_date,
+               dd.attribute1,
+               dd.attribute2
+        from tj_task_data_config dc
+                 LEFT JOIN tj_device_detail dd ON dd.device_id = dc.device_id
+        where dc.task_id = #{taskId}
+          and (dc.case_id = #{caseId} or dc.case_id = 0)
+    </select>
+
+    <select id="selectTaskCaseRecordInfo" resultMap="TaskCaseRecordResult">
+        SELECT cr.id,
+               cr.task_id,
+               cr.case_id,
+               cr.status,
+               cr.detail_info,
+               cr.route_file,
+               cr.start_time,
+               cr.end_time,
+               cr.created_date,
+               cr.created_by,
+               cr.record_id
+        from tj_task_case_record cr
+        where cr.task_id = #{taskId} and cr.case_id = #{caseId}
+        order by cr.start_time desc
+    </select>
+
+    <update id="updateByCondition">
+        update tj_task_case
+        set status          = #{status},
+            passing_rate    = #{passingRate},
+            start_time      = #{startTime},
+            end_time        = #{endTime},
+            test_total_time = #{testTotalTime},
+            sort            = #{sort},
+            connect_info    = #{connectInfo}
+        where id = #{id}
+    </update>
+    <update id="reset">
+        update tj_task_case
+        set status          = 'waiting'
+        where id in
+        <foreach collection="ids" item="id" index="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="prepare">
+        update tj_task_case
+        set status          = 'preparing'
+        where id in
+        <foreach collection="ids" item="id" index="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

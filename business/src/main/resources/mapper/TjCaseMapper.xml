@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjCaseMapper">
+    <update id="updateCaseStatus">
+        update tj_case set status=#{status}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <resultMap id="CasePageResult" type="net.wanji.business.domain.vo.CasePageVo">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="treeId" column="tree_id" jdbcType="INTEGER"/>
+        <result property="caseNumber" column="case_number" jdbcType="VARCHAR"/>
+        <result property="sceneDetailId" column="scene_detail_id" jdbcType="INTEGER"/>
+        <result property="sceneNumber" column="scene_number" jdbcType="VARCHAR"/>
+        <result property="imgUrl" column="img_url" jdbcType="VARCHAR"/>
+        <result property="testSceneDesc" column="test_scene_desc" jdbcType="VARCHAR"/>
+        <result property="label" column="label" jdbcType="VARCHAR"/>
+        <result property="mapFile" column="map_file" jdbcType="VARCHAR" />
+        <result property="mapId" column="map_id" jdbcType="INTEGER" />
+        <result property="detailInfo" column="detail_info" jdbcType="VARCHAR"/>
+        <result property="routeFile" column="route_file" jdbcType="VARCHAR"/>
+        <result property="testTarget" column="test_target" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="updatedDate" column="updated_date" jdbcType="TIMESTAMP"/>
+        <collection property="partConfigs" ofType="net.wanji.business.entity.TjCasePartConfig"
+                    select="selectCasesConfig" column="id"/>
+        <collection property="caseRealRecords" ofType="net.wanji.business.entity.TjCaseRealRecord"
+                    select="selectCasesRecord" column="id"/>
+    </resultMap>
+
+    <resultMap id="PartConfigResult" type="net.wanji.business.entity.TjCasePartConfig">
+        <id property="id" column="config_id" jdbcType="INTEGER"/>
+        <result property="participantRole" column="participant_role" jdbcType="VARCHAR"/>
+        <result property="businessId" column="business_id" jdbcType="VARCHAR"/>
+        <result property="businessType" column="business_type" jdbcType="VARCHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="model" column="model" jdbcType="INTEGER"/>
+        <result property="deviceId" column="deviceId" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <resultMap id="CaseRealRecordResult" type="net.wanji.business.domain.vo.CaseRealRecordVo">
+        <id property="id" column="record_id" jdbcType="INTEGER"/>
+        <result property="caseId" column="case_id" jdbcType="INTEGER"/>
+        <result property="routeFile" column="route_file" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="statusName" column="status_name" jdbcType="INTEGER"/>
+        <result property="startTime" column="start_time" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        <result property="seconds" column="seconds" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="selectCases" resultMap="CasePageResult">
+        select
+        c.id,
+        c.tree_id,
+        c.case_number,
+        c.test_target,
+        c.detail_info,
+        c.route_file,
+        c.map_file,
+        c.map_id,
+        c.status,
+        c.remark,
+        c.updated_date,
+        sd.id as scene_detail_id,
+        sd.number as scene_number,
+        sd.img_url,
+        sd.test_scene_desc,
+        sd.label
+
+        from tj_case c
+        inner join tj_fragmented_scene_detail sd on sd.id = c.scene_detail_id
+        <where>
+            <if test="id != null and id > 0 ">
+                and c.id = #{id}
+            </if>
+            <if test="treeId != null and treeId > 0 ">
+                and c.tree_id = #{treeId}
+            </if>
+            <if test="caseNumber != null and caseNumber !='' ">
+                and c.case_number like concat('%',#{caseNumber},'%')
+            </if>
+            <if test="status != null and status != '' ">
+                and c.status = #{status}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and c.updated_date &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and c.updated_date &lt;= #{endTime}
+            </if>
+            <if test="label != null and label != ''">
+                and find_in_set(#{label}, sd.label) > 0
+            </if>
+            <if test="sceneDetailIds != null and sceneDetailIds.size() > 0">
+                and c.scene_detail_id in
+                <foreach collection="sceneDetailIds" item="sceneDetailId" open="(" separator="," close=")">
+                    #{sceneDetailId}
+                </foreach>
+            </if>
+            <if test="selectedIds != null and selectedIds.size() > 0">
+                and c.id in
+                <foreach collection="selectedIds" item="selectedId" open="(" separator="," close=")">
+                    #{selectedId}
+                </foreach>
+            </if>
+        </where>
+        order by c.updated_date desc
+    </select>
+
+    <select id="selectCasesByIds" resultMap="CasePageResult">
+        select
+        c.id,
+        c.tree_id,
+        c.case_number,
+        c.test_target,
+        c.detail_info,
+        c.route_file,
+        c.status,
+        c.remark,
+        c.updated_date,
+        sd.id as scene_detail_id,
+        sd.number as scene_number,
+        sd.img_url,
+        sd.test_scene_desc,
+        sd.label
+
+        from tj_case c
+        inner join tj_fragmented_scene_detail sd on sd.id = c.scene_detail_id
+        where c.id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="treeId != null and treeId > 0 ">
+            and c.tree_id = #{treeId}
+        </if>
+        order by c.updated_date desc
+    </select>
+
+    <select id="takeExpense" resultType="java.lang.Long">
+        select sum(remark)
+        from tj_case
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectCasesConfig" resultMap="PartConfigResult">
+        select ps.id as config_id,
+               ps.participant_role,
+               ps.business_id,
+               ps.business_type,
+               ps.name,
+               ps.model,
+               ps.device_id
+        from tj_case_part_config ps
+        where ps.case_id = #{id}
+    </select>
+
+    <select id="selectCasesRecord" resultMap="CaseRealRecordResult">
+        select pr.id as record_id,
+               pr.case_id,
+               pr.route_file,
+               pr.status,
+               case pr.status
+                   when 1 then '未通过'
+                   when 2 then '已通过'
+                   else '-'
+                   end as status_name,
+               pr.start_time,
+               pr.end_time,
+               IFNULL(TIME_TO_SEC(TIMEDIFF(end_time, start_time)), 0) AS seconds
+        from tj_case_real_record pr
+        where pr.case_id = #{id}
+        order by pr.start_time desc
+    </select>
+
+    <select id="selectCountBySceneIds" resultType="java.lang.Integer">
+        select count(*)
+        from tj_case
+        where scene_detail_id in (
+        select id
+        from tj_fragmented_scene_detail
+        where fragmented_scene_id in
+        <foreach collection="sceneIds" item="sceneId" open="(" separator="," close=")">
+            #{sceneId}
+        </foreach>
+        )
+    </select>
+
+    <select id="selectCountBySceneDetailIds" resultType="java.lang.Integer">
+        select count(*)
+        from tj_case
+        where scene_detail_id in
+        <foreach collection="sceneDetailIds" item="sceneDetailId" open="(" separator="," close=")">
+            #{sceneDetailId}
+        </foreach>
+    </select>
+
+    <select id="selectSceneIdInCase" resultType="net.wanji.business.entity.TjFragmentedScenes">
+        SELECT s.*
+        FROM tj_fragmented_scenes s
+        WHERE s.id IN (
+            SELECT sd.fragmented_scene_id
+            FROM tj_fragmented_scene_detail sd
+            WHERE sd.id IN (SELECT DISTINCT scene_detail_id FROM tj_case WHERE test_type = #{testType})
+        )
+          AND s.type = #{type}
+    </select>
+
+    <select id="selectSubscenesInCase" resultType="net.wanji.business.entity.TjFragmentedSceneDetail">
+        SELECT sd.*
+        FROM tj_fragmented_scene_detail sd
+        WHERE sd.id IN (SELECT DISTINCT scene_detail_id FROM tj_case WHERE test_type = #{testType})
+          AND sd.fragmented_scene_id = #{fragmentedSceneId}
+    </select>
+
+    <resultMap id="CaseInfoResult" type="net.wanji.business.domain.bo.CaseInfoBo">
+        <id property="id" column="id"/>
+        <result property="caseNumber" column="case_number"/>
+        <result property="label" column="label"/>
+        <result property="allStageLabel" column="all_stage_label"/>
+        <result property="sceneDetailId" column="scene_detail_id"/>
+        <result property="testTarget" column="test_target"/>
+        <result property="testScene" column="test_scene"/>
+        <result property="detailInfo" column="detail_info"/>
+        <result property="routeFile" column="route_file"/>
+        <result property="status" column="status"/>
+        <result property="runningStatus" column="running_status"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="number" column="number"/>
+        <result property="mapFile" column="map_file" jdbcType="VARCHAR" />
+        <result property="mapId" column="map_id" jdbcType="INTEGER" />
+        <result property="remark" column="remark"/>
+        <association property="caseRealRecord" javaType="net.wanji.business.entity.TjCaseRealRecord">
+            <id property="id" column="r_id"/>
+            <result property="caseId" column="case_id"/>
+            <result property="detailInfo" column="r_detail_info"/>
+            <result property="routeFile" column="r_route_file"/>
+            <result property="status" column="r_status"/>
+            <result property="startTime" column="r_start_time"/>
+            <result property="endTime" column="r_end_time"/>
+        </association>
+        <collection property="caseConfigs" javaType="java.util.List" resultMap="CaseConfigResult"/>
+    </resultMap>
+
+    <resultMap id="CaseConfigResult" type="net.wanji.business.domain.bo.CaseConfigBo">
+        <result property="id" column="config_id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="participantRole" column="participant_role"/>
+        <result property="businessId" column="business_id"/>
+        <result property="businessType" column="business_type"/>
+        <result property="name" column="business_name"/>
+        <result property="model" column="model"/>
+        <result property="deviceId" column="device_id"/>
+        <result property="deviceName" column="device_name"/>
+        <result property="deviceType" column="device_type"/>
+        <result property="supportRoles" column="support_roles"/>
+        <result property="ip" column="ip"/>
+        <result property="serviceAddress" column="service_address"/>
+        <result property="dataChannel" column="data_channel"/>
+        <result property="commandChannel" column="command_channel"/>
+        <result property="status" column="device_status"/>
+        <result property="lastOnlineDate" column="last_online_date"/>
+    </resultMap>
+
+    <select id="selectCaseInfo" resultMap="CaseInfoResult">
+        SELECT tc.id,
+               tc.case_number,
+               tc.scene_detail_id,
+               tc.test_target,
+               tc.test_scene,
+               tc.`status`,
+               tc.detail_info,
+               tc.route_file,
+               tc.created_by,
+               tc.map_id,
+               tc.map_file,
+               tc.running_status,
+               tc.remark,
+               sd.number,
+               sd.img_url,
+               sd.test_scene_desc,
+               sd.label,
+               sd.all_stage_label,
+               pc.id AS config_id,
+               pc.case_id,
+               pc.participant_role,
+               pc.business_id,
+               pc.business_type,
+               pc.`name`      AS business_name,
+               pc.model,
+               pc.device_id,
+               dd.device_name,
+               dd.device_type,
+               dd.support_roles,
+               dd.ip,
+               dd.service_address,
+               dd.data_channel,
+               dd.command_channel,
+               dd.`status`    AS device_status,
+               dd.last_online_date,
+               rr.id          AS r_id,
+               rr.detail_info AS r_detail_info,
+               rr.route_file  AS r_route_file,
+               rr.`status`    AS r_status,
+               rr.start_time  AS r_start_time,
+               rr.end_time    AS r_end_time
+        FROM tj_case tc
+                 inner join tj_fragmented_scene_detail sd on sd.id = tc.scene_detail_id
+                 LEFT JOIN tj_case_part_config pc ON pc.case_id = tc.id
+                 LEFT JOIN tj_device_detail dd ON dd.device_id = pc.device_id
+                 LEFT JOIN tj_case_real_record rr ON (rr.case_id = tc.id AND rr.route_file is null)
+        WHERE tc.id = #{caseId}
+    </select>
+
+
+</mapper>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjCaseTreeMapper">
+
+    <resultMap id="BaseResultMap" type="net.wanji.business.entity.TjCaseTree">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="parentId" column="parent_id" jdbcType="INTEGER"/>
+        <result property="level" column="level" jdbcType="INTEGER"/>
+        <result property="attribute1" column="attribute1" jdbcType="VARCHAR"/>
+        <result property="attribute2" column="attribute2" jdbcType="VARCHAR"/>
+        <result property="attribute3" column="attribute3" jdbcType="VARCHAR"/>
+        <result property="attribute4" column="attribute4" jdbcType="VARCHAR"/>
+        <result property="attribute5" column="attribute5" jdbcType="VARCHAR"/>
+        <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
+        <result property="createdDate" column="created_date" jdbcType="TIMESTAMP"/>
+        <result property="updatedBy" column="updated_by" jdbcType="VARCHAR"/>
+        <result property="updatedDate" column="updated_date" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,name,type,
+        status,parent_id,level,
+        attribute1,attribute2,attribute3,
+        attribute4,attribute5,created_by,
+        created_date,updated_by,updated_date
+    </sql>
+
+    <select id="selectByCondition" resultType="net.wanji.business.entity.TjCaseTree">
+        select
+        <include refid="Base_Column_List"/>
+        from tj_case_tree
+        <where>
+            and status = 0
+            and type = #{type}
+            <if test="name != null and name != ''">
+                and name like concat('%',#{name},'%')
+            </if>
+        </where>
+    </select>
+</mapper>

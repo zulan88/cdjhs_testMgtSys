@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjShardingChangeRecordMapper">
+
+    <select id="shardingResult"
+            resultType="net.wanji.business.entity.infity.TjShardingResult">
+        SELECT s.sharding_id                   AS shardingId,
+               s.record_id                     AS recordId,
+               floor(count(s.sharding_id) / 2) AS 'time',
+               max(t.scene_score)              AS evaluationScore
+        FROM tj_sharding_change_record s
+                 LEFT JOIN tj_test_single_scene_score t
+                           ON s.id = t.evaluative_id
+        WHERE s.task_id = #{taskId}
+          AND s.case_id = #{caseId}
+          AND s.record_id = #{recordId}
+        GROUP BY s.record_id,
+                 s.sharding_id
+        ORDER BY min(s.id)
+    </select>
+</mapper>

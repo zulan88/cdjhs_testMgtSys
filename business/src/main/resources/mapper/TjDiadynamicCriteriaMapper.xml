@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjDiadynamicCriteriaMapper">
+
+    <resultMap id="BaseResultMap" type="net.wanji.business.entity.TjDiadynamicCriteria">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="indexDescribe" column="index_describe" jdbcType="VARCHAR"/>
+            <result property="computationalFormula" column="computational_formula" jdbcType="VARCHAR"/>
+            <result property="designConditions" column="design_conditions" jdbcType="VARCHAR"/>
+            <result property="weight" column="weight" jdbcType="VARCHAR"/>
+            <result property="suggest" column="suggest" jdbcType="VARCHAR"/>
+            <result property="type" column="type" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,index_describe,
+        computational_formula,design_conditions,weight,
+        suggest,type
+    </sql>
+</mapper>

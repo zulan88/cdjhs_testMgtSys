@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjScenelibMapper">
+
+    <sql id="selectTjScenelibVo">
+        select id, tree_id, number, labels, scene_source, scene_status, zip_path, xodr_path, xosc_path, scene_desc, create_datetime, create_by, update_datetime, update_by, img_path, video_path, all_stage_labels, scene_detail_id from tj_scenelib
+    </sql>
+
+    <select id="selectTjScenelibList" parameterType="net.wanji.business.entity.TjScenelib" resultType="net.wanji.business.entity.TjScenelib">
+        <include refid="selectTjScenelibVo"/>
+        <where>  
+            <if test="treeId != null "> and tree_id = #{treeId}</if>
+            <if test="number != null  and number != ''"> and number = #{number}</if>
+            <if test="labels != null  and labels != ''"> and labels = #{labels}</if>
+            <if test="sceneSource != null "> and scene_source = #{sceneSource}</if>
+            <if test="sceneStatus != null "> and scene_status = #{sceneStatus}</if>
+            <if test="zipPath != null  and zipPath != ''"> and zip_path = #{zipPath}</if>
+            <if test="xodrPath != null  and xodrPath != ''"> and xodr_path = #{xodrPath}</if>
+            <if test="xoscPath != null  and xoscPath != ''"> and xosc_path = #{xoscPath}</if>
+            <if test="sceneDesc != null  and sceneDesc != ''"> and scene_desc = #{sceneDesc}</if>
+            <if test="createDatetime != null "> and create_datetime = #{createDatetime}</if>
+            <if test="updateDatetime != null "> and update_datetime = #{updateDatetime}</if>
+            <if test="imgPath != null  and imgPath != ''"> and img_path = #{imgPath}</if>
+            <if test="videoPath != null  and videoPath != ''"> and video_path = #{videoPath}</if>
+            <if test="allStageLabels != null  and allStageLabels != ''"> and all_stage_labels = #{allStageLabels}</if>
+        </where>
+    </select>
+
+    <select id="selectScenelibVoList" parameterType="net.wanji.business.domain.vo.ScenelibVo" resultType="net.wanji.business.domain.vo.ScenelibVo">
+        <include refid="selectTjScenelibVo"/>
+        <where>
+            <if test="treeId != null "> and tree_id = #{treeId}</if>
+            <if test="number != null  and number != ''"> and number = #{number}</if>
+            <if test="labels != null  and labels != ''"> and FIND_IN_SET(#{labels},all_stage_labels)</if>
+            <if test="sceneSource != null "> and scene_source = #{sceneSource}</if>
+            <if test="sceneStatus != null "> and scene_status = #{sceneStatus}</if>
+            <if test="startDate != null and startDate != '' and endDate != null"> and create_datetime between #{startDate} and #{endDate}</if>
+        </where>
+        order by create_datetime desc
+    </select>
+    
+    <select id="selectTjScenelibById" parameterType="Long" resultType="net.wanji.business.domain.vo.ScenelibVo">
+        <include refid="selectTjScenelibVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertTjScenelib" parameterType="net.wanji.business.domain.vo.ScenelibVo" useGeneratedKeys="true" keyProperty="id">
+        insert into tj_scenelib
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="treeId != null">tree_id,</if>
+            <if test="number != null">number,</if>
+            <if test="labels != null">labels,</if>
+            <if test="sceneSource != null">scene_source,</if>
+            <if test="sceneStatus != null">scene_status,</if>
+            <if test="zipPath != null">zip_path,</if>
+            <if test="xodrPath != null">xodr_path,</if>
+            <if test="xoscPath != null">xosc_path,</if>
+            <if test="sceneDesc != null">scene_desc,</if>
+            <if test="createDatetime != null">create_datetime,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateDatetime != null">update_datetime,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="imgPath != null">img_path,</if>
+            <if test="videoPath != null">video_path,</if>
+            <if test="allStageLabels != null">all_stage_labels,</if>
+            <if test="sceneDetailId != null">scene_detail_id,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="treeId != null">#{treeId},</if>
+            <if test="number != null">#{number},</if>
+            <if test="labels != null">#{labels},</if>
+            <if test="sceneSource != null">#{sceneSource},</if>
+            <if test="sceneStatus != null">#{sceneStatus},</if>
+            <if test="zipPath != null">#{zipPath},</if>
+            <if test="xodrPath != null">#{xodrPath},</if>
+            <if test="xoscPath != null">#{xoscPath},</if>
+            <if test="sceneDesc != null">#{sceneDesc},</if>
+            <if test="createDatetime != null">#{createDatetime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateDatetime != null">#{updateDatetime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="imgPath != null">#{imgPath},</if>
+            <if test="videoPath != null">#{videoPath},</if>
+            <if test="allStageLabels != null">#{allStageLabels},</if>
+            <if test="sceneDetailId != null">#{sceneDetailId},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTjScenelib" parameterType="net.wanji.business.domain.vo.ScenelibVo">
+        update tj_scenelib
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="treeId != null">tree_id = #{treeId},</if>
+            <if test="number != null">number = #{number},</if>
+            <if test="labels != null">labels = #{labels},</if>
+            <if test="sceneSource != null">scene_source = #{sceneSource},</if>
+            <if test="sceneStatus != null">scene_status = #{sceneStatus},</if>
+            <if test="zipPath != null">zip_path = #{zipPath},</if>
+            <if test="xodrPath != null">xodr_path = #{xodrPath},</if>
+            <if test="xoscPath != null">xosc_path = #{xoscPath},</if>
+            <if test="sceneDesc != null">scene_desc = #{sceneDesc},</if>
+            <if test="createDatetime != null">create_datetime = #{createDatetime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="updateDatetime != null">update_datetime = #{updateDatetime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="imgPath != null">img_path = #{imgPath},</if>
+            <if test="videoPath != null">video_path = #{videoPath},</if>
+            <if test="allStageLabels != null">all_stage_labels = #{allStageLabels},</if>
+            <if test="sceneDetailId != null">scene_detail_id = #{sceneDetailId},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTjScenelibByTreeId" parameterType="Long">
+        delete from tj_scenelib where tree_id in
+        <foreach collection="sceneIds" item="sceneId" open="(" separator="," close=")">
+            #{sceneId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteTjScenelibById" parameterType="Long">
+        delete from tj_scenelib where id = #{id}
+    </delete>
+
+    <delete id="deleteTjScenelibByIds" parameterType="String">
+        delete from tj_scenelib where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectTjSceneDetailListAnd" resultType="net.wanji.business.domain.vo.ScenelibVo">
+        <include refid="selectTjScenelibVo"/>
+        <where>
+            <foreach collection="labellist" item="item" separator = " and " >
+                FIND_IN_SET(#{item},all_stage_labels)
+            </foreach>
+            <if test="treeId != null "> and tree_id = #{treeId}</if>
+        </where>
+    </select>
+
+    <select id="selectTjSceneDetailListOr" resultType="net.wanji.business.domain.vo.ScenelibVo">
+        <include refid="selectTjScenelibVo"/>
+        <where>
+            <foreach collection="labellist" item="item" open="(" separator = " or " close=")" >
+                FIND_IN_SET(#{item},all_stage_labels)
+            </foreach>
+            <if test="treeId != null "> and tree_id = #{treeId}</if>
+        </where>
+    </select>
+
+</mapper>

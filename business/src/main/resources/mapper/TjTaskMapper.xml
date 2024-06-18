@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.TjTaskMapper">
+
+    <insert id="saveCustomScenarioWeight">
+        INSERT INTO tj_task_custom_scenario_weights (
+            `task_id`,
+            `weights`,
+            `weights_type`
+        )
+        VALUES
+        (
+            #{taskId},
+            #{weights},
+            #{weightsType}
+        );
+    </insert>
+    <delete id="deleteCustomScenarioWeightByTaskId">
+        DELETE
+        FROM
+            tj_task_custom_scenario_weights
+        WHERE
+            task_id = #{taskId}
+    </delete>
+
+    <select id="selectCountByStatus" resultType="java.util.Map">
+        select
+            tt.`status`
+        from tj_task tt
+        LEFT JOIN (
+            SELECT
+            dc.task_id,
+            dd.device_id,
+            dd.device_type as object_type,
+            dd.device_name as brand,
+            dd.ip as plate_number,
+            dd.service_address as sign
+            FROM tj_task_data_config dc
+            LEFT JOIN tj_device_detail dd ON dd.device_id = dc.device_id
+            WHERE dc.type = 'av'
+        ) a ON a.task_id = tt.id
+        <where>
+            <if test="taskCode != null and taskCode != ''">
+                AND tt.task_code LIKE CONCAT('%', #{taskCode}, '%')
+            </if>
+            <if test="plateNumber != null and plateNumber != ''">
+                AND a.plate_number LIKE CONCAT('%', #{plateNumber}, '%')
+            </if>
+            <if test="sign != null and sign != ''">
+                AND a.sign LIKE CONCAT('%', #{sign}, '%')
+            </if>
+            <if test="client != null and client != ''">
+                AND tt.client LIKE CONCAT('%', #{client}, '%')
+            </if>
+            <if test="startCreateTime != null">
+                AND tt.create_time &gt;= #{startCreateTime}
+            </if>
+            <if test="endCreateTime != null">
+                AND tt.create_time &lt;= #{endCreateTime}
+            </if>
+            <if test="startPlanDate != null">
+                AND tt.plan_date &gt;= #{startPlanDate}
+            </if>
+            <if test="endPlanDate != null">
+                AND tt.plan_date &lt;= #{endPlanDate}
+            </if>
+            <if test="testType != null and testType != ''">
+                AND tt.test_type = #{testType}
+            </if>
+            <if test="objectType != null and objectType != ''">
+                AND a.object_type = #{objectType}
+            </if>
+            <if test="status != null and status != ''">
+                AND tt.status = #{status}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND tt.created_by = #{createdBy}
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="TaskPageResult" type="net.wanji.business.domain.vo.TaskListVo">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="client" column="client" jdbcType="VARCHAR"/>
+        <result property="consigner" column="consigner" jdbcType="VARCHAR"/>
+        <result property="contract" column="contract" jdbcType="VARCHAR"/>
+        <result property="taskCode" column="task_code" jdbcType="VARCHAR"/>
+        <result property="planDate" column="plan_date" jdbcType="DATE"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="testType" column="test_type" jdbcType="VARCHAR"/>
+        <result property="caseCount" column="case_count" jdbcType="INTEGER"/>
+        <result property="deviceId" column="device_id" jdbcType="INTEGER"/>
+        <result property="objectType" column="object_type" jdbcType="VARCHAR"/>
+        <result property="brand" column="brand" jdbcType="VARCHAR"/>
+        <result property="plateNumber" column="plate_number" jdbcType="VARCHAR"/>
+        <result property="sign" column="sign" jdbcType="VARCHAR"/>
+        <result property="testTotalTime" column="test_total_time" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="continuous" column="continuous" jdbcType="TINYINT"/>
+        <result property="routeFile" column="route_file" jdbcType="VARCHAR"/>
+        <result property="selectedRecordId" column="selected_record_id" jdbcType="INTEGER"/>
+        <collection property="taskCaseVos" ofType="net.wanji.business.domain.vo.TaskCaseVo" select="selectTaskCaseInfo"
+                    column="id"/>
+        <collection property="taskCaseConfigs" ofType="net.wanji.business.entity.TjTaskDataConfig" select="selectTaskCaseConfigs"
+                    column="id"/>
+    </resultMap>
+
+    <resultMap id="TaskCaseResult" type="net.wanji.business.domain.vo.TaskCaseVo">
+        <id property="id" column="task_case_id" jdbcType="INTEGER"/>
+        <result property="caseId" column="case_id" jdbcType="INTEGER"/>
+        <result property="caseNumber" column="case_number" jdbcType="VARCHAR"/>
+        <result property="sceneDetailId" column="scene_detail_id" jdbcType="INTEGER"/>
+        <result property="sceneSort" column="label" jdbcType="VARCHAR"/>
+        <result property="passingRate" column="passing_rate" jdbcType="VARCHAR"/>
+        <result property="startTime" column="start_time" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="detailInfo" column="detail_info" jdbcType="VARCHAR"/>
+        <result property="mapFile" column="map_file" jdbcType="VARCHAR" />
+        <result property="mapId" column="map_id" jdbcType="INTEGER" />
+    </resultMap>
+
+    <resultMap id="TaskCaseConfigResult" type="net.wanji.business.entity.TjTaskDataConfig">
+        <id property="id" column="config_id" jdbcType="INTEGER"/>
+        <result property="taskId" column="task_id" jdbcType="INTEGER"/>
+        <result property="caseId" column="case_id" jdbcType="INTEGER"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="participatorId" column="participator_id" jdbcType="VARCHAR"/>
+        <result property="participatorName" column="participator_name" jdbcType="VARCHAR"/>
+        <result property="deviceId" column="device_id" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="getPageList" resultMap="TaskPageResult">
+        SELECT
+        tt.id,
+        tt.client,
+        tt.consigner,
+        tt.contract,
+        tt.task_code,
+        tt.plan_date,
+        tt.create_time,
+        tt.test_type,
+        tt.case_count,
+        tt.continuous,
+        a.device_id,
+        a.object_type,
+        a.brand,
+        a.plate_number,
+        a.sign,
+        tt.test_total_time,
+        tt.status,
+        tt.route_file,
+        tt.apprecord_id,
+        tt.measurand_id,
+        tt.op_status,
+        tt.is_inner,
+        tt.remark,
+        tt.selected_record_id
+        FROM tj_task tt
+        LEFT JOIN (
+            SELECT
+            dc.task_id,
+            dd.device_id,
+            dd.device_type as object_type,
+            dd.device_name as brand,
+            dd.ip as plate_number,
+            dd.service_address as sign
+            FROM tj_task_data_config dc
+            LEFT JOIN tj_device_detail dd ON dd.device_id = dc.device_id
+            WHERE dc.type = 'av'
+        ) a ON a.task_id = tt.id
+        <where>
+            <if test="taskCode != null and taskCode != ''">
+                AND tt.task_code LIKE CONCAT('%', #{taskCode}, '%')
+            </if>
+            <if test="plateNumber != null and plateNumber != ''">
+                AND a.plate_number LIKE CONCAT('%', #{plateNumber}, '%')
+            </if>
+            <if test="sign != null and sign != ''">
+                AND a.sign LIKE CONCAT('%', #{sign}, '%')
+            </if>
+            <if test="client != null and client != ''">
+                AND tt.client LIKE CONCAT('%', #{client}, '%')
+            </if>
+            <if test="startCreateTime != null">
+                AND tt.create_time &gt;= #{startCreateTime}
+            </if>
+            <if test="endCreateTime != null">
+                AND tt.create_time &lt;= #{endCreateTime}
+            </if>
+            <if test="startPlanDate != null">
+                AND tt.plan_date &gt;= #{startPlanDate}
+            </if>
+            <if test="endPlanDate != null">
+                AND tt.plan_date &lt;= #{endPlanDate}
+            </if>
+            <if test="testType != null and testType != ''">
+                AND tt.test_type = #{testType}
+            </if>
+            <if test="objectType != null and objectType != ''">
+                AND a.object_type = #{objectType}
+            </if>
+            <if test="status != null and status != ''">
+                AND tt.status = #{status}
+            </if>
+            <if test="id != null and id != ''">
+                AND tt.id = #{id}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND tt.created_by = #{createdBy}
+            </if>
+            <if test="isInner != null">
+                AND tt.is_inner = #{isInner}
+            </if>
+            <if test="opStatus != null">
+                AND tt.op_status = #{opStatus}
+            </if>
+        </where>
+        order by tt.plan_date desc, tt.create_time desc
+    </select>
+
+    <select id="selectTaskCaseInfo" resultMap="TaskCaseResult">
+        select ttc.id as task_case_id,
+               ttc.task_id,
+               ttc.case_id,
+               ttc.sort,
+               ttc.passing_rate,
+               ttc.start_time,
+               ttc.end_time,
+               ttc.status,
+               ttc.zip_path,
+               b.case_number,
+               b.scene_detail_id,
+               b.label,
+               b.map_id,
+               b.map_file,
+               b.detail_info
+        from tj_task_case ttc
+                 left join (
+            select tc.id,
+                   tc.case_number,
+                   tc.scene_detail_id,
+                   tc.detail_info,
+                   tc.map_id,
+                   tc.map_file,
+                   sd.label
+            from tj_case tc
+            inner join tj_fragmented_scene_detail sd on tc.scene_detail_id = sd.id
+        ) b on b.id = ttc.case_id
+        where ttc.task_id = #{id}
+        order by ttc.sort
+    </select>
+
+    <select id="selectTaskCaseConfigs" resultMap="TaskCaseConfigResult">
+        select ttdc.id as config_id,
+               ttdc.task_id,
+               ttdc.case_id,
+               ttdc.type,
+               ttdc.participator_id,
+               ttdc.participator_name,
+               ttdc.device_id
+        from tj_task_data_config ttdc
+        where ttdc.task_id = #{id}
+    </select>
+
+    <select id="getExportList" resultType="net.wanji.business.domain.vo.TaskReportVo">
+        SELECT tt.id                            AS task_id,
+               tt.task_name,
+               dc.participator_name,
+               tt.start_time,
+               tt.end_time,
+               tt.test_total_time,
+               tc.id                            AS case_id,
+               tc.case_number                   AS case_name,
+               ttc.passing_rate,
+               ttc.start_time                   AS case_start_time,
+               ttc.end_time                     AS case_end_time,
+               SEC_TO_TIME(ttc.test_total_time) AS case_test_time,
+               dia.type                         AS dc_type,
+               dia.weight                       AS dc_weight,
+               dia.`name`                       AS dia_name,
+               dia.score,
+               dia.time
+        FROM tj_task tt
+                 LEFT JOIN tj_task_data_config dc ON (dc.task_id = tt.id AND dc.type = 'av')
+                 LEFT JOIN tj_task_case ttc ON ttc.task_id = tt.id
+                 LEFT JOIN tj_case tc ON tc.id = ttc.case_id
+                 LEFT JOIN (
+            SELECT dc.id,
+                   dc.type,
+                   td.task_id,
+                   dc.`name`,
+                   td.weight,
+                   td.score,
+                   td.time
+            FROM tj_task_dc td
+                     INNER JOIN tj_diadynamic_criteria dc ON dc.id = td.dc_id
+        ) dia ON dia.task_id = tt.id
+        WHERE tt.id = #{taskId}
+
+    </select>
+
+
+</mapper>
