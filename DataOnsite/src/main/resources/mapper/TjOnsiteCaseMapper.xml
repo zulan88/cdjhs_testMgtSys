@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.onsite.mapper.TjOnsiteCaseMapper">
+
+    <select id="getOnsiteCaseByNum" resultType="net.wanji.onsite.entity.TjOnsiteCase">
+        select * from tj_onsite_case where onsite_number = #{onsiteNumber} LIMIT 1
+    </select>
+
+</mapper>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.makeanappointment.mapper.TestObjectMapper">
+<!--    -->
+<!--    <resultMap type="net.wanji" id="LabelsResult">-->
+<!--        <result property="id"    column="id"    />-->
+<!--        <result property="name"    column="name"    />-->
+<!--        <result property="parentId"    column="parent_Id"    />-->
+<!--        <result property="direction"    column="direction"  />-->
+<!--    </resultMap>-->
+
+<!--    <sql id="selectLabelsVo">-->
+<!--        select id, name, parent_Id, direction from tj_labels-->
+<!--    </sql>-->
+
+
+    <insert id="addTesteeObject" parameterType="net.wanji.makeanappointment.domain.vo.TestObjectVo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tj_testee_object_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test='testeeObjectName != null and testeeObjectName != ""'>testee_object_name,</if>
+            <if test='testeeObjectType != null and testeeObjectType != ""'>testee_object_type,</if>
+            <if test='automaticDrivingLevel != null and automaticDrivingLevel != ""'>automatic_driving_level,</if>
+            <if test='vehicleBrand != null and vehicleBrand != ""'>vehicle_brand,</if>
+            <if test='vehicleModel != null and vehicleModel != ""'>vehicle_model,</if>
+            <if test='vehicleType != null and vehicleType != ""'>vehicle_type,</if>
+            <if test='vehicleLicense != null and vehicleLicense != ""'>vehicle_license,</if>
+            <if test='contactPerson != null and contactPerson != ""'>contact_person,</if>
+            <if test='phoneNumber != null and phoneNumber != ""'>phone_number,</if>
+            <if test='remark != null and remark != ""'>remark,</if>
+            <if test='testeeObjectPic != null and testeeObjectPic != ""'>testee_object_pic,</if>
+            create_time,
+            <if test="createBy != null and createBy != ''">createBy,</if>
+            <if test="dataChannel != null and dataChannel != ''">data_channel,</if>
+            <if test="commandChannel != null and commandChannel != ''">command_channel,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test='testeeObjectName != null and testeeObjectName != ""'>#{testeeObjectName},</if>
+            <if test='testeeObjectType != null and testeeObjectType != ""'>#{testeeObjectType},</if>
+            <if test='automaticDrivingLevel != null and automaticDrivingLevel != ""'>#{automaticDrivingLevel},</if>
+            <if test='vehicleBrand != null and vehicleBrand != ""'>#{vehicleBrand},</if>
+            <if test='vehicleModel != null and vehicleModel != ""'>#{vehicleModel},</if>
+            <if test='vehicleType != null and vehicleType != ""'>#{vehicleType},</if>
+            <if test='vehicleLicense != null and vehicleLicense != ""'>#{vehicleLicense},</if>
+            <if test='contactPerson != null and contactPerson != ""'>#{contactPerson},</if>
+            <if test='phoneNumber != null and phoneNumber != ""'>#{phoneNumber},</if>
+            <if test='remark != null and remark != ""'>#{remark},</if>
+            <if test='testeeObjectPic != null and testeeObjectPic != ""'>#{testeeObjectPic},</if>
+            sysdate(),
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="dataChannel != null and dataChannel != ''">#{dataChannel},</if>
+            <if test="commandChannel != null and commandChannel != ''">#{commandChannel},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTesteeObject">
+        update tj_testee_object_info
+        <set>
+            <if test='testeeObjectName != null and testeeObjectName != ""'>testee_object_name = #{testeeObjectName},</if>
+            <if test='testeeObjectType != null and testeeObjectType != ""'>testee_object_type = #{testeeObjectType},</if>
+            <if test='automaticDrivingLevel != null and automaticDrivingLevel != ""'>automatic_driving_level = #{automaticDrivingLevel},</if>
+            <if test='vehicleBrand != null and vehicleBrand != ""'>vehicle_brand = #{vehicleBrand},</if>
+            <if test='vehicleModel != null and vehicleModel != ""'>vehicle_model = #{vehicleModel},</if>
+            <if test='vehicleType != null and vehicleType != ""'>vehicle_type = #{vehicleType},</if>
+            <if test='vehicleLicense != null and vehicleLicense != ""'>vehicle_license = #{vehicleLicense},</if>
+            <if test='contactPerson != null and contactPerson != ""'>contact_person = #{contactPerson},</if>
+            <if test='phoneNumber != null and phoneNumber != ""'>phone_number = #{phoneNumber},</if>
+            <if test='remark != null and remark != ""'>remark = #{remark},</if>
+            <if test='testeeObjectPic != null and testeeObjectPic != ""'>testee_object_pic = #{testeeObjectPic},</if>
+            update_time = sysdate(),
+            <if test="updateBy != null and updateBy != ''">updateBy = #{updateBy},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTesteeObject">
+        DELETE FROM tj_testee_object_info
+        WHERE id = #{id}
+    </delete>
+
+    <select id="queryTesteeObjectById" resultType="net.wanji.makeanappointment.domain.vo.TestObjectVo">
+        SELECT
+            id,
+            testee_object_name as testeeObjectName,
+            testee_object_type as testeeObjectType,
+            automatic_driving_level as automaticDrivingLevel,
+            vehicle_brand as vehicleBrand,
+            vehicle_model as vehicleModel,
+            vehicle_type as vehicleType,
+            vehicle_license as vehicleLicense,
+            contact_person as contactPerson,
+            phone_number as phoneNumber,
+            remark,
+            testee_object_pic as testeeObjectPic,
+            create_time as createTime,
+            createBy,
+            update_time as updateTime,
+            updateBy
+        FROM
+            tj_testee_object_info
+        WHERE
+            id = #{id}
+    </select>
+
+    <select id="queryTesteeObjectList" resultType="net.wanji.makeanappointment.domain.vo.TestObjectVo">
+        SELECT
+            id,
+            testee_object_name as testeeObjectName,
+            testee_object_type as testeeObjectType,
+            automatic_driving_level as automaticDrivingLevel,
+            vehicle_brand as vehicleBrand,
+            vehicle_model as vehicleModel,
+            vehicle_type as vehicleType,
+            vehicle_license as vehicleLicense,
+            contact_person as contactPerson,
+            phone_number as phoneNumber,
+            remark,
+            testee_object_pic as testeeObjectPic,
+            create_time as createTime,
+            createBy,
+            update_time as updateTime,
+            updateBy
+        FROM
+            tj_testee_object_info
+        <where>
+            <if test='testeeObjectType != null and testeeObjectType != ""'>
+                AND testee_object_type like concat('%', #{testeeObjectType}, '%')
+            </if>
+            <if test='vehicleBrand != null and vehicleBrand != ""'>
+                AND vehicle_brand like concat('%', #{vehicleBrand}, '%')
+            </if>
+            <if test='vehicleModel != null and vehicleModel != ""'>
+                AND vehicle_model like concat('%', #{vehicleModel}, '%')
+            </if>
+            <if test='vehicleType != null and vehicleType != ""'>
+                AND vehicle_type like concat('%', #{vehicleType}, '%')
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>
