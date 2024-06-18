@@ -1,4 +1,4 @@
-package cn.net.wanji;
+package cn.net.wanji.testmgtsys;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

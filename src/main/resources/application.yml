@@ -1,0 +1,32 @@
+# spring配置
+spring:
+  redis:
+    host: 10.102.1.113
+    port: 6379
+    database: 15
+    password:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://10.102.1.113:3306/cdjhs_testmgtsys?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: Wanji123456
+
+
+# mybatis配置
+mybatis:
+  # 搜索指定包别名
+  typeAliasesPackage: cn.net.wanji.testmgtsys
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapperLocations: classpath:mapper/**/*.xml
+
+# swagger配置
+swagger:
+  title: 系统模块接口文档
+  license: Powered By wanji
+  licenseUrl: https://wanji.cn.net
+
+console:
+  log:
+    level: INFO
+logging:
+  config: classpath:logback-dev.xml
