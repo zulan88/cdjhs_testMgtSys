@@ -8,7 +8,7 @@
         <artifactId>cdjhs_tstMgtSys</artifactId>
         <version>1.0.1</version>
     </parent>
-    <name>运营平台</name>
+    <name>ExamineAndApprove</name>
     <artifactId>ExamineAndApprove</artifactId>
 
     <properties>
