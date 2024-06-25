@@ -35,6 +35,7 @@ import net.wanji.business.schedule.PlaybackSchedule;
 import net.wanji.business.service.*;
 import net.wanji.business.trajectory.RedisTrajectory2Consumer;
 import net.wanji.common.common.TrajectoryValueDto;
+import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.CounterUtil;
 import net.wanji.common.utils.DateUtils;
@@ -48,7 +49,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -378,6 +379,61 @@ public class TjFragmentedSceneDetailServiceImpl
         boolean flag = this.saveOrUpdate(detail);
         sceneDetailDto.setId(detail.getId());
         return flag;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Integer saveSceneDetailInfo(TjFragmentedSceneDetailDto sceneDetailDto) throws BusinessException {
+        TjFragmentedSceneDetail detail = new TjFragmentedSceneDetail();
+        BeanUtils.copyBeanProp(detail, sceneDetailDto);
+        if (ObjectUtils.isEmpty(sceneDetailDto.getId())) {
+            detail.setNumber(StringUtils.isEmpty(sceneDetailDto.getNumber()) ? buildSceneNumber() : sceneDetailDto.getNumber());
+            detail.setCreatedBy(SecurityUtils.getUsername());
+            detail.setCreatedDate(LocalDateTime.now());
+        } else {
+            detail.setUpdatedBy(SecurityUtils.getUsername());
+            detail.setUpdatedDate(LocalDateTime.now());
+        }
+        if(!ObjectUtils.isEmpty(sceneDetailDto.getMapId())){
+            TjAtlasVenue tjAtlasVenue = tjAtlasVenueService.getById(sceneDetailDto.getMapId());
+            detail.setMapFile(tjAtlasVenue.getGeoJsonPath());
+        }
+        if(sceneDetailDto.getTrajectoryJson()!=null) {
+            if (sceneDetailDto.getTrajectoryJson().getParticipantTrajectories().stream().filter(item -> item.getType().equals(PartType.MAIN)).count() > 1) {
+                throw new BusinessException("一个场景中只能有一个AV车");
+            }
+        }
+        List<String> labellist = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(sceneDetailDto.getLabelList())) {
+            for (String id : sceneDetailDto.getLabelList()) {
+                labellist.addAll(this.getalllabel(id));
+            }
+        }
+        if (Integer.valueOf(1).equals(sceneDetailDto.getFinished())) {
+            detail.setFinished(true);
+        }
+        detail.setLabel(CollectionUtils.isNotEmpty(sceneDetailDto.getLabelList())
+                ? String.join(",", sceneDetailDto.getLabelList())
+                : null);
+        detail.setAllStageLabel(CollectionUtils.isNotEmpty(labellist)
+                ? labellist.stream().distinct().collect(Collectors.joining(","))
+                : null);
+        //写入文件，将文件地址入库存储
+        SceneTrajectoryBo sceneTrajectoryBo = sceneDetailDto.getTrajectoryJson().buildId();
+        String filePath = WanjiConfig.getUploadPath()+"TrajectoryJson"+System.currentTimeMillis()+".txt";
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath), "UTF-8"))) {
+            writer.write(sceneTrajectoryBo.toJsonString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        detail.setTrajectoryInfoTime(filePath);
+        detail.setTrajectoryInfo(filePath);
+        if (!ObjectUtils.isEmpty(sceneDetailDto.getReferencePoints())){
+            detail.setReferencePoint(sceneDetailDto.getReferencePoints().toJSONString());
+        }
+        this.saveOrUpdate(detail);
+        return detail.getId();
     }
 
     @Override

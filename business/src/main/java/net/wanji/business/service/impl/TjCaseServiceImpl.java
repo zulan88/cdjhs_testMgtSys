@@ -47,6 +47,7 @@ import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.bean.BeanUtils;
+import net.wanji.common.utils.file.FileUtils;
 import net.wanji.common.utils.spring.SpringUtils;
 import net.wanji.system.service.ISysDictDataService;
 import net.wanji.system.service.ISysDictTypeService;
@@ -367,8 +368,8 @@ public class TjCaseServiceImpl extends ServiceImpl<TjCaseMapper, TjCase> impleme
     }
 
     private void handleCasePartConfig(CaseDetailVo caseDetailVo) {
-        List<PartConfigSelect> configSelect = this.getConfigSelect(caseDetailVo.getId(),
-                JSONObject.parseObject(caseDetailVo.getDetailInfo(), CaseTrajectoryDetailBo.class), false);
+        CaseTrajectoryDetailBo trajectoryDetailBo = JSONObject.parseObject(FileUtils.readFile(caseDetailVo.getDetailInfo()), CaseTrajectoryDetailBo.class);
+        List<PartConfigSelect> configSelect = this.getConfigSelect(caseDetailVo.getId(),trajectoryDetailBo, false);
         caseDetailVo.setPartConfigSelects(configSelect);
     }
 
@@ -518,6 +519,7 @@ public class TjCaseServiceImpl extends ServiceImpl<TjCaseMapper, TjCase> impleme
             tjCase.setCaseNumber(this.buildCaseNumber());
             LocalDateTime now = LocalDateTime.now();
             tjCase.setUpdatedDate(now);
+            tjCase.setSceneLibId(tjCaseDto.getSceneLibId());
             tjCase.setUpdatedBy(SecurityUtils.getUsername());
             tjCase.setCreatedBy(SecurityUtils.getUsername());
             tjCase.setCreatedDate(now);
@@ -526,16 +528,17 @@ public class TjCaseServiceImpl extends ServiceImpl<TjCaseMapper, TjCase> impleme
                 if (ObjectUtils.isEmpty(sceneDetail)) {
                     throw new BusinessException("创建失败：场景不存在");
                 }
-                String trajectoryInfo = sceneDetail.getTrajectoryInfo();
+                String trajectoryInfoPath = sceneDetail.getTrajectoryInfo();
                 if (sceneDetail.getSimuType().equals(0)){
-                    trajectoryInfo = sceneDetail.getTrajectoryInfoTime();
+                    trajectoryInfoPath = sceneDetail.getTrajectoryInfoTime();
                 }
-                CaseTrajectoryDetailBo trajectoryDetailBo = JSONObject.parseObject(trajectoryInfo, CaseTrajectoryDetailBo.class);
-                tjCase.setDetailInfo(JSONObject.toJSONString(trajectoryDetailBo));
+                //读文件
+                CaseTrajectoryDetailBo trajectoryDetailBo = JSONObject.parseObject(FileUtils.readFile(trajectoryInfoPath), CaseTrajectoryDetailBo.class);
+                tjCase.setDetailInfo(trajectoryInfoPath);
 
-                if (StringUtils.isEmpty(sceneDetail.getRouteFile())) {
-                    throw new BusinessException("创建失败：场景未进行仿真验证");
-                }
+//                if (StringUtils.isEmpty(sceneDetail.getRouteFile())) {
+//                    throw new BusinessException("创建失败：场景未进行仿真验证");
+//                }
                 tjCase.setRouteFile(sceneDetail.getRouteFile());
                 tjCase.setMapFile(sceneDetail.getMapFile());
                 tjCase.setMapId(sceneDetail.getMapId());
@@ -830,6 +833,7 @@ public class TjCaseServiceImpl extends ServiceImpl<TjCaseMapper, TjCase> impleme
             casePartConfig.setBusinessType(participantTrajectoryBo.getType());
             casePartConfig.setName(participantTrajectoryBo.getName());
             casePartConfig.setModel(participantTrajectoryBo.getModel());
+            casePartConfig.setParticipantRole(participantTrajectoryBo.getRole());
             participantTrajectoryBo.getTrajectory().stream()
                     .filter(t -> PointTypeEnum.START.getPointType().equals(t.getType()))
                     .findFirst()

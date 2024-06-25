@@ -31,6 +31,7 @@ public class TrajectoryDetailBo implements Serializable {
     private String speedUnit;
     private Boolean pass;
     private String reason = "等待校验";
+    private Integer model;
 
     private String date;
 

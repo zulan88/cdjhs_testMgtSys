@@ -42,7 +42,7 @@ public interface ITjScenelibService extends IService<TjScenelib>
      */
     public int insertTjScenelib(TjScenelib tjScenelib);
 
-    public boolean insertTjScenelibBatch(List<TjScenelib> tjScenelibs);
+    public boolean insertTjScenelibBatch(List<TjScenelib> tjScenelibs) throws BusinessException;
 
     /**
      * 修改scenelib
@@ -69,6 +69,8 @@ public interface ITjScenelibService extends IService<TjScenelib>
     public int deleteTjScenelibById(Long id);
 
     public List<ScenelibVo>selectScenelibVoList(ScenelibVo scenelibVo);
+
+    boolean updateBatchandCase(List<TjScenelib> sceneDetails);
 
     boolean updateBatch(List<TjScenelib> sceneDetails);
 

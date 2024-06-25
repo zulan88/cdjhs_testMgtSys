@@ -1,29 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.wanji.business.mapper.TjCaseMapper">
-    <update id="updateCaseStatus">
-        update tj_case set status=#{status}
-        where id in
-        <foreach collection="ids" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </update>
 
     <resultMap id="CasePageResult" type="net.wanji.business.domain.vo.CasePageVo">
         <id property="id" column="id" jdbcType="INTEGER"/>
         <result property="treeId" column="tree_id" jdbcType="INTEGER"/>
         <result property="caseNumber" column="case_number" jdbcType="VARCHAR"/>
         <result property="sceneDetailId" column="scene_detail_id" jdbcType="INTEGER"/>
+        <result property="sceneLibId" column="scene_lib_id" jdbcType="LONGNVARCHAR"/>
         <result property="sceneNumber" column="scene_number" jdbcType="VARCHAR"/>
-        <result property="imgUrl" column="img_url" jdbcType="VARCHAR"/>
-        <result property="testSceneDesc" column="test_scene_desc" jdbcType="VARCHAR"/>
-        <result property="label" column="label" jdbcType="VARCHAR"/>
+        <result property="imgUrl" column="img_path" jdbcType="VARCHAR"/>
+        <result property="testSceneDesc" column="scene_desc" jdbcType="VARCHAR"/>
+        <result property="label" column="labels" jdbcType="VARCHAR"/>
         <result property="mapFile" column="map_file" jdbcType="VARCHAR" />
         <result property="mapId" column="map_id" jdbcType="INTEGER" />
         <result property="detailInfo" column="detail_info" jdbcType="VARCHAR"/>
         <result property="routeFile" column="route_file" jdbcType="VARCHAR"/>
         <result property="testTarget" column="test_target" jdbcType="VARCHAR"/>
         <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="sceneSource" column="scene_source" jdbcType="VARCHAR"/>
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
         <result property="updatedDate" column="updated_date" jdbcType="TIMESTAMP"/>
         <collection property="partConfigs" ofType="net.wanji.business.entity.TjCasePartConfig"
@@ -53,6 +48,19 @@
         <result property="seconds" column="seconds" jdbcType="INTEGER"/>
     </resultMap>
 
+
+    <update id="updateCaseStatus">
+        update tj_case set status=#{status}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateCaseStatusBySceanId">
+        update tj_case set status=#{status} where scene_lib_id = #{sceneLibId}
+    </update>
+
     <select id="selectCases" resultMap="CasePageResult">
         select
         c.id,
@@ -66,14 +74,16 @@
         c.status,
         c.remark,
         c.updated_date,
-        sd.id as scene_detail_id,
+        sd.id as scene_lib_id,
         sd.number as scene_number,
-        sd.img_url,
-        sd.test_scene_desc,
-        sd.label
+        sd.img_path,
+        sd.scene_desc,
+        sd.labels,
+        sd.scene_source
+
 
         from tj_case c
-        inner join tj_fragmented_scene_detail sd on sd.id = c.scene_detail_id
+        inner join tj_scenelib sd on sd.id = c.scene_lib_id
         <where>
             <if test="id != null and id > 0 ">
                 and c.id = #{id}
@@ -107,6 +117,29 @@
                 <foreach collection="selectedIds" item="selectedId" open="(" separator="," close=")">
                     #{selectedId}
                 </foreach>
+            </if>
+        </where>
+        order by c.updated_date desc
+    </select>
+
+    <select id="selectCasesByScean" resultMap="CasePageResult">
+        select
+        c.id,
+        c.tree_id,
+        c.case_number,
+        c.test_target,
+        c.scene_lib_id,
+        c.detail_info,
+        c.route_file,
+        c.map_file,
+        c.map_id,
+        c.status,
+        c.remark,
+        c.updated_date
+        from tj_case c
+        <where>
+            <if test="sceneLibId != null">
+                and c.scene_lib_id = #{sceneLibId}
             </if>
         </where>
         order by c.updated_date desc

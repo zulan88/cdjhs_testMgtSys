@@ -43,6 +43,9 @@ public class TjCase implements Serializable {
     @TableField("scene_detail_id")
     private Integer sceneDetailId;
 
+    @TableField("scene_lib_id")
+    private Long sceneLibId;
+
     @TableField("resources_detail_id")
     private Integer resourcesDetailId;
 

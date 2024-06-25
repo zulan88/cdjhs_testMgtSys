@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
 import net.wanji.business.domain.BusinessTreeSelect;
 import net.wanji.business.domain.Label;
+import net.wanji.business.domain.dto.TjFragmentedSceneDetailDto;
 import net.wanji.business.domain.dto.TjFragmentedScenesDto;
 import net.wanji.business.domain.dto.TreeTypeDto;
 import net.wanji.business.domain.vo.FragmentedScenesDetailVo;
@@ -19,6 +20,7 @@ import net.wanji.business.entity.TjScenelibTree;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.schedule.SceneLabelMap;
 import net.wanji.business.service.*;
+import net.wanji.business.util.AnalyzeOpenX;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
@@ -119,8 +121,10 @@ public class ScenelibController extends BaseController {
         return toAjax(res);
     }
 
+
     @PostMapping("/libaddBatch")
     public AjaxResult addBatch(@RequestBody List<TjScenelib> tjScenelibs) throws BusinessException{
+
         return toAjax(scenelibService.insertTjScenelibBatch(tjScenelibs));
     }
 
@@ -132,7 +136,7 @@ public class ScenelibController extends BaseController {
 
     @PutMapping("/libstatus")
     public AjaxResult updatestatus(@RequestBody List<TjScenelib> scenelibs){
-        return toAjax(scenelibService.updateBatch(scenelibs));
+        return toAjax(scenelibService.updateBatchandCase(scenelibs));
     }
 
     @DeleteMapping("/lib/{ids}")

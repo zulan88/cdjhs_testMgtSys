@@ -207,6 +207,19 @@ public class FileUtils {
         return list;
     }
 
+    public static String readFile(String filePath) {
+        StringBuilder stringBuilder = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return stringBuilder.toString();
+    }
+
     /**
      * 删除文件
      *

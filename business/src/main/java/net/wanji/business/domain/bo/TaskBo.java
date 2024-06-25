@@ -25,7 +25,6 @@ import javax.validation.constraints.NotNull;
 public class TaskBo {
 
     @ApiModelProperty(value = "节点")
-    @NotNull(message = "请确认当前流程节点")
     private Integer processNode;
 
     @ApiModelProperty(value = "任务ID（创建任务信息）", example = "1")
@@ -75,6 +74,16 @@ public class TaskBo {
     private Integer apprecordId;
 
     private Integer measurandId;
+
+    /**
+     * 测试用例名称
+     */
+    private String testCaseName;
+
+    /**
+     * 所属卷类型
+     */
+    private String pageType;
 
     /**
      * 是否连续性测试 0否 1是

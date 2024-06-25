@@ -587,9 +587,9 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         TjTask tjTask = new TjTask();
         if (ObjectUtil.isNotEmpty(in.getId())) {
             tjTask = this.getById(in.getId());
-            if (!TaskStatusEnum.NO_SUBMIT.getCode().equals(tjTask.getStatus())) {
-                throw new BusinessException("任务已提交，不可修改");
-            }
+//            if (!TaskStatusEnum.NO_SUBMIT.getCode().equals(tjTask.getStatus())) {
+//                throw new BusinessException("任务已提交，不可修改");
+//            }
         }
         switch (in.getProcessNode()) {
             case TaskProcessNode.TASK_INFO:
@@ -708,7 +708,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             List<TjCasePartConfig> casePartConfigs = tjCasePartConfigService.list(new LambdaQueryWrapper<TjCasePartConfig>()
                     .eq(TjCasePartConfig::getCaseId, tjCase.getId()));
             Map<String, TjCasePartConfig> casePartConfigMap = casePartConfigs.stream().collect(Collectors.toMap(TjCasePartConfig::getBusinessId, Function.identity()));
-            SceneTrajectoryBo sceneTrajectoryBo = JSONObject.parseObject(tjCase.getDetailInfo(), SceneTrajectoryBo.class);
+            SceneTrajectoryBo sceneTrajectoryBo = JSONObject.parseObject(FileUtils.readFile(tjCase.getDetailInfo()), SceneTrajectoryBo.class);
             // 当前所有从车都使用TESSNG
             List<TjTaskDataConfig> slaveConfigs = sceneTrajectoryBo.getParticipantTrajectories().stream()
                     .filter(t -> !PartType.MAIN.equals(t.getType())).map(t -> {

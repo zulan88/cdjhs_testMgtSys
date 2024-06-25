@@ -57,6 +57,7 @@ import net.wanji.common.utils.StringUtils;
 import net.wanji.system.service.ISysDictDataService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -1349,11 +1350,11 @@ public class TjTaskCaseServiceImpl
 
     List<TjTaskCase> saveList = new ArrayList<>();
     for (Integer caseId : caseIds) {
-      if (!caseMap.containsKey(caseId) || StringUtils.isEmpty(
-          caseMap.get(caseId).getRouteFile())) {
-        throw new BusinessException(
-            StringUtils.format("未查询到用例{}可用轨迹文件", caseId));
-      }
+//      if (!caseMap.containsKey(caseId) || StringUtils.isEmpty(
+//          caseMap.get(caseId).getRouteFile())) {
+//        throw new BusinessException(
+//            StringUtils.format("未查询到用例{}可用轨迹文件", caseId));
+//      }
       TjTaskCase taskCase = new TjTaskCase();
       taskCase.setTaskId(taskId);
       taskCase.setCaseId(caseId);

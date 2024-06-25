@@ -1,5 +1,6 @@
 package net.wanji.business.util;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.InfinteMileScenceExo;

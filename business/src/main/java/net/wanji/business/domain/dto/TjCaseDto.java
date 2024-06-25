@@ -1,6 +1,9 @@
 package net.wanji.business.domain.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import net.wanji.business.common.Constants.BatchGroup;
 import net.wanji.business.common.Constants.DeleteGroup;
 import net.wanji.business.common.Constants.InsertGroup;
@@ -21,6 +24,9 @@ import java.util.Map;
  * @Descriptoin:
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TjCaseDto {
 
     @NotNull(message = "请选择一条数据", groups = {UpdateGroup.class, DeleteGroup.class})
@@ -31,6 +37,10 @@ public class TjCaseDto {
 
     @NotNull(message = "请选择场景", groups = {InsertGroup.class})
     private Integer sceneDetailId;
+
+    private Long sceneLibId;
+
+    private String labels;
 
 //    @NotBlank(message = "请输入测试说明", groups = {UpdateGroup.class})
     private String testTarget;

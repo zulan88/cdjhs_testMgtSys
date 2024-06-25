@@ -12,8 +12,11 @@ import lombok.Data;
 @Data
 public class CaseSceneVo {
 
-    @ApiModelProperty("场景主键")
+    @ApiModelProperty("场景编辑器主键")
     private Integer sceneDetailId;
+
+    @ApiModelProperty("场景库主键")
+    private Long sceneLibId;
 
     @ApiModelProperty("场景编号")
     private String sceneNumber;
@@ -23,6 +26,9 @@ public class CaseSceneVo {
 
     @ApiModelProperty("场景描述")
     private String testSceneDesc;
+
+    @ApiModelProperty("场景来源")
+    private String sceneSource;
 
     @JsonIgnore
     private String label;

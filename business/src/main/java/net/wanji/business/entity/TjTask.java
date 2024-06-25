@@ -28,6 +28,18 @@ public class TjTask implements Serializable {
     private Integer id;
 
     /**
+     * 测试用例名称
+     */
+    @TableField(value = "test_case_name")
+    private String testCaseName;
+
+    /**
+     * 所属卷类型
+     */
+    @TableField(value = "page_type")
+    private String pageType;
+
+    /**
      * 委托单位
      */
     @TableField(value = "client")
