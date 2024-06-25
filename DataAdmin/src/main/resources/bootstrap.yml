@@ -38,7 +38,6 @@ spring:
         # false不注册到 nacos
 #        register-enabled: false
         register-enabled: true
-        register-enabled: true
 #        register-enabled: true
       config:
         # 服务注册地址
