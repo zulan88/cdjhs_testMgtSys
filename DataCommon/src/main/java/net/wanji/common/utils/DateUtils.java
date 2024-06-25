@@ -42,12 +42,19 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils
     static DateTimeFormatter secondFormatter = DateTimeFormatter.ofPattern(YYYYMMDDHHMMSS);
     static DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern(YYYYMMDD);
 
+    public static DateTimeFormatter datePathFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+
     public static String getNowSecondString() {
         return LocalDateTime.now().format(secondFormatter);
     }
 
     public static String getNowDayString() {
         return LocalDateTime.now().format(secondFormatter);
+    }
+
+    public static String getDatePath(){
+        LocalDate now = LocalDate.now();
+        return datePathFormatter.format(now);
     }
 
     /**

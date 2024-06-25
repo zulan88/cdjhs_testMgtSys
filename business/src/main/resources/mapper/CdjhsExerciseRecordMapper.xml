@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.CdjhsExerciseRecordMapper">
+    
+    <resultMap type="net.wanji.business.domain.CdjhsExerciseRecord" id="CdjhsExerciseRecordResult">
+        <result property="id"    column="id"    />
+        <result property="testId" column="test_id"/>
+        <result property="testCaseCode"    column="test_case_code"    />
+        <result property="testCaseName"    column="test_case_name"    />
+        <result property="testPaperType"    column="test_paper_type"    />
+        <result property="userName"    column="user_name"    />
+        <result property="mirrorName"    column="mirror_name"    />
+        <result property="mirrorVersion"    column="mirror_version"    />
+        <result property="mirrorId"    column="mirror_id"    />
+        <result property="mirrorPath"    column="mirror_path"    />
+        <result property="md5" column="md5"/>
+        <result property="deviceId"    column="device_id"    />
+        <result property="status"    column="status"    />
+        <result property="waitingNum"    column="waiting_num"    />
+        <result property="checkResult"    column="check_result"    />
+        <result property="checkMsg"    column="check_msg"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="duration"    column="duration"    />
+        <result property="score"    column="score"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectCdjhsExerciseRecordVo">
+        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, create_time, update_time from cdjhs_exercise_record
+    </sql>
+
+    <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
+        <include refid="selectCdjhsExerciseRecordVo"/>
+        <where>
+            <if test="testId != null">and test_id = #{testId}</if>
+            <if test="testCaseCode != null  and testCaseCode != ''"> and test_case_code = #{testCaseCode}</if>
+            <if test="testCaseName != null  and testCaseName != ''"> and test_case_name like concat('%', #{testCaseName}, '%')</if>
+            <if test="testPaperType != null "> and test_paper_type = #{testPaperType}</if>
+            <if test="userName != null  and userName != ''"> and user_name = #{userName}</if>
+            <if test="mirrorName != null  and mirrorName != ''"> and mirror_name like concat('%', #{mirrorName}, '%')</if>
+            <if test="mirrorVersion != null  and mirrorVersion != ''"> and mirror_version = #{mirrorVersion}</if>
+            <if test="mirrorId != null  and mirrorId != ''"> and mirror_id = #{mirrorId}</if>
+            <if test="mirrorPath != null  and mirrorPath != ''"> and mirror_path = #{mirrorPath}</if>
+            <if test="md5 != null and md5 != ''">and md5 = #{md5}</if>
+            <if test="deviceId != null  and deviceId != ''"> and device_id = #{deviceId}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="waitingNum != null "> and waiting_num = #{waitingNum}</if>
+            <if test="checkResult != null "> and check_result = #{checkResult}</if>
+            <if test="checkMsg != null  and checkMsg != ''"> and check_msg = #{checkMsg}</if>
+            <if test="startTime != null "> and start_time = #{startTime}</if>
+            <if test="endTime != null "> and end_time = #{endTime}</if>
+            <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
+            <if test="score != null "> and score = #{score}</if>
+        </where>
+    </select>
+    
+    <select id="selectCdjhsExerciseRecordById" parameterType="Long" resultMap="CdjhsExerciseRecordResult">
+        <include refid="selectCdjhsExerciseRecordVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertCdjhsExerciseRecord" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into cdjhs_exercise_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="testId != null">test_id,</if>
+            <if test="testCaseCode != null and testCaseCode != ''">test_case_code,</if>
+            <if test="testCaseName != null and testCaseName != ''">test_case_name,</if>
+            <if test="testPaperType != null">test_paper_type,</if>
+            <if test="userName != null">user_name,</if>
+            <if test="mirrorName != null">mirror_name,</if>
+            <if test="mirrorVersion != null">mirror_version,</if>
+            <if test="mirrorId != null">mirror_id,</if>
+            <if test="mirrorPath != null">mirror_path,</if>
+            <if test="md5 != null and md5 != ''">md5,</if>
+            <if test="deviceId != null">device_id,</if>
+            <if test="status != null">status,</if>
+            <if test="waitingNum != null">waiting_num,</if>
+            <if test="checkResult != null">check_result,</if>
+            <if test="checkMsg != null">check_msg,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="duration != null">duration,</if>
+            <if test="score != null">score,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="testId != null">#{testId},</if>
+            <if test="testCaseCode != null and testCaseCode != ''">#{testCaseCode},</if>
+            <if test="testCaseName != null and testCaseName != ''">#{testCaseName},</if>
+            <if test="testPaperType != null">#{testPaperType},</if>
+            <if test="userName != null">#{userName},</if>
+            <if test="mirrorName != null">#{mirrorName},</if>
+            <if test="mirrorVersion != null">#{mirrorVersion},</if>
+            <if test="mirrorId != null">#{mirrorId},</if>
+            <if test="mirrorPath != null">#{mirrorPath},</if>
+            <if test="md5 != null and md5 != ''">#{md5},</if>
+            <if test="deviceId != null">#{deviceId},</if>
+            <if test="status != null">#{status},</if>
+            <if test="waitingNum != null">#{waitingNum},</if>
+            <if test="checkResult != null">#{checkResult},</if>
+            <if test="checkMsg != null">#{checkMsg},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="duration != null">#{duration},</if>
+            <if test="score != null">#{score},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCdjhsExerciseRecord" parameterType="net.wanji.business.domain.CdjhsExerciseRecord">
+        update cdjhs_exercise_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="testId != null">test_id = #{testId},</if>
+            <if test="testCaseCode != null and testCaseCode != ''">test_case_code = #{testCaseCode},</if>
+            <if test="testCaseName != null and testCaseName != ''">test_case_name = #{testCaseName},</if>
+            <if test="testPaperType != null">test_paper_type = #{testPaperType},</if>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="mirrorName != null">mirror_name = #{mirrorName},</if>
+            <if test="mirrorVersion != null">mirror_version = #{mirrorVersion},</if>
+            <if test="mirrorId != null">mirror_id = #{mirrorId},</if>
+            <if test="mirrorPath != null">mirror_path = #{mirrorPath},</if>
+            <if test="md5 != null">md5 = #{md5},</if>
+            <if test="deviceId != null">device_id = #{deviceId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="waitingNum != null">waiting_num = #{waitingNum},</if>
+            <if test="checkResult != null">check_result = #{checkResult},</if>
+            <if test="checkMsg != null">check_msg = #{checkMsg},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="duration != null">duration = #{duration},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCdjhsExerciseRecordById" parameterType="Long">
+        delete from cdjhs_exercise_record where id = #{id}
+    </delete>
+
+    <delete id="deleteCdjhsExerciseRecordByIds" parameterType="String">
+        delete from cdjhs_exercise_record where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -201,4 +201,16 @@ public class TessParam {
         this.mapList = mapList;
         return this;
     }
+
+    public TessParam buildTaskStartParam(Integer roadNum, String dataChannel, String commandChannel,
+                                    String statusChannel, List<String> mapList) {
+        this.simulateType = ChannelBuilder.TASK;
+        this.roadNum = roadNum;
+        this.dataChannel = dataChannel;
+        this.commandChannel = commandChannel;
+        this.statusChannel = statusChannel;
+        this.routingChannel = "1";
+        this.mapList = mapList;
+        return this;
+    }
 }

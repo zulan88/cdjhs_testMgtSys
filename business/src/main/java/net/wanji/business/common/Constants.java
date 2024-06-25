@@ -109,6 +109,7 @@ public interface Constants {
         public static final String DATA_SUFFIX = "data";
         public static final String EVALUATE_SUFFIX = "evaluate";
         public static final String DEFAULT_STATUS_CHANNEL = "STATUSResult";
+        public static final String MIXED_SUFFIX = "mixed";
 
         public static boolean validClientType(Integer clientType) {
             return
@@ -226,6 +227,10 @@ public interface Constants {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE,  username, taskId, 0, TASK, STATUS_SUFFIX);
         }
 
+        public static String buildTaskStatusChannel(String username, Long taskId, Long testId) {
+            return StringUtils.format(TESTING_CHANNEL_TEMPLATE,  username, taskId, testId, TASK, STATUS_SUFFIX);
+        }
+
         /**
          * 创建实车试验控制channel
          * -- 用户名_任务ID(0)_用例ID_3_control
@@ -248,6 +253,10 @@ public interface Constants {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, 0, TASK, CONTROL_SUFFIX);
         }
 
+        public static String buildTaskControlChannel(String username, Long taskId, Long testId) {
+            return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, testId, TASK, CONTROL_SUFFIX);
+        }
+
         /**
          * 创建实车试验数据channel
          * -- 用户名_任务ID(0)_用例ID_3_data
@@ -268,6 +277,10 @@ public interface Constants {
          */
         public static String buildTaskDataChannel(String username, Integer taskId) {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, 0, TASK, DATA_SUFFIX);
+        }
+
+        public static String buildTaskDataChannel(String username, Long taskId, Long testId) {
+            return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, testId, TASK, DATA_SUFFIX);
         }
 
         /**

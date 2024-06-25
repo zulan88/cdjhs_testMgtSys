@@ -284,4 +284,8 @@ public class RedisCache {
     public void publishMessage(String channel, JSONObject message) {
         redisTemplate.convertAndSend(channel, message);
     }
+
+    public void publishMessage(String channel, String message){
+        redisTemplate.convertAndSend(channel, message);
+    }
 }
