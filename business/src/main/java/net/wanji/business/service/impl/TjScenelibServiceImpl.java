@@ -1,9 +1,9 @@
 package net.wanji.business.service.impl;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,6 +14,7 @@ import net.wanji.business.domain.PartConfigSelect;
 import net.wanji.business.domain.Tjshape;
 import net.wanji.business.domain.bo.CaseTrajectoryDetailBo;
 import net.wanji.business.domain.bo.ParticipantTrajectoryBo;
+import net.wanji.business.domain.bo.SceneTrajectoryBo;
 import net.wanji.business.domain.bo.TrajectoryDetailBo;
 import net.wanji.business.domain.dto.CaseQueryDto;
 import net.wanji.business.domain.dto.RoutingPlanDto;
@@ -32,6 +33,7 @@ import net.wanji.business.service.*;
 import net.wanji.business.util.AnalyzeOpenX;
 import net.wanji.business.util.ToBuildOpenX;
 import net.wanji.business.util.ToBuildOpenXUtil;
+import net.wanji.common.common.SimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.file.FileUtils;
@@ -157,7 +159,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
     String proj = "+proj=tmerc +lon_0=121.20585769414902 +lat_0=31.290823210868965 +ellps=WGS84";
     @Autowired
     public ToBuildOpenXUtil toBuildOpenXUtil;
-
+    private static final SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
 
     public Integer insertframeSeanDetail(String xoscPath,String imgPath) throws BusinessException {
         //往场景编辑器对应的表中
@@ -171,10 +173,16 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         list.add("150");
         sceneDetailDto.setLabelList(list);
 
-        //读文件， 拼trajectoryDetail
+        //读文件， 拼trajectoryDetail routingFile
         Map<String, List<TrajectoryDetailBo>> map = new HashMap<>();
         List<Tjshape> analyze = analyzeOpenX.analyze(xoscPath);
+        List<SimulationTrajectoryDto> simulationTrajectoryDtos = new ArrayList<>();
+        final int[] frameId = {1};
         analyze.forEach(item ->{
+            SimulationTrajectoryDto simulationTrajectoryDto = new SimulationTrajectoryDto();
+            simulationTrajectoryDto.setTimestamp(StringUtils.getTimeStamp());
+            simulationTrajectoryDto.setTimestampType("CREATE_TIME");
+            List<TrajectoryValueDto> trajectoryValueDtos = new ArrayList<>();
             item.getWoPostionList().forEach(wo->{
                 JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), proj, Double.parseDouble(wo.getH()));
                 TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
@@ -197,27 +205,55 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 trajectoryDetailBo.setTime(String.valueOf(item.getDuration()));
                 trajectoryDetailBo.setType("pathway");
                 trajectoryDetailBo.setModel(wo.getType());
+                TrajectoryValueDto trajectoryValueDto = new TrajectoryValueDto();
                 if(index == 0){
                     trajectoryDetailBo.setType("start");
                     trajectoryDetailBos.add(trajectoryDetailBo);
                     map.put(wo.getId(),trajectoryDetailBos);
+                    trajectoryValueDto.setName("主车");
+                    trajectoryValueDto.setDriveType(1);
                 }else {
                     trajectoryDetailBos.add(trajectoryDetailBo);
+                    trajectoryValueDto.setName(wo.getId());
+                    trajectoryValueDto.setDriveType(2);
                 }
+
+
+                trajectoryValueDto.setCourseAngle(Double.parseDouble(wo.getH()));
+                trajectoryValueDto.setDriveType(wo.getType());
+                trajectoryValueDto.setFrameId(frameId[0]);
+                trajectoryValueDto.setGlobalTimeStamp(String.valueOf(System.currentTimeMillis()+item.getDuration()));
+                trajectoryValueDto.setId(wo.getId());
+                trajectoryValueDto.setHeight(131);
+                trajectoryValueDto.setLatitude(retotrans.getDoubleValue("latitude"));
+                trajectoryValueDto.setLongitude(retotrans.getDoubleValue("longitude"));
+                trajectoryValueDto.setLength(449);
+                trajectoryValueDto.setOriginalColor(3);
+                trajectoryValueDto.setPicLicense("china");
+                trajectoryValueDto.setSpeed(0);
+                trajectoryValueDto.setTimestamp(sf.format(new Date(Long.parseLong(trajectoryValueDto.getGlobalTimeStamp()))));
+                trajectoryValueDto.setVehicleColor(0);
+                trajectoryValueDto.setVehicleType(1);
+                trajectoryValueDto.setWidth(195);
+                trajectoryValueDtos.add(trajectoryValueDto);
+                simulationTrajectoryDto.setValue(trajectoryValueDtos);
+
             });
+            frameId[0]++;
+            simulationTrajectoryDtos.add(simulationTrajectoryDto);
         });
 
-        Map<String, List<TrajectoryDetailBo>> sortedMap = map.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(key -> Integer.parseInt(key.substring(1)))))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+//        Map<String, List<TrajectoryDetailBo>> sortedMap = map.entrySet().stream()
+//                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(Integer::parseInt)))
+//                .collect(Collectors.toMap(
+//                        Map.Entry::getKey,
+//                        Map.Entry::getValue,
+//                        (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
         final int[] i = {1};
         CaseTrajectoryDetailBo caseTrajectoryDetailBo = new CaseTrajectoryDetailBo();
         List<ParticipantTrajectoryBo> participantTrajectoryBos = new ArrayList<>();
-        sortedMap.forEach((name, trajectoryDetailBo) -> {
+        map.forEach((name, trajectoryDetailBo) -> {
             trajectoryDetailBo.get(trajectoryDetailBo.size()-1).setType("end");
             ParticipantTrajectoryBo participantTrajectoryBo = new ParticipantTrajectoryBo();
             participantTrajectoryBo.setId(String.valueOf(i[0]));
@@ -238,6 +274,22 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         caseTrajectoryDetailBo.setParticipantTrajectories(participantTrajectoryBos);
         sceneDetailDto.setTrajectoryJson(caseTrajectoryDetailBo);
         sceneDetailDto.setImgUrl(imgPath);
+
+        //routingfile入库
+        String filePath = WanjiConfig.getUploadPath()+"Routing"+System.currentTimeMillis()+".txt";
+        // 使用try-with-resources语句自动管理BufferedWriter资源
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            for (SimulationTrajectoryDto dto : simulationTrajectoryDtos) {
+                // 假设toString()方法返回了想要写入的字符串
+                writer.write(JSONObject.toJSONString(dto));
+                writer.newLine(); // 添加一个新行
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        sceneDetailDto.setRouteFile(filePath);
+
         return tjFragmentedSceneDetailService.saveSceneDetailInfo(sceneDetailDto);
     }
 

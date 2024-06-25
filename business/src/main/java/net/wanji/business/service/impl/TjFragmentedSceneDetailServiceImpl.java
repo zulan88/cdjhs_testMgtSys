@@ -426,7 +426,7 @@ public class TjFragmentedSceneDetailServiceImpl
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+        detail.setRouteFile(sceneDetailDto.getRouteFile());
         detail.setTrajectoryInfoTime(filePath);
         detail.setTrajectoryInfo(filePath);
         if (!ObjectUtils.isEmpty(sceneDetailDto.getReferencePoints())){

@@ -138,7 +138,8 @@ public class AnalyzeOpenX {
 
     private WoPostion extractInitialState(String comment) {
         // 使用正则表达式提取 x_init, y_init, heading_init 的值
-        Pattern pattern = Pattern.compile("x_init = ([\\d.]+), y_init = ([\\d.]+), heading_init = ([\\d.]+)");
+        //Pattern pattern = Pattern.compile("x_init = ([\\d.]+), y_init = ([\\d.]+), heading_init = ([\\d.]+)");
+        Pattern pattern = Pattern.compile("v_init = ([\\d.]+), x_init = ([\\d.-]+), y_init = ([\\d.-]+), heading_init = ([\\d.]+)");
         Matcher matcher = pattern.matcher(comment);
         WoPostion woPostion = null;
         if (matcher.find()) {

@@ -58,6 +58,24 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
         return d;
     }
 
+    public static String getTimeStamp(){
+        long currentTimeMillis = System.currentTimeMillis();
+
+        // 将毫秒级时间戳转换为秒（整数部分）
+        long seconds = currentTimeMillis / 1000;
+
+        // 获取小数部分的毫秒值
+        long millisecondsPart = currentTimeMillis % 1000;
+
+        // 将毫秒转换为小数形式的秒（即微秒部分）
+        // 注意：这里简单地将毫秒转换为微秒，实际上Java无法直接获取微秒级的当前时间
+        double microsecondsPart = millisecondsPart * 1000.0;
+
+        // 组合秒和微秒部分
+        double timestampWithMicroseconds = seconds + (microsecondsPart / 1_000_000.0);
+        return String.valueOf(timestampWithMicroseconds);
+    }
+
     private static byte charToByte(char c) {
         return (byte) "0123456789ABCDEF".indexOf(c);
     }
