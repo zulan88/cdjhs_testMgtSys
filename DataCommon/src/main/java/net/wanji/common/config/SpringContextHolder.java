@@ -34,6 +34,11 @@ public class SpringContextHolder implements ApplicationContextAware {
         return (T) applicationContext.getBean(name);
     }
 
+    public static <T> T getBeanByClass(Class<T> clazz){
+        checkApplicationContext();
+        return (T) applicationContext.getBean(clazz);
+    }
+
     /**
      * 从静态变量ApplicationContext中取得Bean, 自动转型为所赋值对象的类型.
      */

@@ -2,6 +2,7 @@ package net.wanji;
 
 import com.github.xiaoymin.swaggerbootstrapui.annotations.EnableSwaggerBootstrapUI;
 import net.wanji.framework.config.SwaggerConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -47,7 +48,7 @@ public class DataApplication
     }
 
     @Bean
-    public RestTemplate restTemplate(ClientHttpRequestFactory factory) {
+    public RestTemplate restTemplate(@Qualifier("httpComponentsClientHttpRequestFactory") ClientHttpRequestFactory factory) {
         RestTemplate restTemplate = new RestTemplate(factory);
         // 支持中文编码
         restTemplate.getMessageConverters().set(1, new StringHttpMessageConverter(StandardCharsets.UTF_8));

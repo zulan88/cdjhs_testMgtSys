@@ -44,6 +44,10 @@ public class TjDeviceDetail implements Serializable {
     @TableField("device_type")
     private String deviceType;
 
+    //设备唯一标识
+    @TableField("uniques")
+    private String uniques;
+
     /**
      * 支持角色
      */

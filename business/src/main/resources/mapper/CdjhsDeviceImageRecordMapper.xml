@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.CdjhsDeviceImageRecordMapper">
+    
+    <resultMap type="net.wanji.business.domain.CdjhsDeviceImageRecord" id="CdjhsDeviceImageRecordResult">
+        <result property="id"    column="id"    />
+        <result property="uniques"    column="uniques"    />
+        <result property="imageId"    column="image_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+    </resultMap>
+
+    <sql id="selectCdjhsDeviceImageRecordVo">
+        select id, uniques, image_id, create_time, create_by from cdjhs_device_image_record
+    </sql>
+
+    <select id="selectCdjhsDeviceImageRecordList" parameterType="net.wanji.business.domain.CdjhsDeviceImageRecord" resultMap="CdjhsDeviceImageRecordResult">
+        <include refid="selectCdjhsDeviceImageRecordVo"/>
+        <where>  
+            <if test="uniques != null  and uniques != ''"> and uniques = #{uniques}</if>
+            <if test="imageId != null  and imageId != ''"> and image_id = #{imageId}</if>
+        </where>
+    </select>
+    
+    <select id="selectCdjhsDeviceImageRecordById" parameterType="Long" resultMap="CdjhsDeviceImageRecordResult">
+        <include refid="selectCdjhsDeviceImageRecordVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectEarliestImage" resultType="string">
+        select image_id from cdjhs_device_image_record
+        where uniques = #{uniques} and image_id in
+        <foreach collection="images" item="imageId" open="(" separator="," close=")">
+            #{imageId}
+        </foreach>
+        order by create_time asc
+        limit 1
+    </select>
+        
+    <insert id="insertCdjhsDeviceImageRecord" parameterType="net.wanji.business.domain.CdjhsDeviceImageRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into cdjhs_device_image_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uniques != null and uniques != ''">uniques,</if>
+            <if test="imageId != null and imageId != ''">image_id,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="createBy != null">create_by,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uniques != null and uniques != ''">#{uniques},</if>
+            <if test="imageId != null and imageId != ''">#{imageId},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCdjhsDeviceImageRecord" parameterType="net.wanji.business.domain.CdjhsDeviceImageRecord">
+        update cdjhs_device_image_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="uniques != null and uniques != ''">uniques = #{uniques},</if>
+            <if test="imageId != null and imageId != ''">image_id = #{imageId},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCdjhsDeviceImageRecordById" parameterType="Long">
+        delete from cdjhs_device_image_record where id = #{id}
+    </delete>
+
+    <delete id="deleteCdjhsDeviceImageRecordByIds" parameterType="String">
+        delete from cdjhs_device_image_record where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

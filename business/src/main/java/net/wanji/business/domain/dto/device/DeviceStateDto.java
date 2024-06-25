@@ -22,11 +22,16 @@ public class DeviceStateDto {
    */
   private Integer type;
   /**
-   * 设备状态，0：离线；1：在线
+   * 设备状态，0：离线；1：运行中 2：空闲
    */
   private Integer state;
   /**
    * 平台设备ID
    */
   private Integer deviceId;
+
+  /**
+   * 设备唯一标识
+   */
+  private String uniques;
 }

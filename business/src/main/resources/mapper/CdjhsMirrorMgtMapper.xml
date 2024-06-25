@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.CdjhsMirrorMgtMapper">
+    
+    <resultMap type="net.wanji.business.domain.CdjhsMirrorMgt" id="CdjhsMirrorMgtResult">
+        <result property="id"    column="id"    />
+        <result property="mirrorName"    column="mirror_name"    />
+        <result property="mirrorVersion"    column="mirror_version"    />
+        <result property="mirrorPathCloud"    column="mirror_path_cloud"    />
+        <result property="mirrorPathLocal"    column="mirror_path_local"    />
+        <result property="mirrorSize" column="mirror_size"/>
+        <result property="totalSize" column="total_size"/>
+        <result property="imageId" column="image_id"/>
+        <result property="uploadStatus" column="upload_status"/>
+        <result property="md5" column="md5"/>
+        <result property="remark"    column="remark"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateBy"    column="update_by"    />
+    </resultMap>
+
+    <sql id="selectCdjhsMirrorMgtVo">
+        select id, mirror_name, mirror_version, mirror_path_cloud, mirror_path_local, mirror_size, total_size, image_id, upload_status, md5, remark, create_time, create_by, update_time, update_by from cdjhs_mirror_mgt
+    </sql>
+
+    <select id="selectCdjhsMirrorMgtList" parameterType="net.wanji.business.domain.CdjhsMirrorMgt" resultMap="CdjhsMirrorMgtResult">
+        <include refid="selectCdjhsMirrorMgtVo"/>
+        <where>  
+            <if test="mirrorName != null  and mirrorName != ''"> and mirror_name like concat('%', #{mirrorName}, '%')</if>
+            <if test="mirrorVersion != null  and mirrorVersion != ''"> and mirror_version = #{mirrorVersion}</if>
+            <if test="mirrorPathCloud != null  and mirrorPathCloud != ''"> and mirror_path_cloud = #{mirrorPathCloud}</if>
+            <if test="mirrorPathLocal != null  and mirrorPathLocal != ''"> and mirror_path_local = #{mirrorPathLocal}</if>
+            <if test="uploadStatus != null">and upload_status = #{uploadStatus}</if>
+            <if test="imageId != null and imageId != ''">and image_id = #{imageId}</if>
+        </where>
+    </select>
+    
+    <select id="selectCdjhsMirrorMgtById" parameterType="Long" resultMap="CdjhsMirrorMgtResult">
+        <include refid="selectCdjhsMirrorMgtVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertCdjhsMirrorMgt" parameterType="net.wanji.business.domain.CdjhsMirrorMgt" useGeneratedKeys="true" keyProperty="id">
+        insert into cdjhs_mirror_mgt
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="mirrorName != null and mirrorName != ''">mirror_name,</if>
+            <if test="mirrorVersion != null and mirrorVersion != ''">mirror_version,</if>
+            <if test="mirrorPathCloud != null and mirrorPathCloud != ''">mirror_path_cloud,</if>
+            <if test="mirrorPathLocal != null and mirrorPathLocal != ''">mirror_path_local,</if>
+            <if test="mirrorSize != null and mirrorSize != ''">mirror_size,</if>
+            <if test="totalSize != null">total_size,</if>
+            <if test="imageId != null and imageId != ''">image_id,</if>
+            <if test="uploadStatus != null">upload_status,</if>
+            <if test="md5 != null and md5 != ''">md5,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="updateBy != null">update_by,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="mirrorName != null and mirrorName != ''">#{mirrorName},</if>
+            <if test="mirrorVersion != null and mirrorVersion != ''">#{mirrorVersion},</if>
+            <if test="mirrorPathCloud != null and mirrorPathCloud != ''">#{mirrorPathCloud},</if>
+            <if test="mirrorPathLocal != null and mirrorPathLocal != ''">#{mirrorPathLocal},</if>
+            <if test="mirrorSize != null and mirrorSize != ''">#{mirrorSize},</if>
+            <if test="totalSize != null">#{totalSize},</if>
+            <if test="imageId != null and imageId != ''">#{imageId},</if>
+            <if test="uploadStatus != null">#{uploadStatus},</if>
+            <if test="md5 != null and md5 != ''">#{md5},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCdjhsMirrorMgt" parameterType="net.wanji.business.domain.CdjhsMirrorMgt">
+        update cdjhs_mirror_mgt
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="mirrorName != null and mirrorName != ''">mirror_name = #{mirrorName},</if>
+            <if test="mirrorVersion != null and mirrorVersion != ''">mirror_version = #{mirrorVersion},</if>
+            <if test="mirrorPathCloud != null and mirrorPathCloud != ''">mirror_path_cloud = #{mirrorPathCloud},</if>
+            <if test="mirrorPathLocal != null and mirrorPathLocal != ''">mirror_path_local = #{mirrorPathLocal},</if>
+            <if test="mirrorSize != null and mirrorSize != ''">mirror_size = #{mirrorSize},</if>
+            <if test="totalSize != null">total_size = #{totalSize},</if>
+            <if test="imageId != null and imageId != ''">image_id = #{imageId},</if>
+            <if test="uploadStatus != null">upload_status = #{uploadStatus},</if>
+            <if test="md5 != null and md5 != ''">md5 = #{md5},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updateMirrorPathLocalInt">
+        update cdjhs_mirror_mgt set mirror_path_local = #{localFilePath}, md5 = #{md5} where id = #{id}
+    </update>
+
+    <delete id="deleteCdjhsMirrorMgtById" parameterType="Long">
+        delete from cdjhs_mirror_mgt where id = #{id}
+    </delete>
+
+    <delete id="deleteCdjhsMirrorMgtByIds" parameterType="String">
+        delete from cdjhs_mirror_mgt where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
