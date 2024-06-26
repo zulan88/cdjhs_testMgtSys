@@ -125,9 +125,10 @@ public class CommonController {
                 Enumeration<? extends ZipEntry> entries = zipFile.entries();
                 String xodrFile = "";
                 String xoscFile = "";
+                int count = (int) (System.currentTimeMillis() % 1000);
                 while (entries.hasMoreElements()) {
                     ZipEntry entry = entries.nextElement();
-                    String entryName = (int) (System.currentTimeMillis() % 1000)+"_"+entry.getName();
+                    String entryName = count+"_"+entry.getName();
                     File entryFile = new File(outputFolder, entryName);
 
                     if (entry.isDirectory()) {
@@ -165,7 +166,8 @@ public class CommonController {
             }
             return AjaxResult.success(data);
         } catch (Exception e) {
-            return AjaxResult.error("编码异常，请剔除中文，并修改为UTF-8");
+            log.error("下载上传失败", e);
+            return AjaxResult.error("文件上传异常，请检测压缩包中文件格式");
         }
     }
 

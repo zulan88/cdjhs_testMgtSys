@@ -30,8 +30,8 @@ public class PlaybackOnsite {
         long period = 100;
         if (ObjectUtils.isEmpty(data)) {
             return;
-        } else if (data.size() > 2) {
-            period = data.get(1).getDuration() - data.get(0).getDuration();
+        } else if (data.size() > 3) {
+            period = data.get(2).getDuration() - data.get(0).getDuration();
         }else {
             return;
         }
