@@ -30,6 +30,7 @@ import net.wanji.business.common.Constants.TaskCaseStatusEnum;
 import net.wanji.business.common.Constants.TaskProcessNode;
 import net.wanji.business.common.Constants.TaskStatusEnum;
 import net.wanji.business.common.Constants.TestType;
+import net.wanji.business.domain.SitePoint;
 import net.wanji.business.domain.bo.*;
 import net.wanji.business.domain.dto.CaseQueryDto;
 import net.wanji.business.domain.dto.RoutingPlanDto;
@@ -575,7 +576,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                         caseDetail.getRouteFile()));
             }
             // 连接轨迹
-            List<Map> trajectoryBos = JSONObject.parseArray(t.getConnectInfo(), Map.class);
+            List<SitePoint> trajectoryBos = JSONObject.parseArray(t.getConnectInfo(), SitePoint.class);
             caseContinuousVo.setConnectInfo(trajectoryBos);
             return caseContinuousVo;
         }).sorted(Comparator.comparing(CaseContinuousVo::getSort)).collect(Collectors.toList());
@@ -741,6 +742,10 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         if (ObjectUtil.isEmpty(in.getId())) {
             throw new BusinessException("请选择任务");
         }
+        tjTask.setClient(in.getClient());
+        tjTask.setConsigner(in.getConsigner());
+        tjTask.setContract(in.getContract());
+
         if (TestType.VIRTUAL_REAL_FUSION.equals(tjTask.getTestType())) {
             if (CollectionUtils.isEmpty(in.getCases())) {
                 throw new BusinessException("请选择用例");
@@ -789,7 +794,9 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 tjTask.setMainPlanFile(in.getRouteFile());
             }
         }
-        tjTask.setProcessNode(TaskProcessNode.VIEW_PLAN);
+//        tjTask.setProcessNode(TaskProcessNode.VIEW_PLAN);
+        tjTask.setProcessNode(TaskProcessNode.WAIT_TEST);
+        tjTask.setStatus(TaskStatusEnum.WAITING.getCode());
         updateById(tjTask);
     }
 
@@ -865,10 +872,8 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             TaskCaseVo tc = taskCaseMap.get(caseContinuousVo.getCaseId());
             // 主车轨迹
             try {
-                List<TrajectoryValueDto> mainTrajectories = routeService.readMainTrajectoryFromOriRoute(tc.getRouteFile());
-                caseContinuousVo.setMainTrajectory(mainTrajectories);
-                caseContinuousVo.setStartPoint(mainTrajectories.get(0));
-                caseContinuousVo.setEndPoint(mainTrajectories.get(mainTrajectories.size() - 1));
+                caseContinuousVo.setStartPoint(buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(0)));
+                caseContinuousVo.setEndPoint(buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(caseContinuousVo.getConnectInfo().size() - 1)));
             } catch (IOException e) {
                 log.error(StringUtils.format("{}主车轨迹信息异常，请检查{}", caseContinuousVo.getCaseNumber(),
                         tc.getRouteFile()));
@@ -878,6 +883,16 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         result.put("taskId", taskId);
         result.put("params", caseContinuousInfo);
         return result;
+    }
+
+    private TrajectoryValueDto buildTrajectoryValueDto(SitePoint sitePoint) throws IOException {
+        TrajectoryValueDto trajectoryValueDto = new TrajectoryValueDto();
+        trajectoryValueDto.setLatitude(Double.valueOf(sitePoint.getLatitude()));
+        trajectoryValueDto.setLongitude(Double.valueOf(sitePoint.getLongitude()));
+        trajectoryValueDto.setId("1");
+        trajectoryValueDto.setName("主车");
+        trajectoryValueDto.setSpeed(0);
+        return trajectoryValueDto;
     }
 
     @Override

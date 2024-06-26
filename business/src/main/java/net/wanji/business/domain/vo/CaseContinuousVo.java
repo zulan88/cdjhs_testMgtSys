@@ -5,6 +5,9 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import net.wanji.business.domain.SitePoint;
+
+import java.util.List;
 
 /**
  * @author: guanyuduo
@@ -37,7 +40,7 @@ public class CaseContinuousVo {
     @JSONField(serialzeFeatures = {SerializerFeature.DisableCircularReferenceDetect})
     private Object endPoint;
     @ApiModelProperty("连接线")
-    private Object connectInfo;
+    private List<SitePoint> connectInfo;
     private String mapFile;
     private Integer mapId;
 }
