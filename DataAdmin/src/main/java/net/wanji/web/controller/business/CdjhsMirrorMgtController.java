@@ -145,7 +145,7 @@ public class CdjhsMirrorMgtController extends BaseController
 	    if(map.isEmpty()){
 	        return AjaxResult.error("分片合并失败");
         }
-	    return AjaxResult.success();
+	    return AjaxResult.success(map);
     }
 
 
@@ -160,7 +160,7 @@ public class CdjhsMirrorMgtController extends BaseController
 	    if(map.isEmpty()){
 	        return AjaxResult.error("文件上传失败");
         }
-	    return AjaxResult.success("文件上传成功");
+	    return AjaxResult.success(map);
     }
 
     @ApiOperationSort(8)

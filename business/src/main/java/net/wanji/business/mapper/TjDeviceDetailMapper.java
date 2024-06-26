@@ -22,4 +22,6 @@ public interface TjDeviceDetailMapper extends BaseMapper<TjDeviceDetail> {
      * @return
      */
     List<DeviceDetailVo> selectByCondition(TjDeviceDetailDto deviceDto);
+
+    TjDeviceDetail selectByUniques(String uniques);
 }

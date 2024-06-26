@@ -22,6 +22,8 @@ public class CdjhsMirrorMgt extends BaseEntity
     @Excel(name = "镜像名称")
     private String mirrorName;
 
+    private String fileName;
+
     /** 镜像版本 */
     @Excel(name = "镜像版本")
     private String mirrorVersion;
@@ -133,6 +135,14 @@ public class CdjhsMirrorMgt extends BaseEntity
 
     public void setTotalSize(Long totalSize) {
         this.totalSize = totalSize;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     @Override

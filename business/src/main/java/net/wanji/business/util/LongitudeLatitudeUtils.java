@@ -1,5 +1,6 @@
 package net.wanji.business.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.gavaghan.geodesy.Ellipsoid;
 import org.gavaghan.geodesy.GeodeticCalculator;
 import org.gavaghan.geodesy.GeodeticCurve;
@@ -17,7 +18,23 @@ import java.util.List;
  * @description TODO
  * @date 2023-04-21 18:54
  **/
+@Slf4j
 public class LongitudeLatitudeUtils {
+    public static boolean isInCriticalDistance(Point2D.Double targetPoint,
+                                               Point2D.Double vehiclePoint, double distance) {
+        GeodeticCurve geodeticCurve = new GeodeticCalculator().calculateGeodeticCurve(
+                Ellipsoid.WGS84, new GlobalCoordinates(vehiclePoint.x, vehiclePoint.y),
+                new GlobalCoordinates(targetPoint.x, targetPoint.y));
+        double ellipsoidalDistance = geodeticCurve.getEllipsoidalDistance();
+        if (log.isDebugEnabled()) {
+            log.debug("distance:[{}] target:[{}] vehicle[{}]",
+                    geodeticCurve.getEllipsoidalDistance(),
+                    targetPoint.x + "," + targetPoint.y,
+                    vehiclePoint.x + "," + vehiclePoint.y);
+        }
+        return BigDecimal.valueOf(ellipsoidalDistance)
+                .compareTo(new BigDecimal(distance)) < 0;
+    }
 
   /**
    * 计算关键点路径长度

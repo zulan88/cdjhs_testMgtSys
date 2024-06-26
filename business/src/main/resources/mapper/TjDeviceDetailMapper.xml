@@ -43,4 +43,7 @@
     </select>
 
 
+    <select id="selectByUniques" parameterType="string" resultType="net.wanji.business.domain.vo.DeviceDetailVo">
+        select * from tj_device_detail where uniques = #{uniques}
+    </select>
 </mapper>

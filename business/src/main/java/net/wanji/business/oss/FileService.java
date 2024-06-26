@@ -225,9 +225,14 @@ public class FileService {
     }
 
     public String download(String objectName){
-        String downloadPath = WanjiConfig.getDownloadPath();
+        //String downloadPath = WanjiConfig.getDownloadPath();
+        String downloadPath = "/Users/jennydediannao/Desktop/download/";
         //本地文件完整路径
         String filePath = downloadPath + ossConfig.getBucketName() + File.separator + objectName;
+        File parentFile = new File(filePath).getParentFile();
+        if(!parentFile.exists()){
+            parentFile.mkdirs();
+        }
         OSS ossClient = new OSSClientBuilder().build(ossConfig.getEndPoint(), ossConfig.getAccessKeyId(), ossConfig.getAccessKeySecret());
         try {
             DownloadFileRequest downloadFileRequest = new DownloadFileRequest(ossConfig.getBucketName(), objectName);
