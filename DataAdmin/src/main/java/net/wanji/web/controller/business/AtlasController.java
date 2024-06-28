@@ -5,6 +5,7 @@ import io.swagger.annotations.*;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.dto.TjAtlasTreeDto;
 import net.wanji.business.domain.dto.TjAtlasVenueDto;
+import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.entity.InfinteMileScence;
 import net.wanji.business.entity.TjAtlasVenue;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
@@ -13,12 +14,15 @@ import net.wanji.business.service.ITjAtlasTreeService;
 import net.wanji.business.service.ITjAtlasVenueService;
 import net.wanji.business.service.InfinteMileScenceService;
 import net.wanji.business.service.TjFragmentedSceneDetailService;
+import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -40,6 +44,9 @@ public class AtlasController extends BaseController {
 
     @Autowired
     private TjFragmentedSceneDetailService tjFragmentedSceneDetailService;
+
+    @Autowired
+    private InteractionFuc interactionFuc;
 
 
     @ApiOperationSort(1)
@@ -105,6 +112,11 @@ public class AtlasController extends BaseController {
         return tjAtlasVenueService.deleteVenueById(id)
                 ? AjaxResult.success("成功")
                 : AjaxResult.error("失败");
+    }
+
+    @GetMapping("/test")
+    public AjaxResult test(Integer id) throws IOException {
+        return AjaxResult.success(interactionFuc.getSceneTrajectory(id));
     }
 
 }

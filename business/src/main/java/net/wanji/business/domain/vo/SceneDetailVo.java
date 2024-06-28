@@ -6,6 +6,9 @@ import net.wanji.business.entity.TjFragmentedSceneDetail;
 @Data
 public class SceneDetailVo extends TjFragmentedSceneDetail {
 
+    /**
+     * 场景分类
+     */
     private String sceneSort;
 
     private String startDate;

@@ -608,4 +608,9 @@ public class TaskController extends BaseController {
     public AjaxResult tasktolib(@RequestParam("taskId") Integer taskId, @RequestParam("caseId") Integer caseId) {
         return AjaxResult.success(taskCaseService.tasktolib(taskId, caseId));
     }
+
+    @PostMapping("/taskstatus")
+    public AjaxResult enable(@RequestBody List<TjTask> tjTasks) {
+        return AjaxResult.success(tjTaskService.updateBatchById(tjTasks));
+    }
 }

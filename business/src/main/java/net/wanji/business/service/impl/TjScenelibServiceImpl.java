@@ -135,8 +135,10 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
     public boolean insertTjScenelibBatch(List<TjScenelib> tjScenelibs) throws BusinessException{
         //场景库入库
         for (TjScenelib tjScenelib : tjScenelibs) {
+            tjScenelib.setNumber(StringUtils.format(Constants.ContentTemplate.SCENE_NUMBER_TEMPLATE, DateUtils.getNowDayString(),
+                    CounterUtil.getRandomChar()));
             //入库场景编辑器对应的库表中
-            Integer SceneDetailId = insertframeSeanDetail(tjScenelib.getXoscPath(),tjScenelib.getImgPath());
+            Integer SceneDetailId = insertframeSeanDetail(tjScenelib.getXoscPath(), tjScenelib);
 
             List<String> labellist = new ArrayList<>();
             if (tjScenelib.getLabels().split(",").length > 0) {
@@ -150,8 +152,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             tjScenelib.setCreateBy("admin");
             tjScenelib.setCreateDatetime(LocalDateTime.now());
             tjScenelib.setSceneDetailId(SceneDetailId);
-            tjScenelib.setNumber(StringUtils.format(Constants.ContentTemplate.SCENE_NUMBER_TEMPLATE, DateUtils.getNowDayString(),
-                    CounterUtil.getRandomChar()));
+
         }
         return this.saveBatch(tjScenelibs);
     }
@@ -161,17 +162,20 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
     public ToBuildOpenXUtil toBuildOpenXUtil;
     private static final SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
 
-    public Integer insertframeSeanDetail(String xoscPath,String imgPath) throws BusinessException {
+    public Integer insertframeSeanDetail(String xoscPath, TjScenelib tjScenelib) throws BusinessException {
         //往场景编辑器对应的表中
         TjFragmentedSceneDetailDto sceneDetailDto = new TjFragmentedSceneDetailDto();
         sceneDetailDto.setFragmentedSceneId(18);
         sceneDetailDto.setSceneSource("仿真");
         sceneDetailDto.setSimuType(0);
         sceneDetailDto.setTestSceneDesc("同步上传文件");
-        List<String> list = new ArrayList<>();
-        list.add("151");
-        list.add("150");
-        sceneDetailDto.setLabelList(list);
+        List<String> labellist = new ArrayList<>();
+        if (tjScenelib.getLabels().split(",").length > 0) {
+            for (String id : tjScenelib.getLabels().split(",")) {
+                labellist.addAll(sceneDetailMapper.getalllabel(id));
+            }
+        }
+        sceneDetailDto.setLabelList(labellist);
 
         //读文件， 拼trajectoryDetail routingFile
         Map<String, List<TrajectoryDetailBo>> map = new HashMap<>();
@@ -264,7 +268,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 //participantTrajectoryBo.setName("主车");
                 participantTrajectoryBo.setType("main");
                 participantTrajectoryBo.setRole("av");
-
+                participantTrajectoryBo.getTrajectory().get(0).setType("start");
             }
             participantTrajectoryBo.setModel(trajectoryDetailBo.get(0).getModel());
             participantTrajectoryBo.setTrajectory(trajectoryDetailBo);
@@ -273,7 +277,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         });
         caseTrajectoryDetailBo.setParticipantTrajectories(participantTrajectoryBos);
         sceneDetailDto.setTrajectoryJson(caseTrajectoryDetailBo);
-        sceneDetailDto.setImgUrl(imgPath);
+        sceneDetailDto.setImgUrl(tjScenelib.getImgPath());
 
         //routingfile入库
         String filePath = WanjiConfig.getUploadPath()+"Routing"+System.currentTimeMillis()+".txt";
@@ -289,6 +293,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         }
 
         sceneDetailDto.setRouteFile(filePath);
+        sceneDetailDto.setNumber(tjScenelib.getNumber());
 
         return tjFragmentedSceneDetailService.saveSceneDetailInfo(sceneDetailDto);
     }
@@ -312,6 +317,17 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 : null);
         tjScenelib.setUpdateBy("admin");
         tjScenelib.setUpdateDatetime(LocalDateTime.now());
+        if(tjScenelib.getImgPath()!=null){
+            Integer secenceId = this.getById(tjScenelib.getId()).getSceneDetailId();
+            TjFragmentedSceneDetail tjFragmentedSceneDetail = new TjFragmentedSceneDetail();
+            tjFragmentedSceneDetail.setImgUrl(tjScenelib.getImgPath());
+            tjFragmentedSceneDetail.setId(secenceId);
+            if(tjScenelib.getLabels()!=null){
+                tjFragmentedSceneDetail.setLabel(tjScenelib.getLabels());
+                tjFragmentedSceneDetail.setAllStageLabel(tjScenelib.getAllStageLabels());
+            }
+            tjFragmentedSceneDetailService.updateById(tjFragmentedSceneDetail);
+        }
         return tjScenelibMapper.updateTjScenelib(tjScenelib);
     }
 

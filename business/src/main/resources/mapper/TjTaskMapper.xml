@@ -205,7 +205,7 @@
             <if test="status != null and status != ''">
                 AND tt.status = #{status}
             </if>
-            <if test="id != null and id != ''">
+            <if test="id != null ">
                 AND tt.id = #{id}
             </if>
             <if test="createdBy != null and createdBy != ''">
