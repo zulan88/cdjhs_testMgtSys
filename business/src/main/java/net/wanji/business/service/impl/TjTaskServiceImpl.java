@@ -658,6 +658,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 tjTask.setMeasurandId(in.getMeasurandId());
                 tjTask.setApprecordId(in.getApprecordId());
             }
+            tjTask.setLastStatus("0");
             this.save(tjTask);
             newAvConfig.setTaskId(tjTask.getId());
             newAvConfig.setType(PartRole.AV);
@@ -840,17 +841,17 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 .findFirst()
                 .orElse(null);
         TjDeviceDetail svDeviceDetail = null;
-        if(svConfig != null){
-            svDeviceDetail = deviceDetailMapper.selectById(svConfig.getDeviceId());
-        }else {
-            svDeviceDetail = deviceDetailMapper.selectOne(new LambdaQueryWrapper<TjDeviceDetail>()
+//        if(svConfig != null){
+//            svDeviceDetail = deviceDetailMapper.selectById(svConfig.getDeviceId());
+//        }else {
+        svDeviceDetail = deviceDetailMapper.selectOne(new LambdaQueryWrapper<TjDeviceDetail>()
                     .eq(TjDeviceDetail::getSupportRoles, "mvSimulation"));
-        }
+//        }
         String channel = ChannelBuilder.buildRoutingPlanChannel(SecurityUtils.getUsername(), task.getId());
         Map<String, Object> params = buildRoutingPlanParam(task.getId(), routingPlanDto.getCases());
         routingPlanConsumer.subscribeAndSend(channel, task.getId(), task.getTaskCode());
         int start = restService.startServer(svDeviceDetail.getIp(), Integer.valueOf(svDeviceDetail.getServiceAddress()),
-                new TessParam().buildRoutingPlanParam(1, channel, params, routingPlanDto.getMapId()));
+                new TessParam().buildRoutingPlanParam(21, channel, params, "21"));
         if (start != 1) {
             String repeatKey = "ROUTING_TASK_" + routingPlanDto.getTaskId();
             redisCache.deleteObject(repeatKey);
@@ -872,8 +873,17 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             TaskCaseVo tc = taskCaseMap.get(caseContinuousVo.getCaseId());
             // 主车轨迹
             try {
-                caseContinuousVo.setStartPoint(buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(0)));
-                caseContinuousVo.setEndPoint(buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(caseContinuousVo.getConnectInfo().size() - 1)));
+//                List<TrajectoryValueDto> res = routeService.readMainTrajectoryFromOriRoute(tc.getRouteFile());
+                Integer speed = 15;
+//                if(res.size()>0){
+//                    speed = res.get(0).getSpeed();
+//                }
+                TrajectoryValueDto start = buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(0),speed);
+                List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
+                mainTrajectories.add(start);
+                caseContinuousVo.setMainTrajectory(mainTrajectories);
+                caseContinuousVo.setStartPoint(start);
+                caseContinuousVo.setEndPoint(start);
             } catch (IOException e) {
                 log.error(StringUtils.format("{}主车轨迹信息异常，请检查{}", caseContinuousVo.getCaseNumber(),
                         tc.getRouteFile()));
@@ -885,13 +895,14 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         return result;
     }
 
-    private TrajectoryValueDto buildTrajectoryValueDto(SitePoint sitePoint) throws IOException {
+    private TrajectoryValueDto buildTrajectoryValueDto(SitePoint sitePoint, Integer speed) throws IOException {
         TrajectoryValueDto trajectoryValueDto = new TrajectoryValueDto();
         trajectoryValueDto.setLatitude(Double.valueOf(sitePoint.getLatitude()));
         trajectoryValueDto.setLongitude(Double.valueOf(sitePoint.getLongitude()));
         trajectoryValueDto.setId("1");
         trajectoryValueDto.setName("主车");
-        trajectoryValueDto.setSpeed(0);
+        trajectoryValueDto.setSpeed(speed);
+        trajectoryValueDto.setFrameId(1);
         return trajectoryValueDto;
     }
 

@@ -168,7 +168,7 @@ public class TessParam {
             this.mapList.add(mapId);
         }
 
-        this.dataChannel = "1";
+        this.dataChannel = routingChannel;
         this.commandChannel = "1";
         this.evaluateChannel = "1";
         this.statusChannel = "1";

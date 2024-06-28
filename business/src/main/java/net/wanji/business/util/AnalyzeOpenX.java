@@ -143,9 +143,9 @@ public class AnalyzeOpenX {
         Matcher matcher = pattern.matcher(comment);
         WoPostion woPostion = null;
         if (matcher.find()) {
-            String xInit = matcher.group(1);
-            String yInit = matcher.group(2);
-            String headingInit = matcher.group(3);
+            String xInit = matcher.group(2);
+            String yInit = matcher.group(3);
+            String headingInit = matcher.group(4);
             woPostion = new WoPostion("0",xInit,yInit,headingInit,1);
         }
         return woPostion;

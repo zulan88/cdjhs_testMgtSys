@@ -156,7 +156,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         return this.saveBatch(tjScenelibs);
     }
 
-    String proj = "+proj=tmerc +lon_0=121.20585769414902 +lat_0=31.290823210868965 +ellps=WGS84";
+    String proj = "+proj=tmerc +lon_0=108.90575652010739 +lat_0=34.37650478465651 +ellps=WGS84";
     @Autowired
     public ToBuildOpenXUtil toBuildOpenXUtil;
     private static final SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");

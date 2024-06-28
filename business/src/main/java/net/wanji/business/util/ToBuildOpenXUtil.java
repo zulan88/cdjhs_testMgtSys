@@ -97,7 +97,7 @@ public class ToBuildOpenXUtil {
     }
 
     public  JSONObject retotrans(Double x, Double y, String sourceCRS, Double angle){
-        String WGS84_PARAM = "+proj=longlat +datum=WGS84 +no_defs ";
+        String WGS84_PARAM = "+proj=longlat +datum=WGS84 +no_defs";
         CoordinateTransform trans = ctFactory
                 .createTransform(createCRS(sourceCRS), createCRS(WGS84_PARAM));
         ProjCoordinate pout = new ProjCoordinate();
@@ -116,14 +116,14 @@ public class ToBuildOpenXUtil {
     }
 
 //    public static void main(String[] args) {
-//        String proj = "+proj=tmerc +lon_0=121.20585769414902 +lat_0=31.290823210868965 +ellps=WGS84";
-//        String WGS84_PARAM = "+proj=longlat +datum=WGS84 +no_defs ";
-//        CoordinateTransform trans = ctFactory
-//                .createTransform(createCRS(proj), createCRS(WGS84_PARAM));
-//        ProjCoordinate pout = new ProjCoordinate();
-//        ProjCoordinate p = new ProjCoordinate(40.46, -3.9);
-//        trans.transform(p, pout);
-//        System.out.println(pout.x + "," + pout.y);
+//        ToBuildOpenXUtil toBuildOpenXUtil = new ToBuildOpenXUtil();
+//        String proj = "+proj=tmerc +lon_0=108.90575652010739 +lat_0=34.37650478465651 +ellps=WGS84";
+//        Double longitude = 108.89839855344397;
+//        Double latitude = 34.37506097171245;
+//        Double x = -676.762040624257;
+//        Double y = -160.1364676622276;
+//        JSONObject worldPosition = toBuildOpenXUtil.retotrans(x,y,proj,0.0);
+//        System.out.println(worldPosition);
 //    }
 
 
