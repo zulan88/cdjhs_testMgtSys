@@ -28,6 +28,10 @@ TrajectoryValueDto {
     private Double courseAngle;
     private Integer speed;
     private Integer lengthwayA;
+    private Double lonAcc;
+    private Double latAcc;
+    private Double angularVelocityX;
+    private Integer gear;
     private Integer steeringWheelAngle;
     private Integer acceleratorPedal;
     private Integer braking;
@@ -261,5 +265,37 @@ TrajectoryValueDto {
 
     public void setFuturePlanList(List<Map<String, Double>> futurePlanList) {
         this.futurePlanList = futurePlanList;
+    }
+
+    public Double getLonAcc() {
+        return lonAcc;
+    }
+
+    public void setLonAcc(Double lonAcc) {
+        this.lonAcc = lonAcc;
+    }
+
+    public Double getLatAcc() {
+        return latAcc;
+    }
+
+    public void setLatAcc(Double latAcc) {
+        this.latAcc = latAcc;
+    }
+
+    public Double getAngularVelocityX() {
+        return angularVelocityX;
+    }
+
+    public void setAngularVelocityX(Double angularVelocityX) {
+        this.angularVelocityX = angularVelocityX;
+    }
+
+    public Integer getGear() {
+        return gear;
+    }
+
+    public void setGear(Integer gear) {
+        this.gear = gear;
     }
 }

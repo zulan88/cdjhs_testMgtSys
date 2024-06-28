@@ -5,19 +5,27 @@ import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsDeviceImageRecord;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.business.domain.param.TessParam;
+import net.wanji.business.entity.DataFile;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.exercise.dto.*;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import net.wanji.business.exercise.dto.report.ReportCurrentPointInfo;
 import net.wanji.business.exercise.dto.report.ReportData;
+import net.wanji.business.exercise.dto.strategy.CaseStrategy;
+import net.wanji.business.exercise.dto.strategy.DeviceConnInfo;
+import net.wanji.business.exercise.dto.strategy.Strategy;
 import net.wanji.business.listener.*;
 import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
+import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.RestService;
+import net.wanji.business.service.record.DataFileService;
+import net.wanji.business.trajectory.KafkaTrajectoryConsumer;
 import net.wanji.business.util.LongitudeLatitudeUtils;
 import net.wanji.common.common.TrajectoryValueDto;
-import net.wanji.common.config.SpringContextHolder;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.RedisKeyUtils;
@@ -26,6 +34,7 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -36,25 +45,31 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class TaskExercise implements Runnable{
-    private static CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper = SpringContextHolder.getBean("cdjhsExerciseRecordMapper");
+    private CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper;
 
-    private static CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper = SpringContextHolder.getBean("cdjhsDeviceImageRecordMapper");
+    private CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper;
 
-    private static RedisCache redisCache = SpringContextHolder.getBean("redisCache");
+    private RedisCache redisCache;
 
-    private static ImageListReportListener imageListReportListener = SpringContextHolder.getBean("imageListReportListener");
+    private ImageListReportListener imageListReportListener;
 
-    private static ImageDelResultListener imageDelResultListener = SpringContextHolder.getBean("imageDelResultListener");
+    private ImageDelResultListener imageDelResultListener;
 
-    private static ImageIssueResultListener imageIssueResultListener = SpringContextHolder.getBean("imageIssueResultListener");
+    private ImageIssueResultListener imageIssueResultListener;
 
-    private static TestIssueResultListener testIssueResultListener = SpringContextHolder.getBean("testIssueResultListener");
+    private TestIssueResultListener testIssueResultListener;
 
-    private static RestService restService = SpringContextHolder.getBean("restService");
+    private RestService restService;
 
-    private static TjDeviceDetailMapper tjDeviceDetailMapper = SpringContextHolder.getBean("tjDeviceDetailMapper");
+    private TjDeviceDetailMapper tjDeviceDetailMapper;
 
-    private static RedisMessageListenerContainer redisMessageListenerContainer = SpringContextHolder.getBean("redisMessageListenerContainer");
+    private RedisMessageListenerContainer redisMessageListenerContainer;
+
+    private KafkaProducer kafkaProducer;
+
+    private DataFileService dataFileService;
+
+    private KafkaTrajectoryConsumer kafkaTrajectoryConsumer;
 
     private Integer imageLengthThresold;
 
@@ -66,16 +81,37 @@ public class TaskExercise implements Runnable{
 
     private Integer tessPort;
 
-    private Double radius = 2.0;
+    private Double radius;
+
+    private String kafkaTopic;
 
     private MainCarTrajectoryListener trajectoryListener;
 
-    public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort){
+    public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort, Double radius, String kafkaTopic,
+                        CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper, RedisCache redisCache,
+                        ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
+                        TestIssueResultListener testIssueResultListener, RestService restService, TjDeviceDetailMapper tjDeviceDetailMapper, RedisMessageListenerContainer redisMessageListenerContainer,
+                        KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer){
         this.imageLengthThresold = imageLengthThresold;
         this.record = record;
         this.uniques = uniques;
         this.tessIp = tessIp;
         this.tessPort = tessPort;
+        this.radius = radius;
+        this.kafkaTopic = kafkaTopic;
+        this.cdjhsExerciseRecordMapper = cdjhsExerciseRecordMapper;
+        this.cdjhsDeviceImageRecordMapper = cdjhsDeviceImageRecordMapper;
+        this.redisCache = redisCache;
+        this.imageListReportListener = imageListReportListener;
+        this.imageDelResultListener = imageDelResultListener;
+        this.imageIssueResultListener = imageIssueResultListener;
+        this.testIssueResultListener = testIssueResultListener;
+        this.restService = restService;
+        this.tjDeviceDetailMapper = tjDeviceDetailMapper;
+        this.redisMessageListenerContainer = redisMessageListenerContainer;
+        this.kafkaProducer = kafkaProducer;
+        this.dataFileService = dataFileService;
+        this.kafkaTrajectoryConsumer = kafkaTrajectoryConsumer;
     }
 
     @Override
@@ -174,7 +210,7 @@ public class TaskExercise implements Runnable{
             String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
             redisCache.publishMessage(testIssueChannel, testMessage);
             //唤醒仿真 构建唤醒仿真开始结构体
-            TessParam tessParam = buildTessServerParam(1, record.getCreateBy(), record.getId(), record.getTestId(), Arrays.asList("21"));
+            TessParam tessParam = buildTessServerParam(1, record.getCreateBy(), record.getId(), Arrays.asList("21"));
             int tessStatus = restService.startServer(tessIp, tessPort, tessParam);
             if(tessStatus != 1){
                 record.setCheckResult(1);
@@ -207,8 +243,22 @@ public class TaskExercise implements Runnable{
             //添加主车轨迹数据通道监听
             String dataChannel = detail.getDataChannel();
             LinkedBlockingQueue<String> queue = getAVRedisQueue(dataChannel);
+            //任务开始指令下发
             redisCache.publishMessage(ykStartReq.getControlChannel(), ykMessage);
             redisCache.publishMessage(tessStartReq.getControlChannel(), tessMessage);
+            //创建融合数据存储记录
+            DataFile dataFile = new DataFile();
+            dataFile.setFileName(record.getId() + File.separator + 0 + File.separator
+                    + UUID.randomUUID());
+            dataFileService.save(dataFile);
+            // 监听kafka、文件记录
+            ToLocalDto toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
+                    dataFile.getId());
+            kafkaTrajectoryConsumer.subscribe(toLocalDto);
+            //向kafka发送数据融合策略
+            CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail, tessParam);
+            String startStrategy = JSONObject.toJSONString(caseStrategy);
+            kafkaProducer.sendMessage(kafkaTopic, startStrategy);
             //更新练习开始时间
             record.setStatus(2);
             record.setStartTime(new Date());
@@ -222,7 +272,8 @@ public class TaskExercise implements Runnable{
             while (!Thread.currentThread().isInterrupted()){
                 String reportDataString = queue.poll(5, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
-                    stop(ykStartReq, tessStartReq, dataChannel);
+                    stopFusion(toLocalDto, detail, tessParam);
+                    stop(ykStartReq, tessStartReq, dataChannel, tessParam.getDataChannel());
                     break;
                 }
                 ReportData reportData = JSONObject.parseObject(reportDataString, ReportData.class);
@@ -236,13 +287,25 @@ public class TaskExercise implements Runnable{
                                 vehicleCurrentInfo.getLatitude()),
                         radius);
                 if(taskEnd){
-                    stop(ykStartReq, tessStartReq, dataChannel);
+                    stopFusion(toLocalDto, detail, tessParam);
+                    stop(ykStartReq, tessStartReq, dataChannel, tessParam.getDataChannel());
                     break;
                 }
             }
-            //更新测试结束
+            //更新测试结束和融合数据本地存储路径
             record.setStatus(3);
             record.setEndTime(new Date());
+            String fusionFilePath = dataFileService.getPath() + File.separator + toLocalDto.getFileName();
+            record.setFusionFilePath(fusionFilePath);
+            //请求算法输出场景评分
+            EvaluationOutputReq param = EvaluationOutputReq.builder()
+                    .taskId(record.getId())
+                    .fusionFilePath(fusionFilePath)
+                    .startPoints(new ArrayList<>())//todo
+                    .mainChannel(dataChannel)
+                    .build();
+            String evaluationOutput = restService.getEvaluationOutput(param);
+            record.setEvaluationOutput(evaluationOutput);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         }catch (Exception e){
             e.printStackTrace();
@@ -252,12 +315,21 @@ public class TaskExercise implements Runnable{
         }
     }
 
+    private void stopFusion(ToLocalDto toLocalDto, TjDeviceDetail detail, TessParam tessParam) {
+        //停止监听kafka和文件记录
+        kafkaTrajectoryConsumer.unSubscribe(toLocalDto);
+        //停止数据融合
+        CaseStrategy endCaseStrategy = buildCaseStrategy(record.getId().intValue(), 0, detail, tessParam);
+        String endMessage = JSONObject.toJSONString(endCaseStrategy);
+        kafkaProducer.sendMessage(kafkaTopic, endMessage);
+    }
+
     private TessParam buildTessServerParam(Integer roadNum, String username,
-                                           Long taskId, Long testId, List<String> mapList) {
+                                           Long taskId, List<String> mapList) {
         return new TessParam().buildTaskStartParam(roadNum,
-                Constants.ChannelBuilder.buildTaskDataChannel(username, taskId, testId),
-                Constants.ChannelBuilder.buildTaskControlChannel(username, taskId, testId),
-                Constants.ChannelBuilder.buildTaskStatusChannel(username, taskId, testId), mapList);
+                Constants.ChannelBuilder.buildTaskDataChannel(username, taskId.intValue()),
+                Constants.ChannelBuilder.buildTaskControlChannel(username, taskId.intValue()),
+                Constants.ChannelBuilder.buildTaskStatusChannel(username, taskId.intValue()), mapList);
     }
 
     private TestStartReqDto buildYKTestStart(TjDeviceDetail deviceDetail, String tessDataChannel){
@@ -345,7 +417,7 @@ public class TaskExercise implements Runnable{
         return mainVehicleCurrentInfo.orElse(null);
     }
 
-    private void stop(TestStartReqDto yk, TestStartReqDto tess,  String dataChannel) {
+    private void stop(TestStartReqDto yk, TestStartReqDto tess,  String dataChannel, String tessDataChannel) {
         //域控
         TestStartParams ykParams = yk.getParams();
         ykParams.setTaskType(0);
@@ -364,9 +436,32 @@ public class TaskExercise implements Runnable{
         redisCache.publishMessage(ykCommandChannel, ykMessage);
         redisCache.publishMessage(tessCommandChannel, tessMessage);
 
+        //仿真关闭
+        restService.stopTessNg(tessIp, String.valueOf(tessPort), tessDataChannel, 1);
+
         //停止监听主车数据通道
         redisMessageListenerContainer.removeMessageListener(trajectoryListener, new ChannelTopic(dataChannel));
         //删除消息队列
         trajectoryListener.remove(dataChannel);
+    }
+
+    private CaseStrategy buildCaseStrategy(int taskId, int state, TjDeviceDetail deviceDetail, TessParam tessParam){
+        CaseStrategy caseStrategy = new CaseStrategy();
+        caseStrategy.setTaskId(taskId);
+        caseStrategy.setState(state);
+        boolean taskEnd = state == 0;
+        caseStrategy.setTaskEnd(taskEnd);
+
+        Strategy strategy = new Strategy();
+        strategy.setBenchmarkDataChannel(deviceDetail.getDataChannel());
+        //域控
+        DeviceConnInfo av = new DeviceConnInfo(deviceDetail.getCommandChannel(), deviceDetail.getDataChannel(), "av", new HashMap<>());
+        strategy.getSourceDevicesInfo().add(av);
+        //仿真
+        DeviceConnInfo mvSimulation = new DeviceConnInfo(tessParam.getCommandChannel(), tessParam.getDataChannel(), "mvSimulation", new HashMap<>());
+        strategy.getSourceDevicesInfo().add(mvSimulation);
+        caseStrategy.setStrategy(strategy);
+
+        return caseStrategy;
     }
 }

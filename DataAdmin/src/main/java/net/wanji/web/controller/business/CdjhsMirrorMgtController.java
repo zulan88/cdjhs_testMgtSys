@@ -122,12 +122,12 @@ public class CdjhsMirrorMgtController extends BaseController
     @ApiOperationSort(6)
     @ApiOperation(value = "镜像分片上传")
     @PostMapping("/chunkUpload")
-    public AjaxResult chunkUpload(String uploadId, String objectName, Long totalSize, Integer totalChunks, MultipartFile multipartFile, Long chunkSize, Integer chunkIndex){
+    public AjaxResult chunkUpload(String uploadId, String objectName, Long totalSize, Integer totalChunks, MultipartFile file, Long chunkSize, Integer chunkIndex){
 	    if(StringUtils.isEmpty(uploadId) || StringUtils.isEmpty(objectName)
-        || multipartFile.isEmpty() || Objects.isNull(chunkSize) || Objects.isNull(chunkIndex)){
+        || file.isEmpty() || Objects.isNull(chunkSize) || Objects.isNull(chunkIndex)){
 	        return AjaxResult.error("参数错误");
         }
-        boolean success = cdjhsMirrorMgtService.chunkUpload(uploadId, objectName, totalSize, totalChunks, multipartFile, chunkSize, chunkIndex);
+        boolean success = cdjhsMirrorMgtService.chunkUpload(uploadId, objectName, totalSize, totalChunks, file, chunkSize, chunkIndex);
 	    if(success){
 	        return AjaxResult.success("文件切片上传成功");
         }

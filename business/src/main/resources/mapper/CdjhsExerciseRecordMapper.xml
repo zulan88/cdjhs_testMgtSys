@@ -25,12 +25,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="endTime"    column="end_time"    />
         <result property="duration"    column="duration"    />
         <result property="score"    column="score"    />
+        <result property="fusionFilePath" column="fusion_file_path"/>
+        <result property="evaluationOutput" column="evaluation_output"/>
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, create_time, update_time from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, fusion_file_path, evaluation_output, create_time, update_time from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -55,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null "> and end_time = #{endTime}</if>
             <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
             <if test="score != null "> and score = #{score}</if>
+            <if test="fusionFilePath != null and fusionFilePath != ''">and fusion_file_path = #{fusionFilePath}</if>
         </where>
     </select>
     
@@ -85,6 +88,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null">end_time,</if>
             <if test="duration != null">duration,</if>
             <if test="score != null">score,</if>
+            <if test="fusionFilePath != null and fusionFilePath != ''">fusion_file_path,</if>
+            <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
          </trim>
@@ -108,6 +113,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null">#{endTime},</if>
             <if test="duration != null">#{duration},</if>
             <if test="score != null">#{score},</if>
+            <if test="fusionFilePath != null and fusionFilePath != ''">#{fusionFilePath},</if>
+            <if test="evaluationOutput != null and evaluationOutput != ''">#{evaluationOutput},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
          </trim>
@@ -135,6 +142,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="duration != null">duration = #{duration},</if>
             <if test="score != null">score = #{score},</if>
+            <if test="fusionFilePath != null">fusion_file_path = #{fusionFilePath},</if>
+            <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output = #{evaluationOutput},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

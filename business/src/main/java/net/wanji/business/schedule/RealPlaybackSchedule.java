@@ -1,11 +1,8 @@
 package net.wanji.business.schedule;
 
 import net.wanji.business.exception.BusinessException;
-import net.wanji.business.socket.WebSocketManage;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
-import net.wanji.common.common.RealTestTrajectoryDto;
-import net.wanji.common.common.SimulationTrajectoryDto;
-import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +11,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @Auther: guanyuduo
@@ -35,6 +30,13 @@ public class RealPlaybackSchedule {
         RealPlaybackDomain realPlaybackDomain = new RealPlaybackDomain(key, mainChannel, trajectories);
         futureMap.put(key, realPlaybackDomain);
         log.info("创建实车回放任务{}完成", key);
+    }
+
+    public static void startSendingData(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, EvaluationOutputResult evaluationOutput) throws IOException, BusinessException {
+        stopSendingData(key);
+        RealPlaybackDomain realPlaybackDomain = new RealPlaybackDomain(key, mainChannel, trajectories, evaluationOutput);
+        futureMap.put(key, realPlaybackDomain);
+        log.info("创建练习回放任务{}完成", key);
     }
 
     public static void suspend(String key) throws BusinessException {

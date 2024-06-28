@@ -289,4 +289,9 @@ public class DataFileServiceImpl extends ServiceImpl<DataFileMapper, DataFile>
       parentFile.mkdirs();
     }
   }
+
+  @Override
+  public String getPath() {
+    return path;
+  }
 }

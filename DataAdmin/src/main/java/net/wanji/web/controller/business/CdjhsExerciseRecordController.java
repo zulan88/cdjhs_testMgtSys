@@ -1,24 +1,30 @@
 package net.wanji.web.controller.business;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
+import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.evaluation.EvaluationReport;
+import net.wanji.business.exercise.dto.evaluation.TrendChange;
+import net.wanji.business.pdf.PdfService;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 练习记录Controller
@@ -26,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author ruoyi
  * @date 2024-06-19
  */
+@Slf4j
 @Api(tags = "练习记录管理")
 @RestController
 @RequestMapping("/exercise")
@@ -33,6 +40,9 @@ public class CdjhsExerciseRecordController extends BaseController
 {
     @Autowired
     private ICdjhsExerciseRecordService cdjhsExerciseRecordService;
+
+    @Autowired
+    private PdfService pdfService;
 
     /**
      * 查询练习记录列表
@@ -85,5 +95,63 @@ public class CdjhsExerciseRecordController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(cdjhsExerciseRecordService.deleteCdjhsExerciseRecordByIds(ids));
+    }
+
+    @GetMapping("/reviewReport")
+    public AjaxResult reviewReport(Long taskId){
+        if(Objects.isNull(taskId)){
+            return AjaxResult.error("请求参数不能为空");
+        }
+        EvaluationReport report = cdjhsExerciseRecordService.reviewReport(taskId);
+        if(Objects.isNull(report)){
+            return AjaxResult.error("报告不存在");
+        }
+        return AjaxResult.success(report);
+    }
+
+    @GetMapping("/playback")
+    public AjaxResult playback(@RequestParam("taskId") Integer taskId, @RequestParam("action") Integer action){
+        try {
+            cdjhsExerciseRecordService.playback(taskId, action);
+        }catch (Exception e){
+            log.error("回放失败: {}", e.getMessage());
+            return AjaxResult.error("回放失败");
+        }
+        return AjaxResult.success("请等待...");
+    }
+
+    @GetMapping("/downloadPdf")
+    public ResponseEntity<InputStreamSource> downloadPdf(Long taskId){
+        try {
+            List<TrendChange> trendChanges = new ArrayList<>();
+            TrendChange change1 = new TrendChange();
+            change1.setTime(2);
+            change1.setValue(4.0);
+            trendChanges.add(change1);
+
+            TrendChange change2 = new TrendChange();
+            change2.setTime(4);
+            change2.setValue(8.0);
+            trendChanges.add(change2);
+
+            TrendChange change3 = new TrendChange();
+            change3.setTime(8);
+            change3.setValue(16.0);
+            trendChanges.add(change3);
+
+            ByteArrayOutputStream outputStream = pdfService.generatePdf(trendChanges);
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(outputStream.toByteArray());
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.add("Content-Disposition", "attachment; filename=test.pdf");
+
+            return ResponseEntity
+                    .ok()
+                    .headers(httpHeaders)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(new InputStreamResource(byteArrayInputStream));
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 }

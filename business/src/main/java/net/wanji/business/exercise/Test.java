@@ -10,18 +10,13 @@ import java.io.File;
  */
 public class Test {
     public static void main(String[] args){
-        ImageListReportReq image = ImageListReportReq.builder()
-                .timestamp(System.currentTimeMillis())
-                .deviceId("001")
-                .type(4)
-                .build();
-
-        String objectName = "admin/2024/06/25/b7c7bef754c447e9a293f5420fb179bd.txt";
-        String downloadPath = "/Users/jennydediannao/Desktop/download/";
-
-        String filepath = downloadPath + "tess" + File.separator + objectName;
-        File parentFile = new File(filepath).getParentFile();
-        if(!parentFile.exists()){
+        String fileName = "0/489/687fadac-731b-4a57-b51a-ada508419659";
+        String path = "/Users/jennydediannao/Desktop/download";
+        File file = new File(path, fileName);
+        System.out.println(file.getName());
+        System.out.println(file.getParentFile().getAbsolutePath());
+        File parentFile = file.getParentFile();
+        if (!parentFile.exists()) {
             parentFile.mkdirs();
         }
 

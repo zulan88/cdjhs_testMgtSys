@@ -87,4 +87,6 @@ public interface DataFileService extends IService<DataFile> {
    * @return
    */
   boolean delete(Integer id);
+
+  String getPath();
 }

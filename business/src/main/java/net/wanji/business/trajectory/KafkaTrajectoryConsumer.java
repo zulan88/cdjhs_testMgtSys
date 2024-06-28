@@ -60,8 +60,8 @@ public class KafkaTrajectoryConsumer {
   private final DataFileService dataFileService;
 
   @KafkaListener(id = "singleTrajectory",
-      topics = { "tj_master_fusion_data" },
-      groupId = "#{T(java.lang.String).valueOf(new java.util.Random().nextInt(1000))}")
+          topics = { "cdjhs_master_fusion_data" },
+          groupId = "#{T(java.lang.String).valueOf(new java.util.Random().nextInt(1000))}")
   public void listen(ConsumerRecord<String, String> record) {
     JSONObject jsonObject = JSONObject.parseObject(record.value());
     Integer taskId = jsonObject.getInteger("taskId");
@@ -69,16 +69,16 @@ public class KafkaTrajectoryConsumer {
     String userName = selectUserOfTask(taskId, caseId);
 
     String key = taskId > 0 ?
-        ChannelBuilder.buildTaskDataChannel(userName, taskId) :
-        ChannelBuilder.buildTestingDataChannel(userName, caseId);
+            ChannelBuilder.buildTaskDataChannel(userName, taskId) :
+            ChannelBuilder.buildTestingDataChannel(userName, caseId);
     JSONArray participantTrajectories = jsonObject.getJSONArray(
-        "participantTrajectories");
+            "participantTrajectories");
     // 轨迹数据
     writeLocal(taskId, caseId, participantTrajectories);
     // 收集数据
     List<ClientSimulationTrajectoryDto> data = participantTrajectories.stream()
-        .map(t -> JSONObject.parseObject(t.toString(),
-            ClientSimulationTrajectoryDto.class)).collect(Collectors.toList());
+            .map(t -> JSONObject.parseObject(t.toString(),
+                    ClientSimulationTrajectoryDto.class)).collect(Collectors.toList());
     outLog(data);
     if (taskId > 0) {
       data.forEach(t -> redisLock.renewLock("task_" + t.getSource()));
@@ -88,12 +88,12 @@ public class KafkaTrajectoryConsumer {
     kafkaCollector.collector(key, caseId, data);
     // 发送ws数据
     String duration = DateUtils.secondsToDuration(
-        (int) Math.floor((double) (kafkaCollector.getSize(key)) / 10));
+            (int) Math.floor((double) (kafkaCollector.getSize(key)) / 10));
 
     RealWebsocketMessage msg = new RealWebsocketMessage(
             RedisMessageType.TRAJECTORY, Maps.newHashMap(), simplifyWebsocketMessage(data),
             duration);
-      WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
+    WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
   }
 
   private Object simplifyWebsocketMessage(List<ClientSimulationTrajectoryDto> data){
@@ -129,27 +129,27 @@ public class KafkaTrajectoryConsumer {
     String key = CacheConstants.USER_OF_CONTINUOUS_TASK_PREFIX + taskId;
     if (redisCache.hasKey(key)) {
       return String.valueOf(redisCache.redisTemplate.opsForHash()
-          .get(key, String.valueOf(caseId)));
+              .get(key, String.valueOf(caseId)));
     }
     if (0 < taskId) {
       // todo 场景中间会传上一个已结束的caseId，导致中间轨迹丢失
       TjTaskCaseRecord taskCaseRecord = taskCaseRecordMapper.selectOne(
-          new LambdaQueryWrapper<TjTaskCaseRecord>().eq(
-                  TjTaskCaseRecord::getTaskId, taskId)
-              .eq(TjTaskCaseRecord::getCaseId, caseId)
-              .eq(TjTaskCaseRecord::getStatus,
-                  TestingStatusEnum.NO_PASS.getCode())
-              .isNull(TjTaskCaseRecord::getEndTime));
+              new LambdaQueryWrapper<TjTaskCaseRecord>().eq(
+                              TjTaskCaseRecord::getTaskId, taskId)
+                      .eq(TjTaskCaseRecord::getCaseId, caseId)
+                      .eq(TjTaskCaseRecord::getStatus,
+                              TestingStatusEnum.NO_PASS.getCode())
+                      .isNull(TjTaskCaseRecord::getEndTime));
       if (!ObjectUtils.isEmpty(taskCaseRecord)) {
         userName = taskCaseRecord.getCreatedBy();
       }
     } else {
       TjCaseRealRecord caseRealRecord = caseRealRecordMapper.selectOne(
-          new LambdaQueryWrapper<TjCaseRealRecord>().eq(
-                  TjCaseRealRecord::getCaseId, caseId)
-              .eq(TjCaseRealRecord::getStatus,
-                  TestingStatusEnum.NO_PASS.getCode())
-              .isNull(TjCaseRealRecord::getEndTime));
+              new LambdaQueryWrapper<TjCaseRealRecord>().eq(
+                              TjCaseRealRecord::getCaseId, caseId)
+                      .eq(TjCaseRealRecord::getStatus,
+                              TestingStatusEnum.NO_PASS.getCode())
+                      .isNull(TjCaseRealRecord::getEndTime));
       if (!ObjectUtils.isEmpty(caseRealRecord)) {
         userName = caseRealRecord.getCreatedBy();
       }
@@ -164,7 +164,7 @@ public class KafkaTrajectoryConsumer {
       StringBuilder sb = new StringBuilder();
       for (ClientSimulationTrajectoryDto trajectoryDto : data) {
         sb.append(StringUtils.format("{}：{}ms；", trajectoryDto.getSource(),
-            now - Long.parseLong(trajectoryDto.getTimestamp())));
+                now - Long.parseLong(trajectoryDto.getTimestamp())));
       }
       log.info(sb.toString());
     }
@@ -172,7 +172,7 @@ public class KafkaTrajectoryConsumer {
 
   public boolean subscribe(ToLocalDto toLocalDto) {
     toLocalDto.setToLocalThread(
-        dataFileService.createToLocalThread(toLocalDto));
+            dataFileService.createToLocalThread(toLocalDto));
     toLocalSet.add(toLocalDto);
     return true;
   }
@@ -180,7 +180,7 @@ public class KafkaTrajectoryConsumer {
   public boolean unSubscribe(ToLocalDto toLocalDto) {
     try {
       Optional<ToLocalDto> localOp = toLocalSet.stream()
-          .filter(e -> e.equals(toLocalDto)).findFirst();
+              .filter(e -> e.equals(toLocalDto)).findFirst();
       if (localOp.isPresent()) {
         ToLocalDto oldToLocal = localOp.get();
         dataFileService.writeStop(oldToLocal);
@@ -196,12 +196,12 @@ public class KafkaTrajectoryConsumer {
   }
 
   private void writeLocal(Integer taskId, Integer caseId,
-      JSONArray participantTrajectories) {
+                          JSONArray participantTrajectories) {
     for (ToLocalDto toLocalDto : toLocalSet) {
       if (toLocalDto.getTaskId().equals(taskId) && toLocalDto.getCaseId()
-          .equals(caseId)) {
+              .equals(caseId)) {
         toLocalDto.getToLocalThread()
-            .write(participantTrajectories.toJSONString());
+                .write(participantTrajectories.toJSONString());
       }
     }
   }

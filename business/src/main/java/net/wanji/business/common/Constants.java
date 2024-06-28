@@ -227,9 +227,6 @@ public interface Constants {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE,  username, taskId, 0, TASK, STATUS_SUFFIX);
         }
 
-        public static String buildTaskStatusChannel(String username, Long taskId, Long testId) {
-            return StringUtils.format(TESTING_CHANNEL_TEMPLATE,  username, taskId, testId, TASK, STATUS_SUFFIX);
-        }
 
         /**
          * 创建实车试验控制channel
@@ -253,9 +250,6 @@ public interface Constants {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, 0, TASK, CONTROL_SUFFIX);
         }
 
-        public static String buildTaskControlChannel(String username, Long taskId, Long testId) {
-            return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, testId, TASK, CONTROL_SUFFIX);
-        }
 
         /**
          * 创建实车试验数据channel
@@ -277,10 +271,6 @@ public interface Constants {
          */
         public static String buildTaskDataChannel(String username, Integer taskId) {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, 0, TASK, DATA_SUFFIX);
-        }
-
-        public static String buildTaskDataChannel(String username, Long taskId, Long testId) {
-            return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, testId, TASK, DATA_SUFFIX);
         }
 
         /**

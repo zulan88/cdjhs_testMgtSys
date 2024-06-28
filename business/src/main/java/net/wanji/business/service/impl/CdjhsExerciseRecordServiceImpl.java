@@ -1,11 +1,32 @@
 package net.wanji.business.service.impl;
 
+import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import com.alibaba.fastjson.JSONObject;
+import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.evaluation.*;
+import net.wanji.business.entity.TjDeviceDetail;
+import net.wanji.business.exception.BusinessException;
+import net.wanji.business.exercise.dto.evaluation.ComfortDetail;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
+import net.wanji.business.exercise.dto.evaluation.IndexDetail;
+import net.wanji.business.exercise.dto.evaluation.SceneDetail;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
+import net.wanji.business.mapper.TjDeviceDetailMapper;
+import net.wanji.business.schedule.RealPlaybackSchedule;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
+import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
+import net.wanji.common.utils.StringUtils;
+import net.wanji.common.utils.file.FileUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +41,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 {
     @Autowired
     private CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper;
+
+    @Autowired
+    private TjDeviceDetailMapper tjDeviceDetailMapper;
 
     /**
      * 查询练习记录
@@ -100,5 +124,185 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     public int deleteCdjhsExerciseRecordById(Long id)
     {
         return cdjhsExerciseRecordMapper.deleteCdjhsExerciseRecordById(id);
+    }
+
+    @Override
+    public EvaluationReport reviewReport(Long taskId) {
+        CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(taskId);
+        if(StringUtils.isNotEmpty(record.getEvaluationOutput())){
+            EvaluationOutputResult outputResult = JSONObject.parseObject(record.getEvaluationOutput(), EvaluationOutputResult.class);
+            EvaluationReport report = EvaluationReport.builder()
+                    .taskId(taskId)
+                    .score(outputResult.getScore())
+                    .avgSpeed(outputResult.getAvgSpeed())
+                    .build();
+
+            //试验场路段场景评分 todo  根据测试用例id查询场景信息
+            List<SceneDetail> sceneDetails = outputResult.getDetails();
+            List<SceneInfo> sceneInfos = sceneDetails.stream()
+                    .map(data -> SceneInfo.builder()
+                            .sceneCode("")
+                            .sceneCategory("")
+                            .sequence(data.getSequence())
+                            .duration(DateUtils.secondsToDuration(data.getDuration()))
+                            .securityScore(data.getSecurityScore())
+                            .efficencyScore(data.getEfficencyScore())
+                            .comfortScore(data.getComfortScore())
+                            .sceneScore(data.getSceneScore())
+                            .build())
+                    .collect(Collectors.toList());
+            sceneInfos = sceneInfos.stream()
+                    .sorted(Comparator.comparingInt(SceneInfo::getSequence))
+                    .collect(Collectors.toList());
+            report.setSceneDetails(sceneInfos);
+
+            //试验场路段行为表征与分析
+            ActionAnalysis actionAnalysis = new ActionAnalysis();
+            //1. 安全
+            SecurityAnalysis securityAnalysis = new SecurityAnalysis();
+            List<IndexDetail> securityIndexs = sceneDetails.stream()
+                    .map(SceneDetail::getSecurityIndexDetails)
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+            Map<Integer, Long> securityIndexMap = securityIndexs.stream()
+                    .collect(Collectors.groupingBy(IndexDetail::getIndex, Collectors.counting()));
+            securityAnalysis.setStats(securityIndexMap);
+            if(securityIndexMap.containsKey(1)){
+                securityAnalysis.setCollapse(securityIndexMap.get(1).intValue());
+            }
+            int infraction = (int) securityIndexMap.values().stream()
+                    .mapToLong(data -> data)
+                    .sum();
+            securityAnalysis.setInfraction(infraction);
+            actionAnalysis.setSecurity(securityAnalysis);
+            //舒适
+            ComfortAnalysis comfortAnalysis = new ComfortAnalysis();
+            List<ComfortDetail> comfortDetails = sceneDetails.stream()
+                    .map(SceneDetail::getComfortDetails)
+                    .collect(Collectors.toList());
+            for(ComfortDetail comfortDetail: comfortDetails){
+                comfortAnalysis.setRapidAcceleration(comfortAnalysis.getRapidAcceleration() + comfortDetail.getRapidAcceleration());
+                comfortAnalysis.setRapidDeceleration(comfortAnalysis.getRapidDeceleration() + comfortDetail.getRapidDeceleration());
+                comfortAnalysis.setSteeringWheel(comfortAnalysis.getSteeringWheel() + comfortDetail.getSteeringWheel());
+            }
+            actionAnalysis.setComfort(comfortAnalysis);
+            //效率
+            EfficencyAnalysis efficencyAnalysis = new EfficencyAnalysis();
+            for(SceneDetail sceneDetail: sceneDetails){
+                Integer duration = sceneDetail.getDuration();
+                Integer expectDuration = sceneDetail.getExpectDuration();
+                if(Objects.nonNull(duration) && Objects.nonNull(expectDuration)){
+                    if(duration.compareTo(expectDuration) < 0){
+                        efficencyAnalysis.setInternal1(efficencyAnalysis.getInternal1() + 1);
+                    }else {
+                        double rate = (duration - expectDuration) / expectDuration.doubleValue();
+                        if(rate < 0.1){
+                            efficencyAnalysis.setInternal2(efficencyAnalysis.getInternal2() + 1);
+                        }else if(rate < 0.3){
+                            efficencyAnalysis.setInternal3(efficencyAnalysis.getInternal3() + 1);
+                        }else{
+                            efficencyAnalysis.setInternal4(efficencyAnalysis.getInternal4() + 1);
+                        }
+                    }
+                }
+            }
+            actionAnalysis.setEfficency(efficencyAnalysis);
+            report.setActionAnalysis(actionAnalysis);
+            //试验场路段场景测试概况
+            TestOverview testOverview = new TestOverview();
+            //1. 安全
+            Map<Integer, Long> securityRateMap = sceneDetails.stream()
+                    .collect(Collectors.groupingBy(s -> {
+                        if (s.getSecurityScore() >= 40) {
+                            return 0;
+                        } else if (s.getSecurityScore() >= 30) {
+                            return 1;
+                        } else if (s.getSecurityScore() >= 20) {
+                            return 2;
+                        } else if (s.getSecurityScore() >= 10) {
+                            return 3;
+                        } else {
+                            return 4;
+                        }
+                    }, Collectors.counting()));
+            testOverview.setSecurity(securityRateMap);
+            //2. 效率
+            Map<Integer, Long> efficencyRateMap = sceneDetails.stream()
+                    .collect(Collectors.groupingBy(s -> {
+                        if (s.getEfficencyScore() >= 24) {
+                            return 0;
+                        } else if (s.getEfficencyScore() >= 18) {
+                            return 1;
+                        } else if (s.getEfficencyScore() >= 12) {
+                            return 2;
+                        } else if (s.getEfficencyScore() >= 6) {
+                            return 3;
+                        } else {
+                            return 4;
+                        }
+                    }, Collectors.counting()));
+            testOverview.setEfficency(efficencyRateMap);
+            //3. 舒适
+            Map<Integer, Long> comfortRateMap = sceneDetails.stream()
+                    .collect(Collectors.groupingBy(s -> {
+                        if (s.getComfortScore() >= 16) {
+                            return 0;
+                        } else if (s.getComfortScore() >= 12) {
+                            return 1;
+                        } else if (s.getComfortScore() >= 8) {
+                            return 2;
+                        } else if (s.getComfortScore() >= 4) {
+                            return 3;
+                        } else {
+                            return 4;
+                        }
+                    }, Collectors.counting()));
+            testOverview.setComfort(comfortRateMap);
+            report.setTestOverview(testOverview);
+            return report;
+        }
+        return null;
+    }
+
+    @Override
+    public void playback(Integer taskId, Integer action) throws BusinessException, IOException {
+        String key = Constants.ChannelBuilder.buildTaskPreviewChannel(
+                SecurityUtils.getUsername(), taskId, null);
+        switch (action) {
+            case Constants.PlaybackAction.START:
+                CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(taskId.longValue());
+                if(Objects.isNull(record) || StringUtils.isEmpty(record.getFusionFilePath())){
+                    throw new BusinessException("未查询到练习记录或任何可用的轨迹文件");
+                }
+                String fusionFilePath = record.getFusionFilePath();
+                List<List<ClientSimulationTrajectoryDto>> trajectories = FileUtils.readRealRouteFile2(fusionFilePath);
+                // 2.数据校验
+                if (CollectionUtils.isEmpty(trajectories)) {
+                    throw new BusinessException("未查询到任何可用轨迹文件，请先进行试验");
+                }
+                //查询练习设备的数据通道
+                TjDeviceDetail avDevice = tjDeviceDetailMapper.selectByUniques(record.getDeviceId());
+                //算法场景评分
+                String evaluationOutput = record.getEvaluationOutput();
+                EvaluationOutputResult evaluationOutputResult = null;
+                if(StringUtils.isNotEmpty(evaluationOutput)){
+                    evaluationOutputResult = JSONObject.parseObject(evaluationOutput, EvaluationOutputResult.class);
+                    //todo  补充场景名称
+                }
+                RealPlaybackSchedule.startSendingData(key, avDevice.getDataChannel(), trajectories, evaluationOutputResult);
+                break;
+            case Constants.PlaybackAction.SUSPEND:
+                RealPlaybackSchedule.suspend(key);
+                break;
+            case Constants.PlaybackAction.CONTINUE:
+                RealPlaybackSchedule.goOn(key);
+                break;
+            case Constants.PlaybackAction.STOP:
+                RealPlaybackSchedule.stopSendingData(key);
+                break;
+            default:
+                break;
+        }
+
     }
 }

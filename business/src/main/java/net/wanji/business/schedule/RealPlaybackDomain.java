@@ -5,6 +5,8 @@ import lombok.Data;
 import net.wanji.business.common.Constants.RedisMessageType;
 import net.wanji.business.domain.RealWebsocketMessage;
 import net.wanji.business.exception.BusinessException;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
+import net.wanji.business.exercise.dto.evaluation.SceneDetail;
 import net.wanji.business.socket.WebSocketManage;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
 
 /**
  * @Auther: guanyuduo
@@ -36,6 +39,61 @@ public class RealPlaybackDomain {
     private boolean running;
     private int index;
     private int length;
+    private EvaluationOutputResult evaluationOutput;
+    private int sequence; //当前场景
+
+    public RealPlaybackDomain(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, EvaluationOutputResult evaluationOutput){
+        this.key = key;
+        this.trajectories = trajectories;
+        this.mainChannel = mainChannel;
+        this.running = true;
+        this.index = 0;
+        this.length = trajectories.size();
+        this.evaluationOutput = evaluationOutput;
+        this.sequence = 0;
+
+        this.future = AsyncManager.me().execute(() -> {
+            // send data
+            try {
+                if (!running) {
+                    return;
+                }
+                if (index >= length) {
+                    try {
+                        RealWebsocketMessage endMsg = new RealWebsocketMessage(RedisMessageType.END, null,
+                                null, "00:00");
+                        WebSocketManage.sendInfo(key, JSONObject.toJSONString(endMsg));
+                        return;
+                    } finally {
+                        RealPlaybackSchedule.stopSendingData(key);
+                    }
+                }
+                if (CollectionUtils.isEmpty(trajectories)) {
+                    return;
+                }
+                String duration = DateUtils.secondsToDuration((int) Math.floor((double) (length - index) / 10));
+                List<ClientSimulationTrajectoryDto> data = trajectories.get(index);
+                ClientSimulationTrajectoryDto mainCar = data.stream()
+                        .filter(n -> mainChannel.equals(n.getSource()))
+                        .collect(Collectors.toList()).get(0);
+                String timestamp = mainCar.getTimestamp();
+                long carTimeStamp = Long.parseLong(timestamp);
+                //当前场景
+                List<SceneDetail> sceneDetails = evaluationOutput.getDetails();
+                if(sequence < sceneDetails.size() - 1){
+                    Long sceneStartTime = sceneDetails.get(sequence + 1).getStartTime();
+                    if(carTimeStamp >= sceneStartTime){
+                        sequence += 1;
+                    }
+                }
+                RealWebsocketMessage msg = new RealWebsocketMessage(RedisMessageType.TRAJECTORY, sceneDetails.get(sequence), data, duration);
+                WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
+                index ++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 100);
+    }
 
     public RealPlaybackDomain(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories) {
         this.key = key;

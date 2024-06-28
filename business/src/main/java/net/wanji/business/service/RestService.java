@@ -15,6 +15,7 @@ import net.wanji.business.domain.vo.IndexCustomWeightVo;
 import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
 import net.wanji.business.domain.vo.SceneWeightDetailsVo;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import org.springframework.http.HttpMethod;
 
 import javax.servlet.http.HttpServletResponse;
@@ -73,12 +74,20 @@ public interface RestService {
      */
     boolean stopTessNg(String ip, String port, String dataChannel, int type);
 
+
+
     /**
      * 查询设备准备状态
      * @param deviceReadyStateParam
      * @return
      */
     boolean selectDeviceReadyState(DeviceReadyStateParam deviceReadyStateParam);
+
+    /**
+     * 请求算法输出场景评分
+     */
+    String getEvaluationOutput(EvaluationOutputReq param);
+
 
     /**
      * 获取济达场景&指标方案列表

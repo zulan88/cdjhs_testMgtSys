@@ -1,7 +1,10 @@
 package net.wanji.business.service;
 
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.evaluation.EvaluationReport;
+import net.wanji.business.exception.BusinessException;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -59,4 +62,8 @@ public interface ICdjhsExerciseRecordService
      * @return 结果
      */
     public int deleteCdjhsExerciseRecordById(Long id);
+
+    public EvaluationReport reviewReport(Long taskId);
+
+    public void playback(Integer taskId, Integer action) throws BusinessException, IOException;
 }

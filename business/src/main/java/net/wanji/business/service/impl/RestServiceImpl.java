@@ -18,6 +18,8 @@ import net.wanji.business.domain.vo.IndexCustomWeightVo;
 import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
 import net.wanji.business.domain.vo.SceneWeightDetailsVo;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.SendTessNgRequestService;
 import net.wanji.common.utils.SecurityUtils;
@@ -114,6 +116,9 @@ public class RestServiceImpl implements RestService {
 
     @Value("${tess.svTrackUrl}")
     private String svTrackurl;
+
+    //@Value("${algorithm.url}")
+    private String algorithmUrl = "http://10.100.72.130:5002/evaluation/output";
 
 
 
@@ -308,6 +313,27 @@ public class RestServiceImpl implements RestService {
         }
     }
 
+    @Override
+    public String getEvaluationOutput(EvaluationOutputReq param) {
+        try {
+            String resultUrl = algorithmUrl;
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<EvaluationOutputReq> httpEntity = new HttpEntity<>(param, httpHeaders);
+            ResponseEntity<String> response = restTemplate.exchange(resultUrl, HttpMethod.GET, httpEntity, String.class);
+            if(response.getStatusCodeValue() == 200){
+                log.info("算法输出场景评分数据: {}", response.getBody());
+                JSONObject jsonObject = JSONObject.parseObject(response.getBody());
+                if(Objects.nonNull(jsonObject) && jsonObject.getIntValue("code") == 200){
+                    return jsonObject.getJSONObject("data").toString();
+                }
+            }
+        } catch (Exception e){
+            log.error("请求算法输出场景评分接口报错");
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     @Override
     public boolean selectDeviceReadyState(DeviceReadyStateParam deviceReadyStateParam) {

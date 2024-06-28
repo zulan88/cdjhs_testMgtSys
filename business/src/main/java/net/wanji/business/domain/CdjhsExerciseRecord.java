@@ -96,6 +96,10 @@ public class CdjhsExerciseRecord extends BaseEntity
     @Excel(name = "评分")
     private BigDecimal score;
 
+    private String fusionFilePath;
+
+    private String evaluationOutput;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -274,6 +278,22 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setMd5(String md5) {
         this.md5 = md5;
+    }
+
+    public String getFusionFilePath() {
+        return fusionFilePath;
+    }
+
+    public void setFusionFilePath(String fusionFilePath) {
+        this.fusionFilePath = fusionFilePath;
+    }
+
+    public String getEvaluationOutput() {
+        return evaluationOutput;
+    }
+
+    public void setEvaluationOutput(String evaluationOutput) {
+        this.evaluationOutput = evaluationOutput;
     }
 
     @Override

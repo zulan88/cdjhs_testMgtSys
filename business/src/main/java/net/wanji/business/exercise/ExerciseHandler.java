@@ -3,10 +3,22 @@ package net.wanji.business.exercise;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.listener.ImageDelResultListener;
+import net.wanji.business.listener.ImageIssueResultListener;
+import net.wanji.business.listener.ImageListReportListener;
+import net.wanji.business.listener.TestIssueResultListener;
+import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
+import net.wanji.business.mapper.TjDeviceDetailMapper;
+import net.wanji.business.service.KafkaProducer;
+import net.wanji.business.service.RestService;
+import net.wanji.business.service.record.DataFileService;
+import net.wanji.business.trajectory.KafkaTrajectoryConsumer;
+import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -51,6 +63,42 @@ public class ExerciseHandler {
     @Autowired
     private CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper;
 
+    @Autowired
+    private CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper;
+
+    @Autowired
+    private static RedisCache redisCache;
+
+    @Autowired
+    private ImageListReportListener imageListReportListener;
+
+    @Autowired
+    private ImageDelResultListener imageDelResultListener;
+
+    @Autowired
+    private ImageIssueResultListener imageIssueResultListener;
+
+    @Autowired
+    private TestIssueResultListener testIssueResultListener;
+
+    @Autowired
+    private RestService restService;
+
+    @Autowired
+    private TjDeviceDetailMapper tjDeviceDetailMapper;
+
+    @Autowired
+    private RedisMessageListenerContainer redisMessageListenerContainer;
+
+    @Autowired
+    private KafkaProducer kafkaProducer;
+
+    @Autowired
+    private DataFileService dataFileService;
+
+    @Autowired
+    private KafkaTrajectoryConsumer kafkaTrajectoryConsumer;
+
     //待配置到配置文件中
     @Value("${image.length.thresold}")
     private Integer imageLengthThresold;
@@ -60,6 +108,12 @@ public class ExerciseHandler {
 
     @Value("${tess.port}")
     private Integer tessPort;
+
+    @Value("${trajectory.radius}")
+    private Double radius;
+
+    @Value("${trajectory.topic}")
+    private String kafkaTopic;
 
 
     @PostConstruct
@@ -81,7 +135,10 @@ public class ExerciseHandler {
                             record = taskQueue.take();
                             occupationMap.put(uniques, record.getId());//占用该域控
 
-                            TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques, tessIp, tessPort);
+                            TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
+                                    tessIp, tessPort, radius, kafkaTopic, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                                    redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
+                                    restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer);
                             executor.submit(taskExercise);
                         } catch (Exception e) {
                             e.printStackTrace();
