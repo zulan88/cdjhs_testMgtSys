@@ -8,6 +8,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
 import net.wanji.business.domain.CdjhsMirrorMgt;
+import net.wanji.business.domain.ChunkMergeReq;
 import net.wanji.business.service.ICdjhsMirrorMgtService;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
@@ -15,6 +16,7 @@ import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.poi.ExcelUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -137,11 +139,11 @@ public class CdjhsMirrorMgtController extends BaseController
     @ApiOperationSort(7)
     @ApiOperation(value = "镜像分片文件合并")
     @PostMapping("/chunkMerge")
-    public AjaxResult chunkMerge(String objectName, String uploadId){
-	    if(StringUtils.isEmpty(objectName) || StringUtils.isEmpty(uploadId)){
+    public AjaxResult chunkMerge(@RequestBody @Validated ChunkMergeReq chunkMergeReq){
+	    if(StringUtils.isEmpty(chunkMergeReq.getObjectName()) || StringUtils.isEmpty(chunkMergeReq.getUploadId())){
 	        return AjaxResult.error("参数错误");
         }
-        Map<String, String> map = cdjhsMirrorMgtService.chunkMerge(objectName, uploadId);
+        Map<String, String> map = cdjhsMirrorMgtService.chunkMerge(chunkMergeReq.getObjectName(), chunkMergeReq.getUploadId());
 	    if(map.isEmpty()){
 	        return AjaxResult.error("分片合并失败");
         }

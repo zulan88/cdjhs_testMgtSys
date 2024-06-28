@@ -1,6 +1,5 @@
 package net.wanji.business.domain;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import net.wanji.common.annotation.Excel;
@@ -94,7 +93,7 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     /** 评分 */
     @Excel(name = "评分")
-    private BigDecimal score;
+    private Double score;
 
     private String fusionFilePath;
 
@@ -262,12 +261,12 @@ public class CdjhsExerciseRecord extends BaseEntity
     {
         return duration;
     }
-    public void setScore(BigDecimal score) 
+    public void setScore(Double score)
     {
         this.score = score;
     }
 
-    public BigDecimal getScore() 
+    public Double getScore()
     {
         return score;
     }

@@ -42,6 +42,16 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils
     static DateTimeFormatter secondFormatter = DateTimeFormatter.ofPattern(YYYYMMDDHHMMSS);
     static DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern(YYYYMMDD);
 
+    public static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * 格式化日期字符串 北京时区
+     */
+    public static String getDateString(Date date){
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.of("Asia/Shanghai"));
+        return localDateTime.format(dateTimeFormatter);
+    }
+
     public static DateTimeFormatter datePathFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     public static String getNowSecondString() {

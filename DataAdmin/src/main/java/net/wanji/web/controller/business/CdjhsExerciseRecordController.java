@@ -2,7 +2,6 @@ package net.wanji.web.controller.business;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -12,12 +11,12 @@ import io.swagger.annotations.ApiOperationSort;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.EvaluationReport;
-import net.wanji.business.exercise.dto.evaluation.TrendChange;
 import net.wanji.business.pdf.PdfService;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
+import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.InputStreamSource;
@@ -123,23 +122,12 @@ public class CdjhsExerciseRecordController extends BaseController
     @GetMapping("/downloadPdf")
     public ResponseEntity<InputStreamSource> downloadPdf(Long taskId){
         try {
-            List<TrendChange> trendChanges = new ArrayList<>();
-            TrendChange change1 = new TrendChange();
-            change1.setTime(2);
-            change1.setValue(4.0);
-            trendChanges.add(change1);
+            CdjhsExerciseRecord record = cdjhsExerciseRecordService.selectCdjhsExerciseRecordById(taskId);
+            if(Objects.isNull(record) || StringUtils.isEmpty(record.getEvaluationOutput())){
+                return ResponseEntity.status(500).build();
+            }
 
-            TrendChange change2 = new TrendChange();
-            change2.setTime(4);
-            change2.setValue(8.0);
-            trendChanges.add(change2);
-
-            TrendChange change3 = new TrendChange();
-            change3.setTime(8);
-            change3.setValue(16.0);
-            trendChanges.add(change3);
-
-            ByteArrayOutputStream outputStream = pdfService.generatePdf(trendChanges);
+            ByteArrayOutputStream outputStream = pdfService.generatePdf(record);
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(outputStream.toByteArray());
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.add("Content-Disposition", "attachment; filename=test.pdf");
