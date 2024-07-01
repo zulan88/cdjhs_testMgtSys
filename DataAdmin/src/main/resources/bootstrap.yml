@@ -36,7 +36,7 @@ spring:
         server-addr: 10.102.1.34:8848
         namespace: 4ae682e0-32b1-4130-9b6d-a76f0a634eee
         # false不注册到 nacos
-        register-enabled: false
+        register-enabled: true
 #        register-enabled: true
 #        register-enabled: true
       config:

@@ -268,7 +268,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 //participantTrajectoryBo.setName("主车");
                 participantTrajectoryBo.setType("main");
                 participantTrajectoryBo.setRole("av");
-                participantTrajectoryBo.getTrajectory().get(0).setType("start");
+                trajectoryDetailBo.get(0).setType("start");
             }
             participantTrajectoryBo.setModel(trajectoryDetailBo.get(0).getModel());
             participantTrajectoryBo.setTrajectory(trajectoryDetailBo);
