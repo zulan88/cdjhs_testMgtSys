@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -62,7 +63,13 @@ public class InteractionFuc {
         List<Integer> mid = taskCaseVos.stream().map(TaskCaseVo::getSceneDetailId).collect(Collectors.toList());
 
         // 根据案例ID列表查询场景详情
-        List<TjFragmentedSceneDetail> sceneDetails = tjFragmentedSceneDetailService.listByIds(mid);
+        List<TjFragmentedSceneDetail> sceneDetails = new ArrayList<>();
+
+        for (Integer mid1 : mid) {
+            TjFragmentedSceneDetail sceneDetail = tjFragmentedSceneDetailService.getById(mid1);
+            sceneDetails.add(sceneDetail);
+        }
+
         // 将场景详情转换为VO对象列表
         List<SceneDetailVo> list = sceneDetails.stream().map(item -> {
             SceneDetailVo sceneDetailVo = new SceneDetailVo();

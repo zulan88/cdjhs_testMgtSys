@@ -264,13 +264,18 @@ public class LabelsController extends BaseController {
             for (String str : labels) {
                 try {
                     long intValue = Long.parseLong(str);
-                    data.add(sceneMap.get(intValue));
+                    if(sceneMap.get(intValue)!=null) {
+                        data.add(sceneMap.get(intValue));
+                    }
                 } catch (NumberFormatException e) {
                     // 处理无效的整数字符串
                 }
             }
+            detailVo.setLabelList(data);
+            detailVo.setLabel(null);
+            return AjaxResult.success(detailVo);
         }
-        return AjaxResult.success(data);
+        return AjaxResult.error("详情数据查询失败");
     }
 
     @ApiOperationSort(8)
