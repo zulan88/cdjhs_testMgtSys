@@ -777,15 +777,15 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             IntStream.range(0, in.getCases().size()).forEach(i -> {
                 in.getCases().get(i).setSort(i + 1);
             });
-            Map<Integer, Object> connectMap = in.getCases().stream().collect(Collectors.toMap(CaseContinuousVo::getId,
+            Map<Integer, List<SitePoint>> connectMap = in.getCases().stream().collect(Collectors.toMap(CaseContinuousVo::getId,
                     CaseContinuousVo::getConnectInfo));
             Map<Integer, Integer> sortMap = in.getCases().stream().collect(Collectors.toMap(CaseContinuousVo::getId,
                     CaseContinuousVo::getSort));
             for (int i = 0; i < tjTaskCases.size(); i++) {
                 TjTaskCase taskCase = tjTaskCases.get(i);
                 taskCase.setSort(sortMap.get(taskCase.getId()));
-                Object obj = connectMap.get(taskCase.getId());
-                taskCase.setConnectInfo(ObjectUtil.isEmpty(obj) || "域控制器".equals(avDetail.getDeviceType())
+                List<SitePoint> obj = connectMap.get(taskCase.getId());
+                taskCase.setConnectInfo(ObjectUtil.isEmpty(obj)
                         ? null
                         : JSONObject.toJSONString(obj));
                 tjTaskCaseMapper.updateByCondition(taskCase);

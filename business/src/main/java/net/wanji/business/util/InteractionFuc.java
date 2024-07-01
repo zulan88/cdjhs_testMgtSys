@@ -1,6 +1,8 @@
 package net.wanji.business.util;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import net.wanji.business.domain.SitePoint;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
 import net.wanji.business.domain.dto.TaskDto;
 import net.wanji.business.domain.vo.SceneDetailVo;
@@ -19,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -54,15 +57,21 @@ public class InteractionFuc {
         if (taskListVo.getTaskCaseVos().size()==0) {
             return null;
         }
+        Gson gson = new Gson();
 
         // 获取任务的案例列表
         List<TaskCaseVo> taskCaseVos = taskListVo.getTaskCaseVos();
 
-        // 将案例ID转换为List，用于后续查询场景详情
-        List<Integer> mid = taskCaseVos.stream().map(TaskCaseVo::getSceneDetailId).collect(Collectors.toList());
+        List<TjFragmentedSceneDetail> sceneDetails = new ArrayList<>();
 
-        // 根据案例ID列表查询场景详情
-        List<TjFragmentedSceneDetail> sceneDetails = tjFragmentedSceneDetailService.listByIds(mid);
+        for (TaskCaseVo taskCaseVo : taskCaseVos) {
+            TjFragmentedSceneDetail sceneDetail = tjFragmentedSceneDetailService.getById(taskCaseVo.getSceneDetailId());
+            List<SitePoint> connect = gson.fromJson(taskCaseVo.getConnectInfo(), new TypeToken<List<SitePoint>>(){}.getType());
+            sceneDetail.setStartPoint(connect.get(0));
+            sceneDetail.setEndPoint(connect.get(connect.size()-1));
+            sceneDetails.add(sceneDetail);
+        }
+
         // 将场景详情转换为VO对象列表
         List<SceneDetailVo> list = sceneDetails.stream().map(item -> {
             SceneDetailVo sceneDetailVo = new SceneDetailVo();

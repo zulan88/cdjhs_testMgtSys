@@ -116,7 +116,7 @@ public class AtlasController extends BaseController {
 
     @GetMapping("/test")
     public AjaxResult test(Integer id) throws IOException {
-        return AjaxResult.success(interactionFuc.getSceneTrajectory(id));
+        return AjaxResult.success(interactionFuc.findSceneDetail(id));
     }
 
 }

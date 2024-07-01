@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
+import io.swagger.models.auth.In;
 import net.wanji.business.domain.BusinessTreeSelect;
 import net.wanji.business.domain.Label;
 import net.wanji.business.domain.dto.TjFragmentedSceneDetailDto;
@@ -298,6 +299,16 @@ public class ScenelibController extends BaseController {
             throws BusinessException, IOException {
         scenelibService.playback(id, vehicleId, action);
         return AjaxResult.success();
+    }
+
+    @GetMapping("/test")
+    public AjaxResult test() throws BusinessException {
+        List<Integer> mid = new ArrayList<>();
+        mid.add(25);
+        mid.add(26);
+        mid.add(1);
+        List<TjFragmentedSceneDetail> sceneDetails = tjFragmentedSceneDetailService.listByIds(mid);
+        return AjaxResult.success(sceneDetails);
     }
 
 }
