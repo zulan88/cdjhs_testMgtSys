@@ -6,12 +6,14 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.wanji.business.domain.SitePoint;
 
 /**
  * <p>
@@ -219,6 +221,12 @@ public class TjFragmentedSceneDetail implements Serializable {
 
     @TableField("camera_info")
     private String cameraInfo;
+
+    @TableField(exist = false)
+    SitePoint startPoint;
+
+    @TableField(exist = false)
+    SitePoint endPoint;
 
 
 }
