@@ -168,7 +168,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         sceneDetailDto.setFragmentedSceneId(18);
         sceneDetailDto.setSceneSource("仿真");
         sceneDetailDto.setSimuType(0);
-        sceneDetailDto.setTestSceneDesc("同步上传文件");
+        sceneDetailDto.setTestSceneDesc(tjScenelib.getSceneDesc());
         List<String> labellist = new ArrayList<>();
         if (tjScenelib.getLabels().split(",").length > 0) {
             for (String id : tjScenelib.getLabels().split(",")) {
