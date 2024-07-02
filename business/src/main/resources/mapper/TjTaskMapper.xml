@@ -120,6 +120,7 @@
         <result property="detailInfo" column="detail_info" jdbcType="VARCHAR"/>
         <result property="mapFile" column="map_file" jdbcType="VARCHAR" />
         <result property="mapId" column="map_id" jdbcType="INTEGER" />
+        <result property="connectInfo" column="connect_info" jdbcType="VARCHAR" />
     </resultMap>
 
     <resultMap id="TaskCaseConfigResult" type="net.wanji.business.entity.TjTaskDataConfig">
@@ -231,6 +232,7 @@
                ttc.end_time,
                ttc.status,
                ttc.zip_path,
+               ttc.connect_info,
                b.case_number,
                b.scene_detail_id,
                b.label,
