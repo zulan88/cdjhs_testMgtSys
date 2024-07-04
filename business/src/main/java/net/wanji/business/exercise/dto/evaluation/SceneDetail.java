@@ -12,7 +12,9 @@ import java.util.List;
 public class SceneDetail {
     private Integer sequence;
 
-    private String name;
+    private String sceneCode;
+
+    private String sceneCategory;
 
     //场景用时 单位s
     private Integer duration;

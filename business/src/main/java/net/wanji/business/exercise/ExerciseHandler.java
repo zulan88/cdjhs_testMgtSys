@@ -1,5 +1,6 @@
 package net.wanji.business.exercise;
 
+import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import net.wanji.business.domain.CdjhsExerciseRecord;
@@ -10,10 +11,12 @@ import net.wanji.business.listener.TestIssueResultListener;
 import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
+import net.wanji.business.mapper.TjTaskMapper;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.record.DataFileService;
 import net.wanji.business.trajectory.KafkaTrajectoryConsumer;
+import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,19 +26,15 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author: jenny
  * @create: 2024-06-22 6:01 下午
  */
+@Slf4j
 @Component
 public class ExerciseHandler {
-    public static ExpiringMap<String, Integer> idleDeviceMap = ExpiringMap.builder()
-            .maxSize(5)
-            .expirationPolicy(ExpirationPolicy.CREATED)
-            .expiration(2, TimeUnit.SECONDS)
-            .build();
+    public static ConcurrentHashMap<String, Integer> idleDeviceMap = new ConcurrentHashMap<>();
 
     public static ExpiringMap<String, Long> occupationMap = ExpiringMap.builder()
             .maxSize(5)
@@ -43,9 +42,7 @@ public class ExerciseHandler {
             .expiration(1, TimeUnit.DAYS)
             .build();
 
-    private static LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = new LinkedBlockingQueue<>(50);
-
-    private static ReentrantLock lock = new ReentrantLock();
+    public static LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = new LinkedBlockingQueue<>(50);
 
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 5,
             10, TimeUnit.SECONDS,
@@ -67,7 +64,7 @@ public class ExerciseHandler {
     private CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper;
 
     @Autowired
-    private static RedisCache redisCache;
+    private RedisCache redisCache;
 
     @Autowired
     private ImageListReportListener imageListReportListener;
@@ -99,6 +96,12 @@ public class ExerciseHandler {
     @Autowired
     private KafkaTrajectoryConsumer kafkaTrajectoryConsumer;
 
+    @Autowired
+    private TjTaskMapper tjTaskMapper;
+
+    @Autowired
+    private InteractionFuc interactionFuc;
+
     //待配置到配置文件中
     @Value("${image.length.thresold}")
     private Integer imageLengthThresold;
@@ -120,49 +123,38 @@ public class ExerciseHandler {
     public void init(){
         Thread thread = new Thread(() -> {
             while (true){
-                if(!idleDeviceMap.isEmpty()){
-                    //选择空闲且没有被占用的域控下发练习
-                    String uniques = "";
-                    for(String device: idleDeviceMap.keySet()){
-                        if(!occupationMap.containsKey(device)){
-                            uniques = device;
-                            break;
+                try {
+                    if(!idleDeviceMap.isEmpty()){
+                        //选择空闲且没有被占用的域控下发练习
+                        String uniques = "";
+                        for (String device : idleDeviceMap.keySet()) {
+                            if (!occupationMap.containsKey(device)) {
+                                uniques = device;
+                                break;
+                            }
                         }
-                    }
-                    if(StringUtils.isNotEmpty(uniques) && taskQueue.size() > 0){
-                        CdjhsExerciseRecord record = null;
-                        try {
-                            record = taskQueue.take();
-                            occupationMap.put(uniques, record.getId());//占用该域控
+                        if(StringUtils.isNotEmpty(uniques)){
+                            CdjhsExerciseRecord record = null;
+                            try {
+                                record = taskQueue.take();
+                                occupationMap.put(uniques, record.getId());//占用该域控
 
-                            TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
-                                    tessIp, tessPort, radius, kafkaTopic, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
-                                    redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
-                                    restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer);
-                            executor.submit(taskExercise);
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                                TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
+                                        tessIp, tessPort, radius, kafkaTopic, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                                        redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
+                                        restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer, tjTaskMapper, interactionFuc);
+                                executor.submit(taskExercise);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
+                }catch (Exception e){
+                    log.info("消费线程报错");
+                    e.printStackTrace();
                 }
             }
         });
         thread.start();
-    }
-
-    public void putIntoTaskQueue(CdjhsExerciseRecord record){
-        lock.lock();
-        try {
-            int size = taskQueue.size();
-            //当没有空闲域控时，将该任务放入任务队列等待执行
-            taskQueue.put(record);
-            record.setStatus(1);
-            record.setWaitingNum(size);
-            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-        }catch (Exception e){
-            e.printStackTrace();
-        }finally {
-            lock.unlock();
-        }
     }
 }

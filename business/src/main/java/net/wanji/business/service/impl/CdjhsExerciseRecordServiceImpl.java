@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSONObject;
@@ -13,12 +14,14 @@ import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.*;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.exception.BusinessException;
+import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.evaluation.ComfortDetail;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
 import net.wanji.business.exercise.dto.evaluation.IndexDetail;
 import net.wanji.business.exercise.dto.evaluation.SceneDetail;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
+import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.schedule.RealPlaybackSchedule;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
@@ -44,6 +47,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Autowired
     private TjDeviceDetailMapper tjDeviceDetailMapper;
+
+    private static ReentrantLock lock = new ReentrantLock();
 
     /**
      * 查询练习记录
@@ -86,7 +91,24 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     {
         cdjhsExerciseRecord.setUserName(SecurityUtils.getUsername());
         cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
-        return cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
+        int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
+        putIntoTaskQueue(cdjhsExerciseRecord);
+        return i;
+    }
+
+    private void putIntoTaskQueue(CdjhsExerciseRecord record){
+        lock.lock();
+        try {
+            int size = ExerciseHandler.taskQueue.size();
+            ExerciseHandler.taskQueue.put(record);
+            record.setStatus(1);
+            record.setWaitingNum(size);
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -134,15 +156,16 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
             EvaluationReport report = EvaluationReport.builder()
                     .taskId(taskId)
                     .score(outputResult.getScore())
+                    .taskDetails(record)
                     .avgSpeed(outputResult.getAvgSpeed())
                     .build();
 
-            //试验场路段场景评分 todo  根据测试用例id查询场景信息
+            //试验场路段场景评分
             List<SceneDetail> sceneDetails = outputResult.getDetails();
             List<SceneInfo> sceneInfos = sceneDetails.stream()
                     .map(data -> SceneInfo.builder()
-                            .sceneCode("")
-                            .sceneCategory("")
+                            .sceneCode(data.getSceneCode())
+                            .sceneCategory(data.getSceneCategory())
                             .sequence(data.getSequence())
                             .duration(DateUtils.secondsToDuration(data.getDuration()))
                             .securityScore(data.getSecurityScore())
@@ -166,6 +189,11 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                     .collect(Collectors.toList());
             Map<Integer, Long> securityIndexMap = securityIndexs.stream()
                     .collect(Collectors.groupingBy(IndexDetail::getIndex, Collectors.counting()));
+            //补全key
+            Map<Integer, IndexTypeEnum> securityIndex = IndexTypeEnum.getIndexTypeByCategory(net.wanji.common.common.Constants.SECURITY);
+            for(Integer index: securityIndex.keySet()){
+                securityIndexMap.putIfAbsent(index, 0L);
+            }
             securityAnalysis.setStats(securityIndexMap);
             if(securityIndexMap.containsKey(1)){
                 securityAnalysis.setCollapse(securityIndexMap.get(1).intValue());
@@ -196,9 +224,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                         efficencyAnalysis.setInternal1(efficencyAnalysis.getInternal1() + 1);
                     }else {
                         double rate = (duration - expectDuration) / expectDuration.doubleValue();
-                        if(rate < 0.1){
+                        if(rate <= 0.1){
                             efficencyAnalysis.setInternal2(efficencyAnalysis.getInternal2() + 1);
-                        }else if(rate < 0.3){
+                        }else if(rate <= 0.3){
                             efficencyAnalysis.setInternal3(efficencyAnalysis.getInternal3() + 1);
                         }else{
                             efficencyAnalysis.setInternal4(efficencyAnalysis.getInternal4() + 1);
@@ -210,6 +238,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
             report.setActionAnalysis(actionAnalysis);
             //试验场路段场景测试概况
             TestOverview testOverview = new TestOverview();
+            Map<Integer, IndexRateEnum> rateEnumMap = IndexRateEnum.getIndexRateEnumMap();
             //1. 安全
             Map<Integer, Long> securityRateMap = sceneDetails.stream()
                     .collect(Collectors.groupingBy(s -> {
@@ -225,6 +254,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                             return 4;
                         }
                     }, Collectors.counting()));
+            completeData(securityRateMap, rateEnumMap);
             testOverview.setSecurity(securityRateMap);
             //2. 效率
             Map<Integer, Long> efficencyRateMap = sceneDetails.stream()
@@ -241,6 +271,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                             return 4;
                         }
                     }, Collectors.counting()));
+            completeData(efficencyRateMap, rateEnumMap);
             testOverview.setEfficency(efficencyRateMap);
             //3. 舒适
             Map<Integer, Long> comfortRateMap = sceneDetails.stream()
@@ -257,11 +288,18 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                             return 4;
                         }
                     }, Collectors.counting()));
+            completeData(comfortRateMap, rateEnumMap);
             testOverview.setComfort(comfortRateMap);
             report.setTestOverview(testOverview);
             return report;
         }
         return null;
+    }
+
+    private void completeData(Map<Integer, Long> rateMap, Map<Integer, IndexRateEnum> rateEnumMap) {
+        for(Integer rateIndex: rateEnumMap.keySet()){
+            rateMap.putIfAbsent(rateIndex, 0L);
+        }
     }
 
     @Override
@@ -287,7 +325,6 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 EvaluationOutputResult evaluationOutputResult = null;
                 if(StringUtils.isNotEmpty(evaluationOutput)){
                     evaluationOutputResult = JSONObject.parseObject(evaluationOutput, EvaluationOutputResult.class);
-                    //todo  补充场景名称
                 }
                 RealPlaybackSchedule.startSendingData(key, avDevice.getDataChannel(), trajectories, evaluationOutputResult);
                 break;

@@ -191,6 +191,7 @@
     <logger name="springfox.documentation.swagger.readers.operation" level="error" />
     <logger name="springfox.documentation.builders.BodyParameterSpecificationProvider" level="error" />
     <logger name="org.mybatis.spring.mapper.ClassPathMapperScanner" level="error" />
+    <logger name="org.apache.kafka.clients.NetworkClient" level="error"/>
 
 
 	<root level="info">

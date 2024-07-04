@@ -59,6 +59,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="score != null "> and score = #{score}</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">and fusion_file_path = #{fusionFilePath}</if>
         </where>
+        order by create_time desc
     </select>
     
     <select id="selectCdjhsExerciseRecordById" parameterType="Long" resultMap="CdjhsExerciseRecordResult">

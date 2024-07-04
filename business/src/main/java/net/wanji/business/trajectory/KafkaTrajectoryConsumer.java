@@ -60,40 +60,40 @@ public class KafkaTrajectoryConsumer {
   private final DataFileService dataFileService;
 
   @KafkaListener(id = "singleTrajectory",
-          topics = { "cdjhs_master_fusion_data" },
+          topics = { "tj_master_fusion_data" },
           groupId = "#{T(java.lang.String).valueOf(new java.util.Random().nextInt(1000))}")
   public void listen(ConsumerRecord<String, String> record) {
     JSONObject jsonObject = JSONObject.parseObject(record.value());
     Integer taskId = jsonObject.getInteger("taskId");
     Integer caseId = jsonObject.getInteger("caseId");
-    String userName = selectUserOfTask(taskId, caseId);
+    //String userName = selectUserOfTask(taskId, caseId);
 
-    String key = taskId > 0 ?
-            ChannelBuilder.buildTaskDataChannel(userName, taskId) :
-            ChannelBuilder.buildTestingDataChannel(userName, caseId);
+    //String key = taskId > 0 ?
+    //        ChannelBuilder.buildTaskDataChannel(userName, taskId) :
+    //        ChannelBuilder.buildTestingDataChannel(userName, caseId);
     JSONArray participantTrajectories = jsonObject.getJSONArray(
             "participantTrajectories");
     // 轨迹数据
     writeLocal(taskId, caseId, participantTrajectories);
     // 收集数据
-    List<ClientSimulationTrajectoryDto> data = participantTrajectories.stream()
-            .map(t -> JSONObject.parseObject(t.toString(),
-                    ClientSimulationTrajectoryDto.class)).collect(Collectors.toList());
-    outLog(data);
-    if (taskId > 0) {
-      data.forEach(t -> redisLock.renewLock("task_" + t.getSource()));
-    } else {
-      redisLock.renewLock("case_" + caseId);
-    }
-    kafkaCollector.collector(key, caseId, data);
-    // 发送ws数据
-    String duration = DateUtils.secondsToDuration(
-            (int) Math.floor((double) (kafkaCollector.getSize(key)) / 10));
-
-    RealWebsocketMessage msg = new RealWebsocketMessage(
-            RedisMessageType.TRAJECTORY, Maps.newHashMap(), simplifyWebsocketMessage(data),
-            duration);
-    WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
+    //List<ClientSimulationTrajectoryDto> data = participantTrajectories.stream()
+    //        .map(t -> JSONObject.parseObject(t.toString(),
+    //                ClientSimulationTrajectoryDto.class)).collect(Collectors.toList());
+    //outLog(data);
+    //if (taskId > 0) {
+    //  data.forEach(t -> redisLock.renewLock("task_" + t.getSource()));
+    //} else {
+    //  redisLock.renewLock("case_" + caseId);
+    //}
+    //kafkaCollector.collector(key, caseId, data);
+    //// 发送ws数据
+    //String duration = DateUtils.secondsToDuration(
+    //        (int) Math.floor((double) (kafkaCollector.getSize(key)) / 10));
+    //
+    //RealWebsocketMessage msg = new RealWebsocketMessage(
+    //        RedisMessageType.TRAJECTORY, Maps.newHashMap(), simplifyWebsocketMessage(data),
+    //        duration);
+    //WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
   }
 
   private Object simplifyWebsocketMessage(List<ClientSimulationTrajectoryDto> data){

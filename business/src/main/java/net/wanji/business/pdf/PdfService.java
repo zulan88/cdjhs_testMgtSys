@@ -116,7 +116,7 @@ public class PdfService {
         for(SceneDetail sceneDetail: sceneDetails){
             //场景
             Integer sequence = sceneDetail.getSequence();
-            String sceneName = sceneDetail.getName();
+            String sceneName = sceneDetail.getSceneCategory();
             String scene = StringUtils.format(formatTemplate, "场景" + sequence, sceneName);
             document.add(new Paragraph(scene).setFont(font).setFontSize(16).setTextAlignment(TextAlignment.LEFT));
             //场景不同评价维度得分

@@ -25,4 +25,6 @@ public class EvaluationOutputReq {
     private String signFilePath;
 
     private String mainChannel;
+
+    private Integer pointsNum;
 }

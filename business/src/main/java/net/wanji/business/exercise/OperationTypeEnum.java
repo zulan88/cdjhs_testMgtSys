@@ -5,6 +5,8 @@ package net.wanji.business.exercise;
  * @create: 2024-06-23 5:23 下午
  */
 public enum OperationTypeEnum {
+    PREPARE_STATUS_REQ(1),
+
     TEST_CONTROL_REQ(2),
 
     IMAGE_LIST_REPORT_REQ(4),

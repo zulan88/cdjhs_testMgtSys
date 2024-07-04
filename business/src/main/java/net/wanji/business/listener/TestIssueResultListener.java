@@ -58,7 +58,7 @@ public class TestIssueResultListener implements MessageListener {
                 }
                 return;
             }
-
+            log.info("接收到设备上报练习任务下发状态结果:{}", body);
             TestIssueResultDto testIssueResultDto = JSONObject.parseObject(body, TestIssueResultDto.class);
             String deviceId = testIssueResultDto.getDeviceId();
             Integer status = testIssueResultDto.getStatus();

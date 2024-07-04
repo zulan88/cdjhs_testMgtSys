@@ -1,6 +1,7 @@
 package net.wanji.business.domain.vo;
 
 import lombok.Data;
+import net.wanji.business.domain.bo.SceneTrajectoryBo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
 
 @Data
@@ -18,5 +19,7 @@ public class SceneDetailVo extends TjFragmentedSceneDetail {
     private String labels;
 
     private String count;
+
+    private SceneTrajectoryBo sceneTrajectoryBo;
 
 }

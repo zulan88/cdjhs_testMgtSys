@@ -361,4 +361,12 @@ public class Constants {
 
 
     public static final String SIGNAL_CONFIG_INFO = "signalConfigInfo:";
+
+    public static final String SECURITY = "安全";
+
+    public static final String EFFICENCY = "效率";
+
+    public static final String COMFORT = "舒适";
+
+    public static final String SIMULATION = "仿真软件";
 }

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.wanji.business.domain.CdjhsExerciseRecord;
 
 import java.util.List;
 
@@ -17,6 +18,8 @@ import java.util.List;
 @Builder
 public class EvaluationReport {
     private Long taskId;
+
+    private CdjhsExerciseRecord taskDetails;
 
     private Double score;
 

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.wanji.common.common.SimulationTrajectoryDto;
 
 import java.util.List;
 
@@ -18,5 +19,5 @@ import java.util.List;
 public class TestParams {
     private String imageId;
 
-    private List<ParticipantTrajectory> participantTrajectories;
+    private List<SimulationTrajectoryDto> participantTrajectories;
 }

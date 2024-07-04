@@ -69,22 +69,6 @@ public class FileWriteRunnable implements Runnable {
         }
       } catch (Exception e) {
         log.error("File [{}] [{}] writer close error!", path, name, e);
-      } finally {
-        try {
-          DataFile dataFile = dataFileService.getById(toLocalDto.getFileId());
-          dataFile.setEncode("utf-8");
-          FileAnalysis.lineOffset(path, dataFile, (id, progress) -> {
-            DataFile dataFileQ = new DataFile();
-            dataFileQ.setId(toLocalDto.getFileId());
-            dataFileQ.setProgress(progress);
-            dataFileService.updateById(dataFileQ);
-          });
-          dataFileService.updateById(dataFile);
-        } catch (IOException e) {
-          if (log.isErrorEnabled()) {
-            log.error("fileAnalysis [{}] error!", toLocalDto.getFileId(), e);
-          }
-        }
       }
     }
   }

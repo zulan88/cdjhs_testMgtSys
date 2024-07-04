@@ -3,22 +3,26 @@ package net.wanji.business.util;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.wanji.business.domain.SitePoint;
+import net.wanji.business.domain.bo.ParticipantTrajectoryBo;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
+import net.wanji.business.domain.bo.TrajectoryDetailBo;
 import net.wanji.business.domain.dto.TaskDto;
 import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.domain.vo.TaskCaseVo;
 import net.wanji.business.domain.vo.TaskListVo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
-import net.wanji.business.entity.TjFragmentedScenes;
+import net.wanji.business.exercise.OperationTypeEnum;
+import net.wanji.business.exercise.dto.evaluation.StartPoint;
+import net.wanji.business.exercise.dto.simulation.*;
 import net.wanji.business.schedule.SceneLabelMap;
 import net.wanji.business.service.TjFragmentedSceneDetailService;
 import net.wanji.business.service.TjTaskService;
+import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.bean.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -140,7 +144,93 @@ public class InteractionFuc {
         }
     }
 
+    public List<SceneDetailVo> getSceneDetails(Integer testId){
+        List<SceneDetailVo> sceneDetails = findSceneDetail(testId);
+        if(StringUtils.isNotEmpty(sceneDetails)){
+            for(SceneDetailVo sceneDetailVo: sceneDetails){
+                try {
+                    SceneTrajectoryBo sceneTrajectory = getSceneTrajectory(sceneDetailVo.getId());
+                    sceneDetailVo.setSceneTrajectoryBo(sceneTrajectory);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return sceneDetails;
+    }
 
+    public List<StartPoint> getSceneStartPoints(Integer testId){
+        List<StartPoint> startPoints = new ArrayList<>();
+        List<SceneDetailVo> sceneDetails = findSceneDetail(testId);
+        if(StringUtils.isNotEmpty(sceneDetails)){
+            for(int i = 0; i < sceneDetails.size(); i++){
+                SceneDetailVo sceneDetailVo = sceneDetails.get(0);
+                if(Objects.nonNull(sceneDetailVo.getStartPoint())){
+                    SitePoint sitePoint = sceneDetailVo.getStartPoint();
+                    StartPoint startPoint = new StartPoint();
+                    startPoint.setSequence(i + 1);
+                    startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
+                    startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
 
+                    startPoints.add(startPoint);
+
+                }
+            }
+        }
+        return startPoints;
+    }
+
+    public SimulationSceneDto getSimulationSceneInfo(Integer testId){
+        //根据测试用例id获取关联场景信息和每个仿真的参与者点位信息
+        List<SceneDetailVo> sceneDetails = getSceneDetails(testId);
+        if(StringUtils.isEmpty(sceneDetails)){
+            return null;
+        }
+        List<SimulationSceneParticipant> simulationScenes = sceneDetails.stream()
+                .map(scene -> {
+                    SimulationSceneParticipant simulationSceneParticipant = new SimulationSceneParticipant();
+                    simulationSceneParticipant.setCaseId(scene.getId());
+                    simulationSceneParticipant.setType(scene.getSceneSort());
+                    simulationSceneParticipant.setAvPassTime(1);
+
+                    List<ParticipantTrajectoryBo> participantTrajectories = scene.getSceneTrajectoryBo().getParticipantTrajectories();
+                    if (StringUtils.isNotEmpty(participantTrajectories)) {
+                        List<ParticipantTrajectory> participants = participantTrajectories.stream()
+                                .map(participant -> {
+                                    ParticipantTrajectory participantTrajectory = new ParticipantTrajectory();
+                                    BeanUtils.copyProperties(participant, participantTrajectory);
+
+                                    List<TrajectoryDetailBo> trajectories = participant.getTrajectory();
+                                    List<TrajectoryPoint> trajectoryPoints = trajectories.stream()
+                                            .map(trajectory -> {
+                                                TrajectoryPoint trajectoryPoint = new TrajectoryPoint();
+                                                BeanUtils.copyProperties(trajectory, trajectoryPoint);
+                                                Double[] postion = new Double[2];
+                                                postion[0] = Double.parseDouble(trajectory.getLongitude());
+                                                postion[1] = Double.parseDouble(trajectory.getLatitude());
+                                                trajectoryPoint.setPosition(postion);
+
+                                                return trajectoryPoint;
+                                            }).collect(Collectors.toList());
+                                    participantTrajectory.setTrajectory(trajectoryPoints);
+
+                                    return participantTrajectory;
+                                }).collect(Collectors.toList());
+
+                        simulationSceneParticipant.setParticipantTrajectories(participants);
+                    }
+
+                    return simulationSceneParticipant;
+                }).collect(Collectors.toList());
+
+        SimulationSceneDto simulationSceneDto = new SimulationSceneDto();
+        simulationSceneDto.setType(OperationTypeEnum.PREPARE_STATUS_REQ.getType());
+        simulationSceneDto.setTimestamp(System.currentTimeMillis());
+        SimulationSceneParam params = new SimulationSceneParam();
+        params.setParam1(simulationScenes);
+        simulationSceneDto.setParams(params);
+
+        return simulationSceneDto;
+    }
 
 }

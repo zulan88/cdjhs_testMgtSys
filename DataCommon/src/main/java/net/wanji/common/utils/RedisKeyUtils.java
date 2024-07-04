@@ -24,6 +24,10 @@ public class RedisKeyUtils {
 
     public static final String OSS_PROGRESS_DETAIL = "OSS_PROGRESS_DETAIL";
 
+    public static final String SIMULATION_STATUS = "CDJHS_SIMULATION_STATUS";
+
+    public static final String SIMULATION_PREPARE_STATUS = "CDJHS_SIMULATION_PREPARE_STATUS";
+
     //设备状态连接符
     public static final String DEVICE_STATUS_PRE_LINK = ":";
 
@@ -73,5 +77,13 @@ public class RedisKeyUtils {
 
     public static String getTestIssueResultKey(String deviceId){
         return TEST_ISSUE_RESULT + DEVICE_STATUS_PRE_LINK + deviceId;
+    }
+
+    public static String getSimulationStatusKey(Integer deviceId){
+        return SIMULATION_STATUS + DEVICE_STATUS_PRE_LINK + deviceId;
+    }
+
+    public static String getSimulationPrepareStatusKey(Integer deviceId, String statusChannel){
+        return SIMULATION_PREPARE_STATUS + DEVICE_STATUS_PRE_LINK + deviceId + DEVICE_STATUS_PRE_LINK + statusChannel;
     }
 }

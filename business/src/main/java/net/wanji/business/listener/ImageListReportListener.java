@@ -54,10 +54,15 @@ public class ImageListReportListener implements MessageListener {
                 }
                 return;
             }
+            log.info("接收到镜像上报列表: {}", body);
             ImageListResultDto imageListResultDto = JSONObject.parseObject(body, ImageListResultDto.class);
             String deviceId = imageListResultDto.getDeviceId();
             List<String> imageList = imageListResultDto.getImageList();
+            if(StringUtils.isEmpty(imageList)){
+                imageList.add("");
+            }
             String key = RedisKeyUtils.getImageListReportKey(deviceId);
+            redisCache.deleteObject(key);
             redisCache.setCacheList(key, imageList);
             redisCache.expire(key, 1, TimeUnit.DAYS);
 

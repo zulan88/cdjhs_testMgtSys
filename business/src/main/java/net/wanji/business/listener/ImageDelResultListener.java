@@ -57,7 +57,7 @@ public class ImageDelResultListener implements MessageListener {
                 }
                 return;
             }
-
+            log.info("镜像删除结果上报: {}", body);
             ImageDelResultDto imageDelResultDto = JSONObject.parseObject(body, ImageDelResultDto.class);
             String deviceId = imageDelResultDto.getDeviceId();
             String imageId = imageDelResultDto.getImageId();

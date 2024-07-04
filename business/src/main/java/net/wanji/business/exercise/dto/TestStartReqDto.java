@@ -17,8 +17,6 @@ public class TestStartReqDto {
     //任务控制-任务启停
     private Integer type;
 
-    private String controlChannel;
-
     private Long timestamp;
 
     private TestStartParams params;

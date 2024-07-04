@@ -1,5 +1,6 @@
 package net.wanji.business.exercise.dto;
 
+import com.alibaba.fastjson.JSONObject;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,4 +18,6 @@ public class TestProtocol {
     private Integer type;
 
     private String channel;
+
+    private Object params = JSONObject.parseObject("{}");
 }
