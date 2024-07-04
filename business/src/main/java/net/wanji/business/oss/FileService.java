@@ -225,8 +225,7 @@ public class FileService {
     }
 
     public String download(String objectName){
-        //String downloadPath = WanjiConfig.getDownloadPath();
-        String downloadPath = "/Users/jennydediannao/Desktop/download/";
+        String downloadPath = WanjiConfig.getDownloadPath();
         //本地文件完整路径
         String filePath = downloadPath + ossConfig.getBucketName() + File.separator + objectName;
         File parentFile = new File(filePath).getParentFile();

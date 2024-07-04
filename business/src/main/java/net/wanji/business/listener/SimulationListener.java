@@ -55,9 +55,9 @@ public class SimulationListener implements MessageListener {
             }
             DeviceStateDto deviceStateDto = JSONObject.parseObject(body, DeviceStateDto.class);
             Integer deviceId = deviceStateDto.getDeviceId();
-            //if(deviceId == 4){
-            //    log.info("接收到设备-{}上报的状态:{}", deviceId, body);
-            //}
+            if(deviceId == 4){
+                log.info("接收到设备-{}上报的状态:{}", deviceId, body);
+            }
             Integer state = deviceStateDto.getState();
             String simulationStatusKey = RedisKeyUtils.getSimulationStatusKey(deviceId);
             redisCache.setCacheObject(simulationStatusKey, state, 5, TimeUnit.SECONDS);

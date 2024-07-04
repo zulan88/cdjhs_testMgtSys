@@ -38,6 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="uploadStatus != null">and upload_status = #{uploadStatus}</if>
             <if test="imageId != null and imageId != ''">and image_id = #{imageId}</if>
         </where>
+        order by create_time desc
     </select>
     
     <select id="selectCdjhsMirrorMgtById" parameterType="Long" resultMap="CdjhsMirrorMgtResult">

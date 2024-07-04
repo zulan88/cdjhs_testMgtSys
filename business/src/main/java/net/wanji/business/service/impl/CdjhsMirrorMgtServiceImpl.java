@@ -11,6 +11,7 @@ import net.wanji.business.service.ICdjhsMirrorMgtService;
 import net.wanji.common.utils.ConvertUtil;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
+import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -93,7 +94,7 @@ public class CdjhsMirrorMgtServiceImpl implements ICdjhsMirrorMgtService
         cdjhsMirrorMgt.setUpdateTime(DateUtils.getNowDate());
         String pathLocal = cdjhsMirrorMgt.getMirrorPathLocal();
         String pathCloud = cdjhsMirrorMgt.getMirrorPathCloud();
-        boolean match = fileService.check(pathLocal, pathCloud);
+        boolean match = StringUtils.isEmpty(pathLocal) || fileService.check(pathLocal, pathCloud);
         if(!match){
             fileService.saveLocalFile(cdjhsMirrorMgt);
         }

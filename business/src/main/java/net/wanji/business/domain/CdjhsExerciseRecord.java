@@ -95,6 +95,8 @@ public class CdjhsExerciseRecord extends BaseEntity
     @Excel(name = "评分")
     private Double score;
 
+    private String taskCaseVos;
+
     private String fusionFilePath;
 
     private String evaluationOutput;
@@ -277,6 +279,14 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setMd5(String md5) {
         this.md5 = md5;
+    }
+
+    public String getTaskCaseVos() {
+        return taskCaseVos;
+    }
+
+    public void setTaskCaseVos(String taskCaseVos) {
+        this.taskCaseVos = taskCaseVos;
     }
 
     public String getFusionFilePath() {
