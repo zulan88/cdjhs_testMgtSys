@@ -80,7 +80,8 @@ public class AnalyzeOpenX {
                     tjshapes.add(mainshape);
                 }
                 Tjshape tjshape = new Tjshape();
-                tjshape.setDuration((int) ((Double.parseDouble(key)-mintime)*1000));
+                int time = (int) ((Double.parseDouble(key)-mintime)*1000);
+                tjshape.setDuration(time);
                 tjshape.setWoPostionList(woPostions);
                 tjshapes.add(tjshape);
                 index++;

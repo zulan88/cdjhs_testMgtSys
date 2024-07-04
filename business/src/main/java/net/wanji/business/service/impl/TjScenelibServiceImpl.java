@@ -190,6 +190,11 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             simulationTrajectoryDto.setTimestampType("CREATE_TIME");
             List<TrajectoryValueDto> trajectoryValueDtos = new ArrayList<>();
             for (WoPostion wo : item.getWoPostionList()) {
+                if (count[0] % 20 != 0) {
+                    count[0]++;
+                    continue;
+                }
+                count[0]++;
                 JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), proj, Double.parseDouble(wo.getH()));
                 TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
                 List<TrajectoryDetailBo> trajectoryDetailBos = map.get(wo.getId());
@@ -204,14 +209,14 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 if (wo.getId().equals("A0")) {
                     trajectoryDetailBo.setLongitude(wo.getX());
                     trajectoryDetailBo.setLatitude(wo.getY());
-                    ;
                 }
                 trajectoryDetailBo.setLongitude(retotrans.getString("longitude"));
                 trajectoryDetailBo.setLatitude(retotrans.getString("latitude"));
                 trajectoryDetailBo.setSpeed(0.0);
                 Double time = item.getDuration() / 1000D;
                 if (time < 0) {
-                    System.out.println("时间小于0"+item.getDuration());
+                    System.out.println("时间"+item.getDuration());
+                    continue;
                 }
                 trajectoryDetailBo.setTime(String.valueOf(time));
                 trajectoryDetailBo.setType("pathway");
@@ -224,11 +229,6 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                     trajectoryValueDto.setName("主车");
                     trajectoryValueDto.setDriveType(1);
                 } else {
-                    count[0]++;
-                    if (count[0] % 20 != 0) {
-                        count[0]++;
-                        continue;
-                    }
                     trajectoryDetailBos.add(trajectoryDetailBo);
                     trajectoryValueDto.setName(wo.getId());
                     trajectoryValueDto.setDriveType(2);
