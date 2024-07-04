@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit;
  * @author: jenny
  * @create: 2024-06-24 11:21 上午
  */
-@Slf4j
+@Slf4j(topic = "exercise")
 public class TaskExercise implements Runnable{
     private CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper;
 
