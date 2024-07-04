@@ -164,7 +164,7 @@ public class InteractionFuc {
         List<SceneDetailVo> sceneDetails = findSceneDetail(testId);
         if(StringUtils.isNotEmpty(sceneDetails)){
             for(int i = 0; i < sceneDetails.size(); i++){
-                SceneDetailVo sceneDetailVo = sceneDetails.get(0);
+                SceneDetailVo sceneDetailVo = sceneDetails.get(i);
                 if(Objects.nonNull(sceneDetailVo.getStartPoint())){
                     SitePoint sitePoint = sceneDetailVo.getStartPoint();
                     StartPoint startPoint = new StartPoint();

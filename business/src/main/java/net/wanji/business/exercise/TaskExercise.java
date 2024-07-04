@@ -339,6 +339,7 @@ public class TaskExercise implements Runnable{
             redisCache.publishMessage(detail.getCommandChannel(), ykStartMessage);
             log.info("向域控{}下发开始任务指令: {}", uniques, ykMessage);
             //更新练习开始时间
+            record.setCheckResult(0);
             record.setStatus(2);
             record.setStartTime(new Date());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
@@ -348,6 +349,12 @@ public class TaskExercise implements Runnable{
             List<TrajectoryValueDto> points = participantTrajectory.getValue();
             TrajectoryValueDto trajectoryValueDto = points.get(points.size() - 1);
             Point2D.Double endPoint = new Point2D.Double(trajectoryValueDto.getLongitude(), trajectoryValueDto.getLatitude());
+            //仿真是否准备就绪
+            boolean isSimulationReady = false;
+            String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulation.getDeviceId(), tessStatusChannel);
+            if(redisCache.hasKey(simulationPrepareStatusKey) && (Integer) redisCache.getCacheObject(simulationPrepareStatusKey) == 1){
+                isSimulationReady = true;
+            }
             while (!Thread.currentThread().isInterrupted()){
                 String reportDataString = queue.poll(5, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
@@ -370,7 +377,7 @@ public class TaskExercise implements Runnable{
                             new Point2D.Double(vehicleCurrentInfo.getLongitude(),
                                     vehicleCurrentInfo.getLatitude()),
                             radius);
-                    if(arrivedSceneStartPoint){
+                    if(isSimulationReady && arrivedSceneStartPoint){
                         redisCache.publishMessage(tessCommandChannel, tessStartMessage);
                         log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, sequence, tessMessage);
                         //场景切换
