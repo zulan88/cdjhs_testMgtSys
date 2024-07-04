@@ -25,12 +25,14 @@ import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.schedule.RealPlaybackSchedule;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
+import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.file.FileUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -47,6 +49,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Autowired
     private TjDeviceDetailMapper tjDeviceDetailMapper;
+
+    @Value("${download.proxy}")
+    private String downloadProxy;
 
     private static ReentrantLock lock = new ReentrantLock();
 
@@ -91,6 +96,11 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     {
         cdjhsExerciseRecord.setUserName(SecurityUtils.getUsername());
         cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
+        //镜像地址改成代理地址
+        String mirrorPath = cdjhsExerciseRecord.getMirrorPath();
+        String downloadPath = WanjiConfig.getDownloadPath();
+        String proxyUrl = downloadProxy + mirrorPath.substring(downloadPath.length());
+        cdjhsExerciseRecord.setMirrorPath(proxyUrl);
         int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
         putIntoTaskQueue(cdjhsExerciseRecord);
         return i;
