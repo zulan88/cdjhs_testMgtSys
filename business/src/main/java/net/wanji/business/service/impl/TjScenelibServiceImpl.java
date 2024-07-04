@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.PartConfigSelect;
 import net.wanji.business.domain.Tjshape;
+import net.wanji.business.domain.WoPostion;
 import net.wanji.business.domain.bo.CaseTrajectoryDetailBo;
 import net.wanji.business.domain.bo.ParticipantTrajectoryBo;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
@@ -182,41 +183,52 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         List<Tjshape> analyze = analyzeOpenX.analyze(xoscPath);
         List<SimulationTrajectoryDto> simulationTrajectoryDtos = new ArrayList<>();
         final int[] frameId = {1};
+        final int[] count = {0};
         analyze.forEach(item ->{
             SimulationTrajectoryDto simulationTrajectoryDto = new SimulationTrajectoryDto();
             simulationTrajectoryDto.setTimestamp(StringUtils.getTimeStamp());
             simulationTrajectoryDto.setTimestampType("CREATE_TIME");
             List<TrajectoryValueDto> trajectoryValueDtos = new ArrayList<>();
-            item.getWoPostionList().forEach(wo->{
+            for (WoPostion wo : item.getWoPostionList()) {
                 JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), proj, Double.parseDouble(wo.getH()));
                 TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
-                List<TrajectoryDetailBo> trajectoryDetailBos= map.get(wo.getId());
+                List<TrajectoryDetailBo> trajectoryDetailBos = map.get(wo.getId());
                 int index = 0;
-                if(trajectoryDetailBos != null ) {
+                if (trajectoryDetailBos != null) {
                     index = trajectoryDetailBos.size();
-                }else {
+                } else {
                     trajectoryDetailBos = new ArrayList<>();
                 }
                 trajectoryDetailBo.setFrameId((long) index);
                 trajectoryDetailBo.setLane("0");
-                if(wo.getId().equals("A0")){
+                if (wo.getId().equals("A0")) {
                     trajectoryDetailBo.setLongitude(wo.getX());
-                    trajectoryDetailBo.setLatitude(wo.getY());;
+                    trajectoryDetailBo.setLatitude(wo.getY());
+                    ;
                 }
                 trajectoryDetailBo.setLongitude(retotrans.getString("longitude"));
                 trajectoryDetailBo.setLatitude(retotrans.getString("latitude"));
                 trajectoryDetailBo.setSpeed(0.0);
-                trajectoryDetailBo.setTime(String.valueOf(item.getDuration()));
+                Double time = item.getDuration() / 1000D;
+                if (time < 0) {
+                    System.out.println("时间小于0"+item.getDuration());
+                }
+                trajectoryDetailBo.setTime(String.valueOf(time));
                 trajectoryDetailBo.setType("pathway");
                 trajectoryDetailBo.setModel(wo.getType());
                 TrajectoryValueDto trajectoryValueDto = new TrajectoryValueDto();
-                if(index == 0){
+                if (index == 0) {
                     trajectoryDetailBo.setType("start");
                     trajectoryDetailBos.add(trajectoryDetailBo);
-                    map.put(wo.getId(),trajectoryDetailBos);
+                    map.put(wo.getId(), trajectoryDetailBos);
                     trajectoryValueDto.setName("主车");
                     trajectoryValueDto.setDriveType(1);
-                }else {
+                } else {
+                    count[0]++;
+                    if (count[0] % 20 != 0) {
+                        count[0]++;
+                        continue;
+                    }
                     trajectoryDetailBos.add(trajectoryDetailBo);
                     trajectoryValueDto.setName(wo.getId());
                     trajectoryValueDto.setDriveType(2);
@@ -226,7 +238,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 trajectoryValueDto.setCourseAngle(Double.parseDouble(wo.getH()));
                 trajectoryValueDto.setDriveType(wo.getType());
                 trajectoryValueDto.setFrameId(frameId[0]);
-                trajectoryValueDto.setGlobalTimeStamp(String.valueOf(System.currentTimeMillis()+item.getDuration()));
+                trajectoryValueDto.setGlobalTimeStamp(String.valueOf(System.currentTimeMillis() + item.getDuration()));
                 trajectoryValueDto.setId(wo.getId());
                 trajectoryValueDto.setHeight(131);
                 trajectoryValueDto.setLatitude(retotrans.getDoubleValue("latitude"));
@@ -242,7 +254,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 trajectoryValueDtos.add(trajectoryValueDto);
                 simulationTrajectoryDto.setValue(trajectoryValueDtos);
 
-            });
+            }
             frameId[0]++;
             simulationTrajectoryDtos.add(simulationTrajectoryDto);
         });

@@ -33,6 +33,14 @@ public class AnalyzeOpenX {
             Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
             OpenScenario openScenario = (OpenScenario) jaxbUnmarshaller.unmarshal(file);
             HashMap<String, List<WoPostion>> woPostionMap = new LinkedHashMap<>(150);
+            Double mintime = 500.0;
+            for (Act act : openScenario.getStoryboard().getStory().get(0).getAct()){
+                Polyline polyline = act.getManeuverGroup().get(0).getManeuver().get(0).getEvent().get(0).getAction().get(0).getPrivateAction().getRoutingAction().getFollowTrajectoryAction().getTrajectory().getShape().getPolyline();
+                Vertex vertex = polyline.getVertex().get(0);
+                if(mintime > Double.parseDouble(vertex.getTime())){
+                    mintime = Double.parseDouble(vertex.getTime());
+                }
+            }
             for (Act act : openScenario.getStoryboard().getStory().get(0).getAct()){
                 String enity = act.getManeuverGroup().get(0).getActors().getEntityRef().get(0).getEntityRef();
                 String name = "car";
@@ -72,7 +80,7 @@ public class AnalyzeOpenX {
                     tjshapes.add(mainshape);
                 }
                 Tjshape tjshape = new Tjshape();
-                tjshape.setDuration((int) (Double.parseDouble(key)*1000));
+                tjshape.setDuration((int) ((Double.parseDouble(key)-mintime)*1000));
                 tjshape.setWoPostionList(woPostions);
                 tjshapes.add(tjshape);
                 index++;
