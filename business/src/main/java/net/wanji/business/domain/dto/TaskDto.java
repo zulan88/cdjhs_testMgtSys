@@ -70,4 +70,8 @@ public class TaskDto {
     private Integer isInner;
 
     private Integer opStatus;
+
+    private String consigner;
+
+    private String lastStatus;
 }

@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.pagehelper.PageInfo;
+import io.swagger.models.auth.In;
 import net.wanji.business.common.Constants;
 import net.wanji.business.common.Constants.CaseStatusEnum;
 import net.wanji.business.common.Constants.ChannelBuilder;
@@ -69,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -176,12 +179,15 @@ public class TjCaseServiceImpl extends ServiceImpl<TjCaseMapper, TjCase> impleme
     }
 
     @Override
-    public List<CasePageVo> pageList(CaseQueryDto caseQueryDto, String selectType) {
+    public List<CasePageVo> pageList(CaseQueryDto caseQueryDto, String selectType, AtomicLong total) {
         // gdj:添加 selectType 作为是否按照用户查询标记
         if ("byUsername".equals(selectType)) {
             caseQueryDto.setUserName(SecurityUtils.getUsername());
         }
         List<CaseDetailVo> caseVos = caseMapper.selectCases(caseQueryDto);
+        if(total != null){
+            total.set(new PageInfo(caseVos).getTotal());
+        }
         handleLabels(caseVos);
         List<TjDeviceDetail> deviceDetails = deviceDetailService.list();
         Map<Integer, TjDeviceDetail> deviceMap = CollectionUtils.emptyIfNull(deviceDetails).stream()

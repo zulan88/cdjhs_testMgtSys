@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
@@ -60,7 +61,7 @@ public interface TjCaseService extends IService<TjCase> {
      * @return
      * @throws BusinessException
      */
-    List<CasePageVo> pageList(CaseQueryDto caseQueryDto, String selectType);
+    List<CasePageVo> pageList(CaseQueryDto caseQueryDto, String selectType, AtomicLong total);
 
     List<CasePageVo> pageListByIds(List<Integer> ids, Integer treeId);
 

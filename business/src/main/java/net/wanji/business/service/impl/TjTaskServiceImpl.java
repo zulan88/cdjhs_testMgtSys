@@ -99,6 +99,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -293,7 +294,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         CaseQueryDto param = new CaseQueryDto();
         param.setSelectedIds(taskCaseVos.stream().map(TaskCaseVo::getCaseId).collect(Collectors.toList()));
         param.setUserName(SecurityUtils.getUsername());
-        return tjCaseService.pageList(param, "byUsername");
+        return tjCaseService.pageList(param, "byUsername", null);
     }
 
     @Override
@@ -411,10 +412,12 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         CaseQueryDto caseQueryDto = taskSaveDto.getCaseQueryDto();
         caseQueryDto.setUserName(SecurityUtils.getUsername());
         PageHelper.startPage(caseQueryDto.getPageNum(), caseQueryDto.getPageSize());
+        caseQueryDto.setTreeId("53");
         List<CasePageVo> casePageVos = null;
+        AtomicLong total = new AtomicLong(0);
         if (ObjectUtils.isEmpty(caseQueryDto.getShowType()) || 0 == caseQueryDto.getShowType()) {
             caseQueryDto.setSelectedIds(null);
-            casePageVos = tjCaseService.pageList(caseQueryDto, "byUsername");
+            casePageVos = tjCaseService.pageList(caseQueryDto, "byUsername", total);
             for (CasePageVo casePageVo : CollectionUtils.emptyIfNull(casePageVos)) {
                 if (CollectionUtils.isNotEmpty(taskCaseVos) && choiceCaseIds.contains(casePageVo.getId())) {
                     casePageVo.setSelected(Boolean.TRUE);
@@ -423,13 +426,13 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         } else {
             // 仅查看选中用例
             caseQueryDto.setSelectedIds(choiceCaseIds);
-            casePageVos = tjCaseService.pageList(caseQueryDto, "byUsername");
+            casePageVos = tjCaseService.pageList(caseQueryDto, "byUsername", total);
             CollectionUtils.emptyIfNull(casePageVos).forEach(t -> t.setSelected(Boolean.TRUE));
         }
         // 列表数据+已选择的用例
         TableDataInfo rspData = new TableDataInfo();
         rspData.setData(casePageVos);
-        rspData.setTotal(new PageInfo(casePageVos).getTotal());
+        rspData.setTotal(total.get());
         Map<String, Object> result = new HashMap<>();
         result.put("tableData", rspData);
         result.put("selectedIds", selectedIds);

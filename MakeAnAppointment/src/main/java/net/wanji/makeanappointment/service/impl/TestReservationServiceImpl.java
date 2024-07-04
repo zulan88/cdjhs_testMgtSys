@@ -80,7 +80,7 @@ public class TestReservationServiceImpl implements TestReservationService {
 
             CaseQueryDto caseQueryDto = new CaseQueryDto();
             caseQueryDto.setSelectedIds(typeList);
-            List<CasePageVo> notByUsername = tjCaseService.pageList(caseQueryDto, "notByUsername");
+            List<CasePageVo> notByUsername = tjCaseService.pageList(caseQueryDto, "notByUsername", null);
 
             caseCountMap = CollectionUtils.emptyIfNull(notByUsername).stream()
                     .collect(Collectors.groupingBy(CasePageVo::getTreeId, Collectors.counting()));
@@ -119,7 +119,7 @@ public class TestReservationServiceImpl implements TestReservationService {
 
         // 用例状态必须有效
         caseQueryDto.setStatus("effective");
-        List<CasePageVo> allCasePage = tjCaseService.pageList(caseQueryDto, "notByUsername");
+        List<CasePageVo> allCasePage = tjCaseService.pageList(caseQueryDto, "notByUsername", null);
 
         if (CollectionUtils.isEmpty(caseIdArray)) {
             return allCasePage;

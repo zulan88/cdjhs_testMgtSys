@@ -183,27 +183,27 @@ public class FragmentedScenesDetailVo extends TjFragmentedSceneDetail {
     }
 
     public SceneTrajectoryBo getTrajectoryJson() {
-        if (this.getSimuType()!=null && this.getSimuType()==0){
-            try {
-                if (StringUtils.isNotEmpty(this.getTrajectoryInfoTime())) {
-                    return JSONObject.parseObject(this.getTrajectoryInfoTime(), SceneTrajectoryBo.class);
-                }
-            } catch (Exception e) {
-                if (log.isErrorEnabled()) {
-                    log.error("parse error!", e);
-                }
-            }
-        }else {
-            try {
-                if (StringUtils.isNotEmpty(this.getTrajectoryInfo())) {
-                    return JSONObject.parseObject(this.getTrajectoryInfo(), SceneTrajectoryBo.class);
-                }
-            } catch (Exception e) {
-                if (log.isErrorEnabled()) {
-                    log.error("parse error!", e);
-                }
-            }
-        }
+//        if (this.getSimuType()!=null && this.getSimuType()==0){
+//            try {
+//                if (StringUtils.isNotEmpty(this.getTrajectoryInfoTime())) {
+//                    return JSONObject.parseObject(this.getTrajectoryInfoTime(), SceneTrajectoryBo.class);
+//                }
+//            } catch (Exception e) {
+//                if (log.isErrorEnabled()) {
+//                    log.error("parse error!", e);
+//                }
+//            }
+//        }else {
+//            try {
+//                if (StringUtils.isNotEmpty(this.getTrajectoryInfo())) {
+//                    return JSONObject.parseObject(this.getTrajectoryInfo(), SceneTrajectoryBo.class);
+//                }
+//            } catch (Exception e) {
+//                if (log.isErrorEnabled()) {
+//                    log.error("parse error!", e);
+//                }
+//            }
+//        }
         return trajectoryJson;
     }
 

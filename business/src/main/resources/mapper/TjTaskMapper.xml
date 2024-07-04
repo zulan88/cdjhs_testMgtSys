@@ -152,6 +152,7 @@
         a.sign,
         tt.test_total_time,
         tt.status,
+        tt.last_status,
         tt.route_file,
         tt.apprecord_id,
         tt.measurand_id,
@@ -185,6 +186,9 @@
             <if test="client != null and client != ''">
                 AND tt.client LIKE CONCAT('%', #{client}, '%')
             </if>
+            <if test="consigner != null and consigner != ''">
+                AND tt.consigner = #{consigner}
+            </if>
             <if test="startCreateTime != null">
                 AND tt.create_time &gt;= #{startCreateTime}
             </if>
@@ -205,6 +209,9 @@
             </if>
             <if test="status != null and status != ''">
                 AND tt.status = #{status}
+            </if>
+            <if test="lastStatus != null and lastStatus != ''">
+                AND tt.last_status = #{lastStatus}
             </if>
             <if test="id != null ">
                 AND tt.id = #{id}
