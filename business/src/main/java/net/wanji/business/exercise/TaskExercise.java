@@ -25,6 +25,7 @@ import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
 import net.wanji.business.exercise.dto.strategy.CaseStrategy;
 import net.wanji.business.exercise.dto.strategy.DeviceConnInfo;
 import net.wanji.business.exercise.dto.strategy.Strategy;
+import net.wanji.business.exercise.enums.OperationTypeEnum;
 import net.wanji.business.listener.*;
 import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
@@ -251,7 +252,7 @@ public class TaskExercise implements Runnable{
             String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
             redisCache.publishMessage(testIssueChannel, testIssue);
             log.info("给设备{}下发练习任务信息成功", uniques);
-            Integer complianceStatus = testIssueResultListener.awaitingMessage(uniques, 10, TimeUnit.MINUTES);
+            Integer complianceStatus = testIssueResultListener.awaitingMessage(uniques, 20, TimeUnit.MINUTES);
             log.info("练习设备是否准备就绪: {}", complianceStatus);
             if(Objects.isNull(complianceStatus) || complianceStatus == 0){
                 record.setCheckResult(1);

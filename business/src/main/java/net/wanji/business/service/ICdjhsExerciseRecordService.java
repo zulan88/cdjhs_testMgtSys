@@ -66,4 +66,8 @@ public interface ICdjhsExerciseRecordService
     public EvaluationReport reviewReport(Long taskId);
 
     public void playback(Integer taskId, Integer action) throws BusinessException, IOException;
+
+    public void putIntoTaskQueue(CdjhsExerciseRecord record);
+
+    public List<CdjhsExerciseRecord> selectUnexecutedExercises();
 }

@@ -106,7 +106,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         return i;
     }
 
-    private void putIntoTaskQueue(CdjhsExerciseRecord record){
+    @Override
+    public void putIntoTaskQueue(CdjhsExerciseRecord record){
         lock.lock();
         try {
             int size = ExerciseHandler.taskQueue.size();
@@ -351,5 +352,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 break;
         }
 
+    }
+
+    @Override
+    public List<CdjhsExerciseRecord> selectUnexecutedExercises() {
+        return cdjhsExerciseRecordMapper.selectUnexecutedExercises();
     }
 }

@@ -67,6 +67,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectCdjhsExerciseRecordVo"/>
         where id = #{id}
     </select>
+
+    <select id="selectUnexecutedExercises" resultMap="CdjhsExerciseRecordResult">
+        <include refid="selectCdjhsExerciseRecordVo"/>
+        where status = 1 and device_id is null;
+    </select>
         
     <insert id="insertCdjhsExerciseRecord" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" useGeneratedKeys="true" keyProperty="id">
         insert into cdjhs_exercise_record

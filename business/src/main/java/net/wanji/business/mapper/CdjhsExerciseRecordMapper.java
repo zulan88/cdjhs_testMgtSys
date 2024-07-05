@@ -59,4 +59,6 @@ public interface CdjhsExerciseRecordMapper
      * @return 结果
      */
     public int deleteCdjhsExerciseRecordByIds(Long[] ids);
+
+    public List<CdjhsExerciseRecord> selectUnexecutedExercises();
 }

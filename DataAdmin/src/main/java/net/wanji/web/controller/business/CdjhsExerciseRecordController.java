@@ -207,7 +207,7 @@ public class CdjhsExerciseRecordController extends BaseController
 
     private String ip = "http://129.211.28.237";
 
-    private Integer port = 8079;
+    private Integer port = 8002;
 
     @GetMapping("/startTessServer")
     public AjaxResult startTessServer(){

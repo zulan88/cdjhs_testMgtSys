@@ -43,7 +43,7 @@ public class DeviceStatusReflash {
     @Autowired
     private RedisUtil redisUtil;
 
-    @Scheduled(cron = "0 */5 * * * ?")
+    //@Scheduled(cron = "0 */5 * * * ?")
     public void reflash() {
         List<TjDeviceDetail> list = tjDeviceDetailService.list();
         for (TjDeviceDetail tjDeviceDetail : list) {

@@ -118,8 +118,8 @@ public class RestServiceImpl implements RestService {
     @Value("${tess.svTrackUrl}")
     private String svTrackurl;
 
-    //@Value("${algorithm.url}")
-    private String algorithmUrl = "http://10.100.72.130:5002/evaluation/output";
+    @Value("${algorithm.url}")
+    private String algorithmUrl;
 
 
 

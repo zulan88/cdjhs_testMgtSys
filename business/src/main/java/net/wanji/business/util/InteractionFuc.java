@@ -11,7 +11,7 @@ import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.domain.vo.TaskCaseVo;
 import net.wanji.business.domain.vo.TaskListVo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
-import net.wanji.business.exercise.OperationTypeEnum;
+import net.wanji.business.exercise.enums.OperationTypeEnum;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.simulation.*;
 import net.wanji.business.schedule.SceneLabelMap;

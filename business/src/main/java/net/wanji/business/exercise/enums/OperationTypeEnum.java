@@ -1,4 +1,4 @@
-package net.wanji.business.exercise;
+package net.wanji.business.exercise.enums;
 
 /**
  * @author: jenny
