@@ -215,7 +215,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 trajectoryDetailBo.setSpeed(0.0);
                 Double time = item.getDuration() / 1000D;
                 if (time < 0) {
-                    System.out.println("时间"+item.getDuration());
+//                    System.out.println("时间"+item.getDuration());
                     continue;
                 }
                 trajectoryDetailBo.setTime(String.valueOf(time));
