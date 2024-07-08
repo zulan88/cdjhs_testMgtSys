@@ -115,6 +115,11 @@ public class CdjhsExerciseRecordController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
+        //校验是否存在进行中的任务
+        List<CdjhsExerciseRecord> results = cdjhsExerciseRecordService.selectCdjhsExerciseRecordByStatusAndIds(2, ids);
+        if(!results.isEmpty()){
+            return AjaxResult.error("待删除记录中存在进行中的任务");
+        }
         return toAjax(cdjhsExerciseRecordService.deleteCdjhsExerciseRecordByIds(ids));
     }
 

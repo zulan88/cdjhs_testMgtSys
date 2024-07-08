@@ -1,10 +1,8 @@
 package net.wanji.business.service.impl;
 
 import java.io.IOException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -144,6 +142,34 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public int deleteCdjhsExerciseRecordByIds(Long[] ids)
     {
+        //查找待开始状态任务
+        List<CdjhsExerciseRecord> unexecutedRecords = selectCdjhsExerciseRecordByStatusAndIds(1, ids);
+        if(!unexecutedRecords.isEmpty()){
+            lock.lock();
+            ExerciseHandler.qualified.set(false);
+            try {
+                LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = ExerciseHandler.taskQueue;
+                int waiting = 0;
+                Iterator<CdjhsExerciseRecord> iterator = taskQueue.iterator();
+                while (iterator.hasNext()){
+                    CdjhsExerciseRecord next = iterator.next();
+                    boolean existed = unexecutedRecords.stream()
+                            .anyMatch(item -> item.getId().compareTo(next.getId()) == 0);
+                    if(existed){
+                        iterator.remove();
+                        continue;
+                    }
+                    next.setWaitingNum(waiting);
+                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(next);
+                    waiting++;
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }finally {
+                ExerciseHandler.qualified.set(true);
+                lock.unlock();
+            }
+        }
         return cdjhsExerciseRecordMapper.deleteCdjhsExerciseRecordByIds(ids);
     }
 
@@ -357,5 +383,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public List<CdjhsExerciseRecord> selectUnexecutedExercises() {
         return cdjhsExerciseRecordMapper.selectUnexecutedExercises();
+    }
+
+    @Override
+    public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids) {
+        return cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordByStatusAndIds(status, ids);
     }
 }

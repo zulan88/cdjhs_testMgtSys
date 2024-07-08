@@ -1,6 +1,7 @@
 package net.wanji.business.mapper;
 
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -61,4 +62,6 @@ public interface CdjhsExerciseRecordMapper
     public int deleteCdjhsExerciseRecordByIds(Long[] ids);
 
     public List<CdjhsExerciseRecord> selectUnexecutedExercises();
+
+    public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(@Param("status") Integer status, @Param("ids") Long[] ids);
 }

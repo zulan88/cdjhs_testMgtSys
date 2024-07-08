@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author: jenny
@@ -43,6 +44,8 @@ public class ExerciseHandler {
             .build();
 
     public static LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = new LinkedBlockingQueue<>(50);
+
+    public static AtomicBoolean qualified = new AtomicBoolean(true);
 
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 5,
             10, TimeUnit.SECONDS,
@@ -133,20 +136,15 @@ public class ExerciseHandler {
                                 break;
                             }
                         }
-                        if(StringUtils.isNotEmpty(uniques)){
-                            CdjhsExerciseRecord record = null;
-                            try {
-                                record = taskQueue.take();
-                                occupationMap.put(uniques, record.getId());//占用该域控
+                        if(StringUtils.isNotEmpty(uniques) && qualified.get()){
+                            CdjhsExerciseRecord record = taskQueue.take();
+                            occupationMap.put(uniques, record.getId());//占用该域控
 
-                                TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
-                                        tessIp, tessPort, radius, kafkaTopic, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
-                                        redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
-                                        restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer, tjTaskMapper, interactionFuc);
-                                executor.submit(taskExercise);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                            TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
+                                    tessIp, tessPort, radius, kafkaTopic, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                                    redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
+                                    restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer, tjTaskMapper, interactionFuc);
+                            executor.submit(taskExercise);
                         }
                     }
                 }catch (Exception e){

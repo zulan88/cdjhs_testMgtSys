@@ -72,6 +72,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectCdjhsExerciseRecordVo"/>
         where status = 1 and device_id is null;
     </select>
+
+    <select id="selectCdjhsExerciseRecordByStatusAndIds" resultMap="CdjhsExerciseRecordResult">
+        <include refid="selectCdjhsExerciseRecordVo"/>
+        where status = #{status} and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
         
     <insert id="insertCdjhsExerciseRecord" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" useGeneratedKeys="true" keyProperty="id">
         insert into cdjhs_exercise_record

@@ -142,7 +142,7 @@ public class TaskExercise implements Runnable{
         try{
             log.info("开始准备与域控{}进行交互...", uniques);
             record.setDeviceId(uniques);
-            record.setStatus(1);
+            record.setStatus(2);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             //获取镜像列表
             List<String> imageList = getImageListReport(uniques);
@@ -315,7 +315,6 @@ public class TaskExercise implements Runnable{
             log.info("向域控{}下发开始任务指令: {}", uniques, ykMessage);
             //更新练习开始时间
             record.setCheckResult(0);
-            record.setStatus(2);
             record.setStartTime(new Date());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             //等待任务结束

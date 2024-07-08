@@ -70,4 +70,6 @@ public interface ICdjhsExerciseRecordService
     public void putIntoTaskQueue(CdjhsExerciseRecord record);
 
     public List<CdjhsExerciseRecord> selectUnexecutedExercises();
+
+    public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids);
 }
