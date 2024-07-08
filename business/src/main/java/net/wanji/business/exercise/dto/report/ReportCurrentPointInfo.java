@@ -90,7 +90,13 @@ public class ReportCurrentPointInfo {
   /**
    * 纵向加速度，单位：m/s2
    */
-  private double lonAcc;
+  private Double lonAcc;
+
+  private Double latAcc;
+
+  private Double angularVelocityX;
+
+  private Integer gear;
   /**
    * 方向盘转转角（示例15.1deg）,单位：deg
    */

@@ -302,6 +302,25 @@ public class TaskExercise implements Runnable{
             JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
             redisCache.publishMessage(tessCommandChannel, simulationScene);
             log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
+            //仿真是否准备就绪
+            boolean isSimulationReady = false;
+            long startTime = System.currentTimeMillis();
+            String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulation.getDeviceId(), tessStatusChannel);
+            while ((System.currentTimeMillis() - startTime) < 300000){
+                Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
+                if(Objects.nonNull(state) && state == 1){
+                    isSimulationReady = true;
+                    break;
+                }
+                Thread.sleep(2000);
+            }
+            if(!isSimulationReady){
+                record.setCheckResult(1);
+                record.setCheckMsg("仿真设备不具备测试条件");
+                record.setStatus(3);
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                return;
+            }
             //获取每个场景的起点列表
             List<StartPoint> startPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
             //给域控管理插件下发任务开始指令
@@ -333,6 +352,7 @@ public class TaskExercise implements Runnable{
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
             String startStrategy = JSONObject.toJSONString(caseStrategy);
             kafkaProducer.sendMessage(kafkaTopic, startStrategy);
+            log.info("向topic-{}发送数据融合开始策略: {}", kafkaTopic, startStrategy);
             //域控
             TestStartReqDto ykStartReq = buildYKTestStart(detail, tessDataChannel);
             String ykMessage = JSONObject.toJSONString(ykStartReq);
@@ -350,12 +370,7 @@ public class TaskExercise implements Runnable{
             List<TrajectoryValueDto> points = participantTrajectory.getValue();
             TrajectoryValueDto trajectoryValueDto = points.get(points.size() - 1);
             Point2D.Double endPoint = new Point2D.Double(trajectoryValueDto.getLongitude(), trajectoryValueDto.getLatitude());
-            //仿真是否准备就绪
-            boolean isSimulationReady = false;
-            String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulation.getDeviceId(), tessStatusChannel);
-            if(redisCache.hasKey(simulationPrepareStatusKey) && (Integer) redisCache.getCacheObject(simulationPrepareStatusKey) == 1){
-                isSimulationReady = true;
-            }
+
             while (!Thread.currentThread().isInterrupted()){
                 String reportDataString = queue.poll(5, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
@@ -369,16 +384,19 @@ public class TaskExercise implements Runnable{
                 if(Objects.isNull(vehicleCurrentInfo)){
                     continue;
                 }
+                log.info("当前主车轨迹经纬度-{}-{}", vehicleCurrentInfo.getLongitude(), vehicleCurrentInfo.getLatitude());
                 //判断主车位置是否到达场景起点
                 if(!startPoints.isEmpty() && sceneIndex < startPoints.size()){
                     StartPoint startPoint = startPoints.get(sceneIndex);
                     Integer sequence = startPoint.getSequence();
+                    log.info("当前场景{}的起点经纬度是-{}-{}", sequence, startPoint.getLongitude(), startPoint.getLatitude());
                     Point2D.Double sceneStartPoint = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
                     boolean arrivedSceneStartPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPoint,
                             new Point2D.Double(vehicleCurrentInfo.getLongitude(),
                                     vehicleCurrentInfo.getLatitude()),
                             radius);
-                    if(isSimulationReady && arrivedSceneStartPoint){
+                    log.info("是否到达场景{}的触发点:{}", sequence, arrivedSceneStartPoint);
+                    if(arrivedSceneStartPoint){
                         redisCache.publishMessage(tessCommandChannel, tessStartMessage);
                         log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, sequence, tessMessage);
                         //场景切换
@@ -413,8 +431,14 @@ public class TaskExercise implements Runnable{
                     .mainChannel(dataChannel)
                     .pointsNum(20)
                     .build();
+            String evaluationParas = JSONObject.toJSONString(param);
+            log.info("测试评价参数: {}", evaluationParas);
             String evaluationOutput = restService.getEvaluationOutput(param);
             evaluationOutput = dataComplete(evaluationOutput, record.getTestId());
+            if(StringUtils.isNotEmpty(evaluationOutput)){
+                double score = JSONObject.parseObject(evaluationOutput).getDoubleValue("score");
+                record.setScore(score);
+            }
             record.setEvaluationOutput(evaluationOutput);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         }catch (Exception e){
@@ -510,12 +534,14 @@ public class TaskExercise implements Runnable{
         TestProtocol receiveProtocol = TestProtocol.builder()
                 .type(0)
                 .channel(deviceDetail.getDataChannel())
+                .params(JSONObject.parseObject("{}"))
                 .build();
         protocols.add(receiveProtocol);
         //数据发送-背景车
         TestProtocol backgroundProtocol = TestProtocol.builder()
                 .type(1)
                 .channel(tessDataChannel)
+                .params(JSONObject.parseObject("{}"))
                 .build();
         protocols.add(backgroundProtocol);
 

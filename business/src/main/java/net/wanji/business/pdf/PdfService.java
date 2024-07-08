@@ -3,7 +3,6 @@ package net.wanji.business.pdf;
 import com.alibaba.fastjson.JSONObject;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -20,6 +19,7 @@ import net.wanji.business.exercise.dto.evaluation.TrendChange;
 import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.pdf.enums.PdfContentEnum;
 import net.wanji.business.pdf.enums.PdfTitleEnum;
+import net.wanji.business.pdf.enums.TestPaperTypeEnum;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
@@ -83,13 +83,16 @@ public class PdfService {
             field.setAccessible(true);
             Object value = field.get(record);
             String result = "";
-            if(value instanceof String){
-                result = value.toString();
-            }else{
+            if(value instanceof Date){
                 Date date = (Date) value;
                 if(Objects.nonNull(date)){
                     result = DateUtils.getDateString(date);
                 }
+            }else if(value instanceof Integer){
+                Integer testPaperType = (Integer) value;
+                result = TestPaperTypeEnum.getNameByType(testPaperType);
+            }else {
+                result = value.toString();
             }
             String content = StringUtils.format(formatTemplate, name, result);
             Paragraph paragraph = new Paragraph(content)

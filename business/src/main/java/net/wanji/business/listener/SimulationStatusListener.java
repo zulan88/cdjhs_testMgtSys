@@ -54,8 +54,8 @@ public class SimulationStatusListener implements MessageListener {
                 }
                 return;
             }
+            log.info("接受到仿真准备状态: {}", body);
             String channelTopic = new String(message.getChannel());
-            log.info("接收到仿真状态通道-{}上报心跳: {}", channelTopic, body);
             DeviceStateDto deviceStateDto = JSONObject.parseObject(body, DeviceStateDto.class);
             Integer deviceId = deviceStateDto.getDeviceId();
             Integer state = deviceStateDto.getState();

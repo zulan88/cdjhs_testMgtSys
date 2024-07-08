@@ -22,7 +22,7 @@ public class EvaluationOutputReq {
 
     private List<StartPoint> startPoints;
 
-    private String signFilePath;
+    //private String signFilePath;
 
     private String mainChannel;
 

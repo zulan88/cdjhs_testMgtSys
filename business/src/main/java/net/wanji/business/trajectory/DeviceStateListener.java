@@ -53,7 +53,6 @@ public class DeviceStateListener implements MessageListener {
                 }
                 return;
             }
-            //log.info("接收到设备状态信息上报: {}", body);
             DeviceStateDto stateDto = JSONObject.parseObject(body, DeviceStateDto.class);
             String uniques = stateDto.getUniques();
             Integer state = stateDto.getState();
@@ -61,7 +60,6 @@ public class DeviceStateListener implements MessageListener {
             redisCache.setCacheObject(key, state, 2, TimeUnit.SECONDS);
             if(state == 2){
                 ExerciseHandler.idleDeviceMap.put(uniques, stateDto.getState());
-                //ExerciseHandler.idleDeviceMap.resetExpiration(uniques);
             }
         }catch (Exception e){
             e.printStackTrace();

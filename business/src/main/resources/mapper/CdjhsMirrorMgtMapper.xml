@@ -37,6 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="mirrorPathLocal != null  and mirrorPathLocal != ''"> and mirror_path_local = #{mirrorPathLocal}</if>
             <if test="uploadStatus != null">and upload_status = #{uploadStatus}</if>
             <if test="imageId != null and imageId != ''">and image_id = #{imageId}</if>
+            <if test="createBy != null and createBy != ''">and create_by = #{createBy}</if>
         </where>
         order by create_time desc
     </select>

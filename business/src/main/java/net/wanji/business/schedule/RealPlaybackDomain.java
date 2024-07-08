@@ -16,11 +16,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
@@ -79,14 +75,18 @@ public class RealPlaybackDomain {
                 String timestamp = mainCar.getTimestamp();
                 long carTimeStamp = Long.parseLong(timestamp);
                 //当前场景
-                List<SceneDetail> sceneDetails = evaluationOutput.getDetails();
-                if(sequence < sceneDetails.size() - 1){
-                    Long sceneStartTime = sceneDetails.get(sequence + 1).getStartTime();
-                    if(carTimeStamp >= sceneStartTime){
-                        sequence += 1;
+                SceneDetail sceneDetail = null;
+                if(Objects.nonNull(evaluationOutput)){
+                    List<SceneDetail> sceneDetails = evaluationOutput.getDetails();
+                    if(sequence < sceneDetails.size() - 1){
+                        Long sceneStartTime = sceneDetails.get(sequence + 1).getStartTime();
+                        if(carTimeStamp >= sceneStartTime){
+                            sequence += 1;
+                        }
                     }
+                    sceneDetail = sceneDetails.get(sequence);
                 }
-                RealWebsocketMessage msg = new RealWebsocketMessage(RedisMessageType.TRAJECTORY, sceneDetails.get(sequence), data, duration);
+                RealWebsocketMessage msg = new RealWebsocketMessage(RedisMessageType.TRAJECTORY, sceneDetail, data, duration);
                 WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
                 index ++;
             } catch (Exception e) {

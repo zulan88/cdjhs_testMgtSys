@@ -134,7 +134,7 @@ public class TaskController extends BaseController {
     @ApiOperation(value = "5.列表")
     @PostMapping("/pageList")
     public Map<String, Object> pageList(@Validated @RequestBody TaskDto taskDto, HttpServletRequest request) throws BusinessException {
-        taskDto.setCreatedBy(SecurityUtils.getUsername());
+        //taskDto.setCreatedBy(SecurityUtils.getUsername());
         Map<String, Object> result = new HashMap<>();
         Map<String, Long> countMap = tjTaskService.selectCount(taskDto);
         result.put("statistics", countMap);

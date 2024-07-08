@@ -18,6 +18,7 @@ import net.wanji.business.domain.evaluation.EvaluationReport;
 import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.exercise.ExerciseHandler;
+import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
 import net.wanji.business.pdf.PdfService;
@@ -256,5 +257,24 @@ public class CdjhsExerciseRecordController extends BaseController
         log.info("下发场景开始指令成功");
 
         return AjaxResult.success();
+    }
+
+    @GetMapping("/testAlgorithm")
+    public AjaxResult testAlgorithm(){
+        String json = "{\"fusionFilePath\":\"/data/online_test/onlineTestFile/record/81/0/50d1f839-94e6-47a2-aa1c-c752817b320c\",\"mainChannel\":\"CDJHS_GKQResult_YK001\",\"pointsNum\":20,\"startPoints\":[{\"latitude\":34.37270304771323,\"longitude\":108.89390620857213,\"sequence\":1},{\"latitude\":34.37391551783871,\"longitude\":108.89725552170744,\"sequence\":2}],\"taskId\":81}";
+        EvaluationOutputReq req = JSONObject.parseObject(json, EvaluationOutputReq.class);
+
+        //请求算法输出场景评分
+        EvaluationOutputReq param = EvaluationOutputReq.builder()
+                .taskId(req.getTaskId())
+                .fusionFilePath(req.getFusionFilePath())
+                .startPoints(req.getStartPoints())
+                .mainChannel(req.getMainChannel())
+                .pointsNum(20)
+                .build();
+        String evaluationParas = JSONObject.toJSONString(param);
+        log.info("测试评价参数: {}", evaluationParas);
+        String evaluationOutput = restService.getEvaluationOutput(param);
+        return AjaxResult.success("成功", evaluationOutput);
     }
 }
