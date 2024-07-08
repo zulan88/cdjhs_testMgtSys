@@ -61,5 +61,5 @@ public interface CdjhsMirrorMgtMapper
      */
     public int deleteCdjhsMirrorMgtByIds(Long[] ids);
 
-    public int updateMirrorPathLocalInt(@Param("id") Long id, @Param("localFilePath") String localFilePath, @Param("md5") String md5);
+    public int updateMirrorPathLocalInt(@Param("id") Long id, @Param("localFilePath") String localFilePath, @Param("md5") String md5, @Param("uploadStatus") Integer uploadStatus);
 }

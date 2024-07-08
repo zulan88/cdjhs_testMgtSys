@@ -181,7 +181,7 @@ public class InteractionFuc {
     }
 
     public SimulationSceneDto getSimulationSceneInfo(Integer testId){
-        //根据测试用例id获取关联场景信息和每个仿真的参与者点位信息
+        //根据测试用例id获取关联场景信息和每个仿真参与者点位信息
         List<SceneDetailVo> sceneDetails = getSceneDetails(testId);
         if(StringUtils.isEmpty(sceneDetails)){
             return null;

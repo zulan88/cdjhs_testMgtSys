@@ -57,13 +57,12 @@ public class ImageDelResultListener implements MessageListener {
                 }
                 return;
             }
-            log.info("镜像删除结果上报: {}", body);
             ImageDelResultDto imageDelResultDto = JSONObject.parseObject(body, ImageDelResultDto.class);
             String deviceId = imageDelResultDto.getDeviceId();
             String imageId = imageDelResultDto.getImageId();
             Integer imageStatus = imageDelResultDto.getImageStatus();
             String key = RedisKeyUtils.getImageDeleteResultKey(deviceId, imageId);
-            redisCache.setCacheObject(key, imageStatus, 1, TimeUnit.DAYS);
+            redisCache.setCacheObject(key, imageStatus, 10, TimeUnit.SECONDS);
 
             CountDownLatch latch = latchMap.get(deviceId);
             if(latch != null){

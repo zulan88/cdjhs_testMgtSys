@@ -64,7 +64,7 @@ public class ImageListReportListener implements MessageListener {
             String key = RedisKeyUtils.getImageListReportKey(deviceId);
             redisCache.deleteObject(key);
             redisCache.setCacheList(key, imageList);
-            redisCache.expire(key, 1, TimeUnit.DAYS);
+            redisCache.expire(key, 10, TimeUnit.SECONDS);
 
             CountDownLatch latch = latchMap.get(deviceId);
             if(latch != null){

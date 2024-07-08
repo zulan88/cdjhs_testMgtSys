@@ -208,9 +208,16 @@ public class FileService {
                 String md5 = DigestUtils.md5DigestAsHex(inputStream);
                 //更新本地md5值
                 cdjhsMirrorMgt.setMd5(md5);
-                cdjhsMirrorMgtMapper.updateMirrorPathLocalInt(cdjhsMirrorMgt.getId(), localFilePath, md5);
+                cdjhsMirrorMgt.setUploadStatus(0);
+                cdjhsMirrorMgt.setUpdateTime(DateUtils.getNowDate());
+                cdjhsMirrorMgtMapper.updateMirrorPathLocalInt(cdjhsMirrorMgt.getId(), localFilePath, md5, 0);
             }
         } catch (Exception e){
+            CdjhsMirrorMgt mirrorMgt = new CdjhsMirrorMgt();
+            mirrorMgt.setId(cdjhsMirrorMgt.getId());
+            mirrorMgt.setUploadStatus(1);
+            mirrorMgt.setUpdateTime(DateUtils.getNowDate());
+            cdjhsMirrorMgtMapper.updateCdjhsMirrorMgt(mirrorMgt);
             log.error("更新镜像列表-{}本地存储路径和md5发生错误", cdjhsMirrorMgt.getId());
             e.printStackTrace();
         }
