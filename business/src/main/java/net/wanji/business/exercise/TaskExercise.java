@@ -25,7 +25,9 @@ import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
 import net.wanji.business.exercise.dto.strategy.CaseStrategy;
 import net.wanji.business.exercise.dto.strategy.DeviceConnInfo;
 import net.wanji.business.exercise.dto.strategy.Strategy;
+import net.wanji.business.exercise.enums.CheckResultEnum;
 import net.wanji.business.exercise.enums.OperationTypeEnum;
+import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.listener.*;
 import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
@@ -142,15 +144,14 @@ public class TaskExercise implements Runnable{
         try{
             log.info("开始准备与域控{}进行交互...", uniques);
             record.setDeviceId(uniques);
-            record.setStatus(2);
+            record.setStatus(TaskStatusEnum.RUNNING.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             //获取镜像列表
             List<String> imageList = getImageListReport(uniques);
             if(Objects.isNull(imageList)){
-                //任务结束
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("练习设备没有上报镜像列表,任务结束");
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -162,16 +163,15 @@ public class TaskExercise implements Runnable{
                     String image = cdjhsDeviceImageRecordMapper.selectEarliestImage(uniques, imageList.toArray(new String[0]));
                     Integer status = imageDelete(uniques, image);
                     if(Objects.isNull(status)){
-                        //任务结束
-                        record.setCheckResult(1);
+                        record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                         record.setCheckMsg(String.format("练习设备没有上报清除镜像结果状态: %s", image));
-                        record.setStatus(3);
+                        record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                         cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                         return;
                     }else if(status == 0){
-                        record.setCheckResult(1);
+                        record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                         record.setCheckMsg(String.format("练习设备清除镜像失败: %s", image));
-                        record.setStatus(3);
+                        record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                         cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                         return;
                     }
@@ -179,15 +179,15 @@ public class TaskExercise implements Runnable{
                 //镜像下发
                 Integer integrityStatus = imageIssue(uniques, record.getMd5(), mirrorId, record.getMirrorPath());
                 if(Objects.isNull(integrityStatus)){
-                    record.setCheckResult(1);
+                    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                     record.setCheckMsg(String.format("%s镜像下发后,未收到练习设备上报结果", mirrorId));
-                    record.setStatus(3);
+                    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                     cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                     return;
                 }else if(integrityStatus == 0){
-                    record.setCheckResult(1);
+                    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                     record.setCheckMsg(String.format("%s镜像文件完整性校验失败", mirrorId));
-                    record.setStatus(3);
+                    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                     cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                     return;
                 }
@@ -195,9 +195,9 @@ public class TaskExercise implements Runnable{
             //练习任务下发
             TjTask tjTask = tjTaskMapper.selectById(record.getTestId());
             if(Objects.isNull(tjTask) || StringUtils.isEmpty(tjTask.getMainPlanFile())){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg(String.format("测试用例%d不存在或者主车路径文件不存在", record.getTestId()));
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -206,10 +206,10 @@ public class TaskExercise implements Runnable{
             Integer complianceStatus = issueTaskExercise2YK(uniques, mirrorId, trajectories);
             log.info("练习设备{}是否准备就绪: {}", uniques, complianceStatus);
             if(Objects.isNull(complianceStatus) || complianceStatus == 0){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 String checkMsg = Objects.isNull(complianceStatus) ? "练习设备未上报练习任务下发结果" : "合规性校验不通过";
                 record.setCheckMsg(checkMsg);
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -220,9 +220,9 @@ public class TaskExercise implements Runnable{
             String tessStatusChannel = tessParam.getStatusChannel();
             int tessStatus = restService.startServer(tessIp, tessPort, tessParam);
             if(tessStatus != 1){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("唤醒仿真失败,任务结束");
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -232,9 +232,9 @@ public class TaskExercise implements Runnable{
             query.setDeviceType(net.wanji.common.common.Constants.SIMULATION);
             List<DeviceDetailVo> simulations = tjDeviceDetailMapper.selectByCondition(query);
             if(simulations.isEmpty()){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("数据库没有录入仿真软件信息");
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -244,9 +244,9 @@ public class TaskExercise implements Runnable{
             //给仿真下发片段式场景参与者点位集
             SimulationSceneDto simulationSceneInfo = interactionFuc.getSimulationSceneInfo(record.getTestId().intValue());
             if(Objects.isNull(simulationSceneInfo)){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("获取片段式场景参与者点位集信息失败");
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -267,9 +267,9 @@ public class TaskExercise implements Runnable{
                 Thread.sleep(2000);
             }
             if(!isSimulationReady){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("仿真设备不具备测试条件");
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -278,10 +278,10 @@ public class TaskExercise implements Runnable{
             //任务开始
             TjDeviceDetail detail = tjDeviceDetailMapper.selectByUniques(uniques);
             if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
-                record.setCheckResult(1);
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 String checkMsg = String.format("数据库中没有查询到练习设备%s的数据通道或指令通道", uniques);
                 record.setCheckMsg(checkMsg);
-                record.setStatus(3);
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
@@ -314,7 +314,7 @@ public class TaskExercise implements Runnable{
             redisCache.publishMessage(detail.getCommandChannel(), ykStartMessage);
             log.info("向域控{}下发开始任务指令: {}", uniques, ykMessage);
             //更新练习开始时间
-            record.setCheckResult(0);
+            record.setCheckResult(CheckResultEnum.SUCCESS.getResult());
             record.setStartTime(new Date());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             //等待任务结束
@@ -368,7 +368,7 @@ public class TaskExercise implements Runnable{
                 }
             }
             //更新测试结束和融合数据本地存储路径
-            record.setStatus(3);
+            record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             record.setEndTime(new Date());
             //计算测试时长
             int sec = (int) (record.getEndTime().getTime() - record.getStartTime().getTime()) / 1000;

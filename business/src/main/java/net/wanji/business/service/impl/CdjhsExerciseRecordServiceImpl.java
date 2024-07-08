@@ -17,6 +17,7 @@ import net.wanji.business.exercise.dto.evaluation.ComfortDetail;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
 import net.wanji.business.exercise.dto.evaluation.IndexDetail;
 import net.wanji.business.exercise.dto.evaluation.SceneDetail;
+import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
 import net.wanji.business.pdf.enums.IndexTypeEnum;
@@ -110,7 +111,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         try {
             int size = ExerciseHandler.taskQueue.size();
             ExerciseHandler.taskQueue.put(record);
-            record.setStatus(1);
+            record.setStatus(TaskStatusEnum.WAITING.getStatus());
             record.setWaitingNum(size);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         }catch (Exception e){
