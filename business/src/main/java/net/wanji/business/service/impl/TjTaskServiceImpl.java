@@ -881,12 +881,16 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
 //                if(res.size()>0){
 //                    speed = res.get(0).getSpeed();
 //                }
+                if(caseContinuousVo.getConnectInfo().size() == 0){
+                    throw new BusinessException("未置场景轨迹");
+                }
                 TrajectoryValueDto start = buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(0),speed);
+                TrajectoryValueDto end = buildTrajectoryValueDto(caseContinuousVo.getConnectInfo().get(caseContinuousVo.getConnectInfo().size()-1),speed);
                 List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
                 mainTrajectories.add(start);
                 caseContinuousVo.setMainTrajectory(mainTrajectories);
                 caseContinuousVo.setStartPoint(start);
-                caseContinuousVo.setEndPoint(start);
+                caseContinuousVo.setEndPoint(end);
             } catch (IOException e) {
                 log.error(StringUtils.format("{}主车轨迹信息异常，请检查{}", caseContinuousVo.getCaseNumber(),
                         tc.getRouteFile()));
