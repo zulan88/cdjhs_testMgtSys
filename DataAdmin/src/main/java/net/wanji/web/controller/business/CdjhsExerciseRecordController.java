@@ -21,6 +21,7 @@ import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
+import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.pdf.PdfService;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.business.service.RestService;
@@ -116,7 +117,7 @@ public class CdjhsExerciseRecordController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         //校验是否存在进行中的任务
-        List<CdjhsExerciseRecord> results = cdjhsExerciseRecordService.selectCdjhsExerciseRecordByStatusAndIds(2, ids);
+        List<CdjhsExerciseRecord> results = cdjhsExerciseRecordService.selectCdjhsExerciseRecordByStatusAndIds(TaskStatusEnum.RUNNING.getStatus(), ids);
         if(!results.isEmpty()){
             return AjaxResult.error("待删除记录中存在进行中的任务");
         }

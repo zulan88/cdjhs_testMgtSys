@@ -40,7 +40,7 @@ public class ExerciseHandler {
     public static ExpiringMap<String, Long> occupationMap = ExpiringMap.builder()
             .maxSize(5)
             .expirationPolicy(ExpirationPolicy.CREATED)
-            .expiration(1, TimeUnit.DAYS)
+            .expiration(3, TimeUnit.HOURS)
             .build();
 
     public static LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = new LinkedBlockingQueue<>(50);

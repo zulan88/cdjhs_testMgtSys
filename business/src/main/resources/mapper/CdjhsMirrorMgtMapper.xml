@@ -46,6 +46,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectCdjhsMirrorMgtVo"/>
         where id = #{id}
     </select>
+
+    <select id="selectCdjhsMirrorMgtByIds" parameterType="long" resultMap="CdjhsMirrorMgtResult">
+        <include refid="selectCdjhsMirrorMgtVo"/>
+        where id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
         
     <insert id="insertCdjhsMirrorMgt" parameterType="net.wanji.business.domain.CdjhsMirrorMgt" useGeneratedKeys="true" keyProperty="id">
         insert into cdjhs_mirror_mgt
@@ -107,8 +115,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <update id="updateMirrorPathLocalInt">
-        update cdjhs_mirror_mgt set mirror_path_local = #{localFilePath}, md5 = #{md5} where id = #{id}
+    <update id="update">
+        update cdjhs_mirror_mgt set mirror_path_local = #{localFilePath}, md5 = #{md5}, upload_status = #{uploadStatus} where id = #{id}
     </update>
 
     <delete id="deleteCdjhsMirrorMgtById" parameterType="Long">

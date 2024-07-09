@@ -109,7 +109,11 @@ public class CdjhsMirrorMgtServiceImpl implements ICdjhsMirrorMgtService
     @Override
     public int deleteCdjhsMirrorMgtByIds(Long[] ids)
     {
-        return cdjhsMirrorMgtMapper.deleteCdjhsMirrorMgtByIds(ids);
+        //查询待删除镜像信息
+        List<CdjhsMirrorMgt> cdjhsMirrorMgts = cdjhsMirrorMgtMapper.selectCdjhsMirrorMgtByIds(ids);
+        int i = cdjhsMirrorMgtMapper.deleteCdjhsMirrorMgtByIds(ids);
+        fileService.deleteMirrors(cdjhsMirrorMgts);
+        return i;
     }
 
     /**

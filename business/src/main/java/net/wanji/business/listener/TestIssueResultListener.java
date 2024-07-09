@@ -63,7 +63,7 @@ public class TestIssueResultListener implements MessageListener {
             String deviceId = testIssueResultDto.getDeviceId();
             Integer status = testIssueResultDto.getStatus();
             String key = RedisKeyUtils.getTestIssueResultKey(deviceId);
-            redisCache.setCacheObject(key, status, 1, TimeUnit.DAYS);
+            redisCache.setCacheObject(key, status, 10, TimeUnit.SECONDS);
 
             CountDownLatch latch = latchMap.get(deviceId);
             if(latch != null){

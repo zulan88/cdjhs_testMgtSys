@@ -63,7 +63,7 @@ public class ImageIssueResultListener implements MessageListener {
             String imageId = imageIssueResultDto.getImageId();
             Integer imageStatus = imageIssueResultDto.getImageStatus();
             String key = RedisKeyUtils.getImageIssueResultKey(deviceId, imageId);
-            redisCache.setCacheObject(key, imageStatus, 1, TimeUnit.DAYS);
+            redisCache.setCacheObject(key, imageStatus, 10, TimeUnit.SECONDS);
 
             CountDownLatch latch = latchMap.get(deviceId);
             if(latch != null){

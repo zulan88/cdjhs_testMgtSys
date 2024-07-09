@@ -144,7 +144,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     public int deleteCdjhsExerciseRecordByIds(Long[] ids)
     {
         //查找待开始状态任务
-        List<CdjhsExerciseRecord> unexecutedRecords = selectCdjhsExerciseRecordByStatusAndIds(1, ids);
+        List<CdjhsExerciseRecord> unexecutedRecords = selectCdjhsExerciseRecordByStatusAndIds(TaskStatusEnum.WAITING.getStatus(), ids);
         if(!unexecutedRecords.isEmpty()){
             lock.lock();
             ExerciseHandler.qualified.set(false);
@@ -233,8 +233,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 securityIndexMap.putIfAbsent(index, 0L);
             }
             securityAnalysis.setStats(securityIndexMap);
-            if(securityIndexMap.containsKey(1)){
-                securityAnalysis.setCollapse(securityIndexMap.get(1).intValue());
+            if(securityIndexMap.containsKey(IndexTypeEnum.COLLAPSE.getIndexType())){
+                securityAnalysis.setCollapse(securityIndexMap.get(IndexTypeEnum.COLLAPSE.getIndexType()).intValue());
             }
             int infraction = (int) securityIndexMap.values().stream()
                     .mapToLong(data -> data)

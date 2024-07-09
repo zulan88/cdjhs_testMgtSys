@@ -7,6 +7,8 @@ public class RedisKeyUtils {
     //设备状态前缀
     public static final String DEVICE_STATUS_PRE = "CDJHS_DEVICE_STATUS";
 
+    public static final String DEVICE_READY_STATUS_PRE = "CDJHS_DEVICE_READY_STATUS";
+
     //镜像列表上报前缀
     public static final String IMAGE_LIST_REPORT = "CDJHS_IMAGE_LIST_REPORT";
 
@@ -37,6 +39,10 @@ public class RedisKeyUtils {
 
     public static String getDeviceStatusKey(String uniques){
         return DEVICE_STATUS_PRE + DEVICE_STATUS_PRE_LINK + uniques;
+    }
+
+    public static String getDeviceReadyStatusKey(String uniques){
+        return DEVICE_READY_STATUS_PRE + DEVICE_STATUS_PRE_LINK + uniques;
     }
 
     public static String getOssMultipartUploadKey(String uploadId){

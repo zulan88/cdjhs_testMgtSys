@@ -425,7 +425,7 @@ public class TaskExercise implements Runnable{
         String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
         redisCache.publishMessage(testIssueChannel, testIssue);
         log.info("给设备{}下发练习任务信息成功", uniques);
-        return testIssueResultListener.awaitingMessage(uniques, 20, TimeUnit.MINUTES);
+        return testIssueResultListener.awaitingMessage(uniques, 1, TimeUnit.HOURS);
     }
 
     private Integer imageIssue(String uniques, String md5, String mirrorId, String mirrorPath) {

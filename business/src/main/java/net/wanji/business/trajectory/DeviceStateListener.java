@@ -57,9 +57,12 @@ public class DeviceStateListener implements MessageListener {
             String uniques = stateDto.getUniques();
             Integer state = stateDto.getState();
             String key = RedisKeyUtils.getDeviceStatusKey(uniques);
-            redisCache.setCacheObject(key, state, 2, TimeUnit.SECONDS);
+            redisCache.setCacheObject(key, state, 20, TimeUnit.SECONDS);
             if(state == 2){
-                ExerciseHandler.idleDeviceMap.put(uniques, stateDto.getState());
+                //准备状态
+                String readyKey = RedisKeyUtils.getDeviceReadyStatusKey(uniques);
+                redisCache.setCacheObject(readyKey, state, 20, TimeUnit.SECONDS);
+                ExerciseHandler.idleDeviceMap.put(uniques, state);
             }
         }catch (Exception e){
             e.printStackTrace();
