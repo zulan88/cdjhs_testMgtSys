@@ -158,49 +158,58 @@ public class AnalyzeOpenX {
     private WoPostion extractInitialState(String comment) {
         // 使用正则表达式提取 x_init, y_init, heading_init 的值
         //Pattern pattern = Pattern.compile("x_init = ([\\d.]+), y_init = ([\\d.]+), heading_init = ([\\d.]+)");
-        Pattern pattern = Pattern.compile("v_init = ([\\d.]+), x_init = ([\\d.-]+), y_init = ([\\d.-]+), heading_init = ([\\d.-]+)");
-        Matcher matcher = pattern.matcher(comment);
+        Pattern patternx = Pattern.compile("x_init = ([\\d.-]+)");
+        Pattern patterny = Pattern.compile("y_init = ([\\d.-]+)");
+        Pattern patternh = Pattern.compile("heading_init = ([\\d.-]+)");
+        Matcher matcherX = patternx.matcher(comment);
+        Matcher matcherY = patterny.matcher(comment);
+        Matcher matcherH = patternh.matcher(comment);
         WoPostion woPostion = null;
-        if (matcher.find()) {
-            String xInit = matcher.group(2);
-            String yInit = matcher.group(3);
-            String headingInit = matcher.group(4);
-            woPostion = new WoPostion("0",xInit,yInit,headingInit,1);
+        if (matcherX.find()) {
+            String xInit = matcherX.group(1);
+            if (matcherY.find()) {
+                String yInit = matcherY.group(1);
+                if (matcherH.find()) {
+                    String headingInit = matcherH.group(1);
+                    woPostion = new WoPostion("0",xInit,yInit,headingInit,1);
+                }
+            }
         }
         return woPostion;
     }
 
     private WoPostion takeEndPosition(String comment) {
-        // 定义正则表达式
-        String patternX = "x_target = \\((\\d+\\.\\d+), (\\d+\\.\\d+)\\)";
-        String patternY = "y_target = \\((\\d+\\.\\d+), (\\d+\\.\\d+)\\)";
-
-        // 编译正则表达式
-        Pattern regexPatternX = Pattern.compile(patternX);
-        Pattern regexPatternY = Pattern.compile(patternY);
-
-        // 创建Matcher对象
-        Matcher matcherX = regexPatternX.matcher(comment);
-        Matcher matcherY = regexPatternY.matcher(comment);
+        String[] x_target = extractCoordinates(comment, "x_target");
+        String[] y_target = extractCoordinates(comment, "y_target");
 
         // 查找匹配
-        if (matcherX.find() && matcherY.find()) {
-            // 提取x_target的值
-            double x1 = Double.parseDouble(matcherX.group(1));
-            double x2 = Double.parseDouble(matcherX.group(2));
-
-            // 提取y_target的值
-            double y1 = Double.parseDouble(matcherY.group(1));
-            double y2 = Double.parseDouble(matcherY.group(2));
+        if (x_target[0] != null) {
 
             WoPostion woPostion = new WoPostion();
             // 输出结果
-            woPostion.setXTarget("x_target = (" + x1 + ", " + x2 + ")");
-            woPostion.setYTarget("y_target = (" + y1 + ", " + y2 + ")");
+            woPostion.setXTarget(x_target[0] + ", " + x_target[1]);
+            woPostion.setYTarget(y_target[0] + ", " + y_target[1]);
             return woPostion;
         } else {
             System.out.println("未找到匹配的数据。");
         }
         return null;
+    }
+
+    private static String[] extractCoordinates(String input, String target) {
+        String pattern =  target + " = \\((-?\\d+\\.\\d+), (-?\\d+\\.\\d+)\\)";
+        java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher matcher = regex.matcher(input);
+
+        String[] coordinates = new String[2];
+
+        if (matcher.find()) {
+            coordinates[0] = matcher.group(1);
+            coordinates[1] = matcher.group(2);
+        } else {
+            System.err.println("No match found for " + target);
+        }
+
+        return coordinates;
     }
 }

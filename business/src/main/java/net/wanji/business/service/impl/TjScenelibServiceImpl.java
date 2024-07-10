@@ -307,7 +307,11 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
         sceneDetailDto.setRouteFile(filePath);
         sceneDetailDto.setNumber(tjScenelib.getNumber());
-        sceneDetailDto.setMapId(Integer.valueOf(tjScenelib.getGeojsonPath()));
+        if(tjScenelib.getGeojsonPath()!=null) {
+            sceneDetailDto.setMapId(Integer.valueOf(tjScenelib.getGeojsonPath()));
+        }else {
+            sceneDetailDto.setMapId(21);
+        }
         sceneDetailDto.setRoadCondition(tjScenelib.getXoscPath());
 
         return tjFragmentedSceneDetailService.saveSceneDetailInfo(sceneDetailDto);
@@ -402,11 +406,16 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 //List<PartConfigSelect> partConfigSelects = new ArrayList<>();
                 //partConfigSelects.add(partConfigSelect);
                 tjCaseDto.setLabels(item.getLabels());
-                tjCaseDto.setMapId(Integer.valueOf(scenelib.getGeojsonPath()));
+                if(scenelib.getGeojsonPath()!=null) {
+                    tjCaseDto.setMapId(Integer.valueOf(scenelib.getGeojsonPath()));
+                }else {
+                    tjCaseDto.setMapId(21);
+                }
                 tjCaseDto.setEvoNum(scenelib.getEvoNum());
                 JSONObject jsonObject = new JSONObject();
-                jsonObject.put("xTarget", SceneLibMap.getEnd(scenelib.getXoscPath()).getXTarget());
-                jsonObject.put("yTarget", SceneLibMap.getEnd(scenelib.getXoscPath()).getYTarget());
+                WoPostion end = SceneLibMap.getEnd(scenelib.getXoscPath());
+                jsonObject.put("xTarget", end.getXTarget());
+                jsonObject.put("yTarget", end.getYTarget());
                 tjCaseDto.setTestTarget(jsonObject.toJSONString());
                 //tjCaseDto.setPartConfigSelects(partConfigSelects);
                 try {
