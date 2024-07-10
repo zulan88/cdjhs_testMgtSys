@@ -483,6 +483,11 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         result.put("taskId", taskSaveDto.getId());
         result.put("planRoute", mainTrajectories);
         List<CaseContinuousVo> caseContinuousVos = getCaseContinuousInfo(taskSaveDto.getId());
+        for (CaseContinuousVo caseContinuousVo : CollectionUtils.emptyIfNull(caseContinuousVos)) {
+            TjCase tjCase = tjCaseService.getById(caseContinuousVo.getCaseId());
+            caseContinuousVo.setEndTarget(tjCase.getTestTarget());
+        }
+
         result.put("cases", caseContinuousVos);
         Set<Integer> count = new HashSet<>();
         for (CaseContinuousVo caseContinuousVo : CollectionUtils.emptyIfNull(caseContinuousVos)) {

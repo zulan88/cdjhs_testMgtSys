@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import net.wanji.business.common.Constants;
@@ -412,11 +413,17 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                     tjCaseDto.setMapId(21);
                 }
                 tjCaseDto.setEvoNum(scenelib.getEvoNum());
-                JSONObject jsonObject = new JSONObject();
                 WoPostion end = SceneLibMap.getEnd(scenelib.getXoscPath());
-                jsonObject.put("xTarget", end.getXTarget());
-                jsonObject.put("yTarget", end.getYTarget());
-                tjCaseDto.setTestTarget(jsonObject.toJSONString());
+                double x1 = Double.parseDouble(end.getXTarget().split(",")[0]);
+                double x2 = Double.parseDouble(end.getXTarget().split(",")[1]);
+                double y1 = Double.parseDouble(end.getYTarget().split(",")[0]);
+                double y2 = Double.parseDouble(end.getYTarget().split(",")[1]);
+                JSONObject end1 = toBuildOpenXUtil.retotrans(x1, y1, proj, 0D);
+                JSONObject end2 = toBuildOpenXUtil.retotrans(x2, y2, proj, 0D);
+                JSONArray jsonArray = new JSONArray();
+                jsonArray.add(end1);
+                jsonArray.add(end2);
+                tjCaseDto.setTestTarget(jsonArray.toJSONString());
                 //tjCaseDto.setPartConfigSelects(partConfigSelects);
                 try {
                     caseService.saveCase(tjCaseDto);

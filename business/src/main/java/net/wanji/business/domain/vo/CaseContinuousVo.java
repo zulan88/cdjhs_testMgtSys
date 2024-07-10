@@ -43,4 +43,5 @@ public class CaseContinuousVo {
     private List<SitePoint> connectInfo;
     private String mapFile;
     private Integer mapId;
+    private String endTarget;
 }

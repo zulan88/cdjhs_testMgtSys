@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="net.wanji.business.mapper.TjScenelibMapper">
 
     <sql id="selectTjScenelibVo">
-        select id, tree_id, number, labels, scene_source, scene_status, zip_path, xodr_path, xosc_path, scene_desc, create_datetime, create_by, update_datetime, update_by, img_path, video_path, all_stage_labels, scene_detail_id from tj_scenelib
+        select id, tree_id, number, labels, scene_source, scene_status, zip_path, xodr_path, xosc_path, scene_desc, create_datetime, create_by, update_datetime, update_by, img_path, video_path, all_stage_labels, scene_detail_id, geojson_path, evo_num from tj_scenelib
     </sql>
 
     <select id="selectTjScenelibList" parameterType="net.wanji.business.entity.TjScenelib" resultType="net.wanji.business.entity.TjScenelib">
