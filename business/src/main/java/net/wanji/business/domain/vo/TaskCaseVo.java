@@ -63,6 +63,8 @@ public class TaskCaseVo extends TjTaskCase {
 
     private Integer mapId;
 
+    private String evaNum;
+
 
 
 }

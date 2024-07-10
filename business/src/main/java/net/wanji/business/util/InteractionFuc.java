@@ -66,22 +66,18 @@ public class InteractionFuc {
         // 获取任务的案例列表
         List<TaskCaseVo> taskCaseVos = taskListVo.getTaskCaseVos();
 
-        List<TjFragmentedSceneDetail> sceneDetails = new ArrayList<>();
+        List<SceneDetailVo> list = new ArrayList<>();
 
         for (TaskCaseVo taskCaseVo : taskCaseVos) {
             TjFragmentedSceneDetail sceneDetail = tjFragmentedSceneDetailService.getById(taskCaseVo.getSceneDetailId());
-            List<SitePoint> connect = gson.fromJson(taskCaseVo.getConnectInfo(), new TypeToken<List<SitePoint>>(){}.getType());
-            sceneDetail.setStartPoint(connect.get(0));
-            sceneDetail.setEndPoint(connect.get(connect.size()-1));
-            sceneDetails.add(sceneDetail);
-        }
-
-        // 将场景详情转换为VO对象列表
-        List<SceneDetailVo> list = sceneDetails.stream().map(item -> {
             SceneDetailVo sceneDetailVo = new SceneDetailVo();
-            BeanUtils.copyProperties(item, sceneDetailVo);
-            return sceneDetailVo;
-        }).collect(Collectors.toList());
+            BeanUtils.copyProperties(sceneDetail, sceneDetailVo);
+            List<SitePoint> connect = gson.fromJson(taskCaseVo.getConnectInfo(), new TypeToken<List<SitePoint>>(){}.getType());
+            sceneDetailVo.setStartPoint(connect.get(0));
+            sceneDetailVo.setEndPoint(connect.get(connect.size()-1));
+            sceneDetailVo.setEvoNum(Integer.valueOf(taskCaseVo.getEvaNum()));
+            list.add(sceneDetailVo);
+        }
 
         list.forEach(sceneDetailVo -> {
             String labels = sceneDetailVo.getLabel();

@@ -529,6 +529,8 @@ public class TjCaseServiceImpl extends ServiceImpl<TjCaseMapper, TjCase> impleme
             tjCase.setUpdatedBy(SecurityUtils.getUsername());
             tjCase.setCreatedBy(SecurityUtils.getUsername());
             tjCase.setCreatedDate(now);
+            tjCase.setMapId(tjCaseDto.getMapId());
+            tjCase.setEvaObject(String.valueOf(tjCaseDto.getEvoNum()));
             if(tjCaseDto.getIsGen()==null || tjCaseDto.getIsGen().equals(0)){
                 TjFragmentedSceneDetail sceneDetail = sceneDetailService.getById(tjCaseDto.getSceneDetailId());
                 if (ObjectUtils.isEmpty(sceneDetail)) {

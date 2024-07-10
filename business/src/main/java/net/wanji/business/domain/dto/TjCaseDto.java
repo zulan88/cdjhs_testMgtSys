@@ -54,4 +54,8 @@ public class TjCaseDto {
     private String remark;
 
     private Integer isGen;
+
+    private Integer mapId;
+
+    private Integer evoNum;
 }

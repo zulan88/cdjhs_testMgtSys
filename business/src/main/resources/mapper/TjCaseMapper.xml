@@ -91,6 +91,9 @@
             <if test="treeId != null and treeId > 0 ">
                 and c.tree_id = #{treeId}
             </if>
+            <if test="mapId != null" >
+                and c.map_id = #{mapId}
+            </if>
             <if test="caseNumber != null and caseNumber !='' ">
                 and c.case_number like concat('%',#{caseNumber},'%')
             </if>

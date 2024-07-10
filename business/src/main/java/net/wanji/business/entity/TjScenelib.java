@@ -101,4 +101,7 @@ public class TjScenelib
      * */
     @TableField("is_gen")
     private Integer isGen;
+
+    @TableField("evo_num")
+    private Integer evoNum;
 }

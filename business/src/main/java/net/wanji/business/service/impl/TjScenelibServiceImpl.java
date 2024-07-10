@@ -32,6 +32,7 @@ import net.wanji.business.schedule.PlaybackSchedule;
 import net.wanji.business.schedule.SceneLabelMap;
 import net.wanji.business.service.*;
 import net.wanji.business.util.AnalyzeOpenX;
+import net.wanji.business.util.SceneLibMap;
 import net.wanji.business.util.ToBuildOpenX;
 import net.wanji.business.util.ToBuildOpenXUtil;
 import net.wanji.common.common.SimulationTrajectoryDto;
@@ -306,6 +307,8 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
         sceneDetailDto.setRouteFile(filePath);
         sceneDetailDto.setNumber(tjScenelib.getNumber());
+        sceneDetailDto.setMapId(Integer.valueOf(tjScenelib.getGeojsonPath()));
+        sceneDetailDto.setRoadCondition(tjScenelib.getXoscPath());
 
         return tjFragmentedSceneDetailService.saveSceneDetailInfo(sceneDetailDto);
     }
@@ -382,6 +385,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         scenelibs.forEach(item -> {   //没有数据先插入数据
             List<CaseDetailVo> caseVos = caseMapper.selectCasesByScean(item.getId());
             if (caseVos.isEmpty()){
+                TjScenelib scenelib = this.getById(item.getId());
                 TjCaseDto tjCaseDto = new TjCaseDto();
                 tjCaseDto.setRemark("1");
                 tjCaseDto.setTreeId(53);
@@ -398,6 +402,12 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 //List<PartConfigSelect> partConfigSelects = new ArrayList<>();
                 //partConfigSelects.add(partConfigSelect);
                 tjCaseDto.setLabels(item.getLabels());
+                tjCaseDto.setMapId(Integer.valueOf(scenelib.getGeojsonPath()));
+                tjCaseDto.setEvoNum(scenelib.getEvoNum());
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("xTarget", SceneLibMap.getEnd(scenelib.getXoscPath()).getXTarget());
+                jsonObject.put("yTarget", SceneLibMap.getEnd(scenelib.getXoscPath()).getYTarget());
+                tjCaseDto.setTestTarget(jsonObject.toJSONString());
                 //tjCaseDto.setPartConfigSelects(partConfigSelects);
                 try {
                     caseService.saveCase(tjCaseDto);

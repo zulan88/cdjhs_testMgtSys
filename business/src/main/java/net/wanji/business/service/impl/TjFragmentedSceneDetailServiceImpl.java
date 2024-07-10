@@ -385,6 +385,7 @@ public class TjFragmentedSceneDetailServiceImpl
     @Override
     public Integer saveSceneDetailInfo(TjFragmentedSceneDetailDto sceneDetailDto) throws BusinessException {
         TjFragmentedSceneDetail detail = new TjFragmentedSceneDetail();
+        detail.setRoadCondition(sceneDetailDto.getRoadCondition());
         BeanUtils.copyBeanProp(detail, sceneDetailDto);
         if (ObjectUtils.isEmpty(sceneDetailDto.getId())) {
             detail.setNumber(StringUtils.isEmpty(sceneDetailDto.getNumber()) ? buildSceneNumber() : sceneDetailDto.getNumber());

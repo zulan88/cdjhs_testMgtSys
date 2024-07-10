@@ -22,4 +22,6 @@ public class SceneDetailVo extends TjFragmentedSceneDetail {
 
     private SceneTrajectoryBo sceneTrajectoryBo;
 
+    private Integer evoNum;
+
 }

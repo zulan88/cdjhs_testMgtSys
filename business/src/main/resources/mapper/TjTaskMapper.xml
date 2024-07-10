@@ -121,6 +121,7 @@
         <result property="mapFile" column="map_file" jdbcType="VARCHAR" />
         <result property="mapId" column="map_id" jdbcType="INTEGER" />
         <result property="connectInfo" column="connect_info" jdbcType="VARCHAR" />
+        <result property="evaNum" column="eva_object" jdbcType="VARCHAR" />
     </resultMap>
 
     <resultMap id="TaskCaseConfigResult" type="net.wanji.business.entity.TjTaskDataConfig">
@@ -245,6 +246,7 @@
                b.label,
                b.map_id,
                b.map_file,
+               b.eva_object,
                b.detail_info
         from tj_task_case ttc
                  left join (
@@ -254,7 +256,8 @@
                    tc.detail_info,
                    tc.map_id,
                    tc.map_file,
-                   sd.label
+                   sd.label,
+                   tc.eva_object
             from tj_case tc
             inner join tj_fragmented_scene_detail sd on tc.scene_detail_id = sd.id
         ) b on b.id = ttc.case_id

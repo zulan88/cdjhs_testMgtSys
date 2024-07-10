@@ -65,4 +65,6 @@ public class CaseQueryDto {
     private String userName;
 
     private Integer sellectOrAll;
+
+    private Integer mapId;
 }

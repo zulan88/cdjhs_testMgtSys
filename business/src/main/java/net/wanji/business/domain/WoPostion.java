@@ -13,6 +13,8 @@ public class WoPostion {
         this.type = type;
     }
 
+    public WoPostion(){}
+
     String id;
 
     String x;
@@ -22,5 +24,9 @@ public class WoPostion {
     String h;
 
     Integer type;
+
+    String xTarget;
+
+    String yTarget;
 
 }

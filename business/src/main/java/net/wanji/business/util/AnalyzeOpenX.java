@@ -71,9 +71,15 @@ public class AnalyzeOpenX {
                 //主车
                 if(index == 0){
                     List<WoPostion> mainPostions = new ArrayList<>();
-                    WoPostion mainPostion = parseCommentsFromXML(xocsPath);
-                    mainPostion.setId("A0");
-                    mainPostions.add(mainPostion);
+                    List<WoPostion> mainPostion = parseCommentsFromXML(xocsPath);
+                    for (WoPostion woPostion : mainPostion){
+                        if (woPostion.getX()!=null){
+                            woPostion.setId("A0");
+                            mainPostions.add(woPostion);
+                        }else {
+                            SceneLibMap.putEnd(xocsPath,woPostion);
+                        }
+                    }
                     Tjshape mainshape = new Tjshape();
                     mainshape.setDuration(0);
                     mainshape.setWoPostionList(mainPostions);
@@ -104,8 +110,8 @@ public class AnalyzeOpenX {
         }
     }
 
-    public  WoPostion parseCommentsFromXML(String filePath) {
-        WoPostion woPostion = null;
+    public  List<WoPostion> parseCommentsFromXML(String filePath) {
+        List<WoPostion> woPostion = null;
         try {
             File xmlFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -122,9 +128,9 @@ public class AnalyzeOpenX {
         return woPostion;
     }
 
-    private WoPostion traverseNodes(Node node) {
+    private List<WoPostion> traverseNodes(Node node) {
         NodeList nodeList = node.getChildNodes();
-        WoPostion woPostion = null;
+        List<WoPostion> woPostionList = new ArrayList<>();
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node currentNode = nodeList.item(i);
             if (currentNode.getNodeType() == Node.COMMENT_NODE) {
@@ -133,16 +139,20 @@ public class AnalyzeOpenX {
                 // 检查是否是我们感兴趣的注释
                 if (data.startsWith("[Initial State]")) {
                     System.out.println("Found Initial State Comment: " + data);
-                    woPostion = extractInitialState(data);
+                    woPostionList.add(extractInitialState(data));
+                }
+                if(data.startsWith("[Driving Task]")){
+                    System.out.println("Found Driving Task Comment: " + data);
+                    woPostionList.add(takeEndPosition(data));
                 }
             }
             // 如果当前节点下还有子节点，继续遍历
             if (currentNode.hasChildNodes()) {
-                WoPostion woPostion1 = traverseNodes(currentNode);
-                if(woPostion1 != null) return woPostion1;
+                woPostionList = traverseNodes(currentNode);
+                if(woPostionList.size() > 0) return woPostionList;
             }
         }
-        return woPostion;
+        return woPostionList;
     }
 
     private WoPostion extractInitialState(String comment) {
@@ -158,5 +168,39 @@ public class AnalyzeOpenX {
             woPostion = new WoPostion("0",xInit,yInit,headingInit,1);
         }
         return woPostion;
+    }
+
+    private WoPostion takeEndPosition(String comment) {
+        // 定义正则表达式
+        String patternX = "x_target = \\((\\d+\\.\\d+), (\\d+\\.\\d+)\\)";
+        String patternY = "y_target = \\((\\d+\\.\\d+), (\\d+\\.\\d+)\\)";
+
+        // 编译正则表达式
+        Pattern regexPatternX = Pattern.compile(patternX);
+        Pattern regexPatternY = Pattern.compile(patternY);
+
+        // 创建Matcher对象
+        Matcher matcherX = regexPatternX.matcher(comment);
+        Matcher matcherY = regexPatternY.matcher(comment);
+
+        // 查找匹配
+        if (matcherX.find() && matcherY.find()) {
+            // 提取x_target的值
+            double x1 = Double.parseDouble(matcherX.group(1));
+            double x2 = Double.parseDouble(matcherX.group(2));
+
+            // 提取y_target的值
+            double y1 = Double.parseDouble(matcherY.group(1));
+            double y2 = Double.parseDouble(matcherY.group(2));
+
+            WoPostion woPostion = new WoPostion();
+            // 输出结果
+            woPostion.setXTarget("x_target = (" + x1 + ", " + x2 + ")");
+            woPostion.setYTarget("y_target = (" + y1 + ", " + y2 + ")");
+            return woPostion;
+        } else {
+            System.out.println("未找到匹配的数据。");
+        }
+        return null;
     }
 }
