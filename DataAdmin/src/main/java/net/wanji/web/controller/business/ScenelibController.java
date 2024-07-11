@@ -137,6 +137,9 @@ public class ScenelibController extends BaseController {
 
     @PutMapping("/libstatus")
     public AjaxResult updatestatus(@RequestBody List<TjScenelib> scenelibs){
+        if(scenelibs.size()==0){
+            return AjaxResult.error("请选择场景");
+        }
         return toAjax(scenelibService.updateBatchandCase(scenelibs));
     }
 

@@ -200,6 +200,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 trajectoryDetailBo.setLongitude(retotrans.getString("longitude"));
                 trajectoryDetailBo.setLatitude(retotrans.getString("latitude"));
                 trajectoryDetailBo.setSpeed(0.0);
+                trajectoryDetailBo.setHeading(retotrans.getString("degree"));
                 Double time = Double.valueOf(wo.getTime());
                 if (time < 0) {
 //                    System.out.println("时间"+item.getDuration());
@@ -476,7 +477,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             }
             tjFragmentedSceneDetailService.updateById(tjFragmentedSceneDetail);
         }
-        return tjScenelibMapper.updateTjScenelib(tjScenelib);
+        return tjScenelibMapper.updateById(tjScenelib);
     }
 
     /**

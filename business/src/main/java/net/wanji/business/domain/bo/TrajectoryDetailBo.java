@@ -35,6 +35,8 @@ public class TrajectoryDetailBo implements Serializable {
 
     private String date;
 
+    private String heading;
+
     public void setPosition(String position) {
         if (StringUtils.isNotEmpty(position)) {
             this.position = position;
