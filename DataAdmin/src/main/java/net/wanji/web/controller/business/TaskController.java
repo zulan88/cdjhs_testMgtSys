@@ -14,15 +14,14 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.wanji.business.common.Constants.TaskStatusEnum;
-import net.wanji.business.domain.bo.SaveCustomIndexWeightBo;
-import net.wanji.business.domain.bo.SaveCustomScenarioWeightBo;
-import net.wanji.business.domain.bo.SaveTaskSchemeBo;
-import net.wanji.business.domain.bo.TaskBo;
+import net.wanji.business.domain.bo.*;
 import net.wanji.business.domain.dto.RoutingPlanDto;
 import net.wanji.business.domain.dto.TaskDto;
 import net.wanji.business.domain.dto.device.TaskSaveDto;
 import net.wanji.business.domain.param.TessTrackParam;
+import net.wanji.business.domain.vo.ConTrace;
 import net.wanji.business.domain.vo.PlatformSSDto;
+import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.domain.vo.TaskListVo;
 import net.wanji.business.domain.vo.task.infinity.SelectRecordIdVo;
 import net.wanji.business.entity.TjTask;
@@ -32,6 +31,8 @@ import net.wanji.business.entity.infity.TjInfinityTask;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.service.*;
 import net.wanji.business.service.impl.TjInfinityTaskServiceImpl;
+import net.wanji.business.util.InteractionFuc;
+import net.wanji.common.common.SimulationTrajectoryDto;
 import net.wanji.common.constant.CacheConstants;
 import net.wanji.common.constant.HttpStatus;
 import net.wanji.common.core.controller.BaseController;
@@ -40,6 +41,8 @@ import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
+import net.wanji.common.utils.file.FileUploadUtils;
+import net.wanji.common.utils.file.FileUtils;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
@@ -85,6 +88,9 @@ public class TaskController extends BaseController {
 
     @Autowired
     private TjInfinityTaskService tjInfinityTaskService;
+
+    @Autowired
+    private InteractionFuc interactionFuc;
 
     @ApiOperationSort(1)
     @ApiOperation(value = "1.节点初始化")
@@ -612,5 +618,27 @@ public class TaskController extends BaseController {
     @PostMapping("/taskstatus")
     public AjaxResult enable(@RequestBody List<TjTask> tjTasks) {
         return AjaxResult.success(tjTaskService.updateBatchById(tjTasks));
+    }
+
+    @GetMapping("/routingPlanStop")
+    public AjaxResult routingPlanStop() {
+        //前端断开websocket时触发停止逻辑
+        return AjaxResult.success();
+    }
+
+    @GetMapping("/preview")
+    public AjaxResult preview(@RequestParam("taskId") Integer taskId) throws IOException {
+        TjTask tjTask = tjTaskService.getById(taskId);
+        String routeFile = FileUploadUtils.getAbsolutePathFileName(tjTask.getMainPlanFile());
+        List<SimulationTrajectoryDto> trajectories = FileUtils.readOriTrajectory(routeFile);
+        ConTrace conTrace = new ConTrace();
+        conTrace.setMainPoints(trajectories);
+        List<SceneTrajectoryBo> sceneTrajectoryBos = new ArrayList<>();
+        List<SceneDetailVo> sceneDetailVos = interactionFuc.findSceneDetail(taskId);
+        for (SceneDetailVo sceneDetailVo : sceneDetailVos) {
+            sceneTrajectoryBos.add(interactionFuc.getSceneTrajectory(sceneDetailVo.getId()));
+        }
+        conTrace.setSceneTrajectoryBoList(sceneTrajectoryBos);
+        return AjaxResult.success(conTrace);
     }
 }

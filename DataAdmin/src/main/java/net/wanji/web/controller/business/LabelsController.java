@@ -4,13 +4,14 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
 import net.wanji.business.domain.Label;
-import net.wanji.business.domain.vo.FragmentedScenesDetailVo;
-import net.wanji.business.domain.vo.SceneDetailVo;
-import net.wanji.business.domain.vo.TreeVo;
+import net.wanji.business.domain.dto.TaskDto;
+import net.wanji.business.domain.vo.*;
+import net.wanji.business.entity.TjFragmentedSceneDetail;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.schedule.SceneLabelMap;
 import net.wanji.business.service.ILabelsService;
 import net.wanji.business.service.TjFragmentedSceneDetailService;
+import net.wanji.business.service.TjTaskService;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class LabelsController extends BaseController {
 
     @Autowired
     private SceneLabelMap sceneLabelMap;
+
+    @Autowired
+    private TjTaskService tjTaskService;
 
     @ApiOperationSort(1)
     @ApiOperation(value = "1.列表页查询（输出为树形结构）")
@@ -257,25 +261,44 @@ public class LabelsController extends BaseController {
                 sceneMap.put(tlabel.getId(), prelabel + "-" + tlabel.getName());
             }
         }
-        List<String> data = new ArrayList<>();
+        List<FragmentedScenesDetailVo> res = new ArrayList<>();
         if (id != null) {
-            FragmentedScenesDetailVo detailVo = tjFragmentedSceneDetailService.getDetailVo(id,null);
-            List<String> labels = detailVo.getLabelList();
-            for (String str : labels) {
-                try {
-                    long intValue = Long.parseLong(str);
-                    if(sceneMap.get(intValue)!=null) {
-                        data.add(sceneMap.get(intValue));
-                    }
-                } catch (NumberFormatException e) {
-                    // 处理无效的整数字符串
-                }
+            TaskDto taskDto = new TaskDto();
+            taskDto.setId(id);
+
+            // 调用服务获取任务
+            TaskListVo taskListVo= tjTaskService.pageList(taskDto).get(0);
+
+            // 如果任务的案例列表为空，则直接返回null
+            if (taskListVo.getTaskCaseVos().size()==0) {
+                return null;
             }
-            detailVo.setLabelList(data);
-            detailVo.setLabel(null);
-            return AjaxResult.success(detailVo);
+
+            // 获取任务的案例列表
+            List<TaskCaseVo> taskCaseVos = taskListVo.getTaskCaseVos();
+
+            List<TjFragmentedSceneDetail> sceneDetails = new ArrayList<>();
+
+            for (TaskCaseVo taskCaseVo : taskCaseVos) {
+                List<String> data = new ArrayList<>();
+                FragmentedScenesDetailVo detailVo = tjFragmentedSceneDetailService.getDetailVo(taskCaseVo.getSceneDetailId(), null);
+                List<String> labels = detailVo.getLabelList();
+                for (String str : labels) {
+                    try {
+                        long intValue = Long.parseLong(str);
+                        if (sceneMap.get(intValue) != null) {
+                            data.add(sceneMap.get(intValue));
+                        }
+                    } catch (NumberFormatException e) {
+                        // 处理无效的整数字符串
+                    }
+                }
+                detailVo.setLabelList(data);
+                detailVo.setLabel("");
+                res.add(detailVo);
+            }
         }
-        return AjaxResult.error("详情数据查询失败");
+        return AjaxResult.success(res);
     }
 
     @ApiOperationSort(8)

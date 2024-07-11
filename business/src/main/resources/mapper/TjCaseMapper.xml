@@ -79,7 +79,8 @@
         sd.img_path,
         sd.scene_desc,
         sd.labels,
-        sd.scene_source
+        sd.scene_source,
+        sd.evo_num
 
 
         from tj_case c
@@ -108,6 +109,9 @@
             </if>
             <if test="label != null and label != ''">
                 and find_in_set(#{label}, sd.label) > 0
+            </if>
+            <if test="sceneSource != null and sceneSource != ''">
+                and sd.scene_source = #{sceneSource}
             </if>
             <if test="sceneDetailIds != null and sceneDetailIds.size() > 0">
                 and c.scene_detail_id in

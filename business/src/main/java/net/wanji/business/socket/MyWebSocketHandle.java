@@ -182,6 +182,8 @@ public class MyWebSocketHandle extends TextWebSocketHandler {
             restService.stopTessNg(detailVo.getIp(), detailVo.getServiceAddress(), key,1);
         } else if (clientType == ChannelBuilder.INFINITE_SIMULATION){
             restService.stopTessNg(detailVo.getIp(), detailVo.getServiceAddress(), key,0);
+        }else if (clientType == ChannelBuilder.PLAN){
+            restService.stopTessNg(detailVo.getIp(), detailVo.getServiceAddress(), key,1);
         }
     }
 }

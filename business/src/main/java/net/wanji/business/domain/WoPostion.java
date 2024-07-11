@@ -29,4 +29,6 @@ public class WoPostion {
 
     String yTarget;
 
+    String time;
+
 }

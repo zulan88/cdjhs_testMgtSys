@@ -1,5 +1,6 @@
 package net.wanji.business.util;
 
+import net.wanji.business.domain.CdShape;
 import net.wanji.business.domain.Tjshape;
 import net.wanji.business.domain.WoPostion;
 import net.wanji.openx.generated.*;
@@ -211,5 +212,74 @@ public class AnalyzeOpenX {
         }
 
         return coordinates;
+    }
+
+
+    public List<CdShape> cdParseXML(String xocsPath) {
+        File file = new File(xocsPath);
+        JAXBContext jaxbContext = null;
+        try {
+            jaxbContext = JAXBContext.newInstance(OpenScenario.class);
+            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+            OpenScenario openScenario = (OpenScenario) jaxbUnmarshaller.unmarshal(file);
+            HashMap<String, CdShape> woPostionMap = new LinkedHashMap<>(20);
+            Double mintime = 500.0;
+            for (Act act : openScenario.getStoryboard().getStory().get(0).getAct()){
+                Polyline polyline = act.getManeuverGroup().get(0).getManeuver().get(0).getEvent().get(0).getAction().get(0).getPrivateAction().getRoutingAction().getFollowTrajectoryAction().getTrajectory().getShape().getPolyline();
+                Vertex vertex = polyline.getVertex().get(0);
+                if(mintime > Double.parseDouble(vertex.getTime())){
+                    mintime = Double.parseDouble(vertex.getTime());
+                }
+            }
+            for (Act act : openScenario.getStoryboard().getStory().get(0).getAct()){
+                String enity = act.getManeuverGroup().get(0).getActors().getEntityRef().get(0).getEntityRef();
+                String name = "car";
+                ScenarioObject scenarioObject = openScenario.getEntities().getScenarioObject().stream().filter(e -> e.getName().equals(enity)).findFirst().get();
+                if (scenarioObject.getVehicle() != null){
+                    name = scenarioObject.getVehicle().getVehicleCategory();
+                }else if (scenarioObject.getPedestrian() != null){
+                    name = scenarioObject.getPedestrian().getPedestrianCategory();
+                }
+                Polyline polyline = act.getManeuverGroup().get(0).getManeuver().get(0).getEvent().get(0).getAction().get(0).getPrivateAction().getRoutingAction().getFollowTrajectoryAction().getTrajectory().getShape().getPolyline();
+                CdShape cdShape = new CdShape();
+                cdShape.setId(enity);
+                List<WoPostion> woPostions = new ArrayList<>();
+                for (Vertex vertex : polyline.getVertex()){
+                    WorldPosition worldPosition = vertex.getPosition().getWorldPosition();
+                    Double time = Double.parseDouble(vertex.getTime()) - mintime;
+                    WoPostion woPostion = new WoPostion(enity,worldPosition.getX(), worldPosition.getY(), worldPosition.getH(), taketype(name));
+                    woPostion.setTime(String.format("%.1f", time));
+                    woPostions.add(woPostion);
+                }
+                cdShape.setWoPostionList(woPostions);
+                woPostionMap.put(enity,cdShape);
+            }
+            List<CdShape> cdShapes = new ArrayList<>();
+            //主车
+            List<WoPostion> mainPostions = new ArrayList<>();
+            List<WoPostion> mainPostion = parseCommentsFromXML(xocsPath);
+            for (WoPostion woPostion : mainPostion){
+                if (woPostion.getX()!=null){
+                    woPostion.setId("A0");
+                    woPostion.setTime("0");
+                    mainPostions.add(woPostion);
+                }else {
+                    SceneLibMap.putEnd(xocsPath,woPostion);
+                }
+            }
+            CdShape mainshape = new CdShape();
+            mainshape.setWoPostionList(mainPostions);
+            mainshape.setId("A0");
+            cdShapes.add(mainshape);
+
+            for (String key : woPostionMap.keySet()){
+                cdShapes.add(woPostionMap.get(key));
+            }
+
+            return cdShapes;
+
+        } catch (JAXBException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

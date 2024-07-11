@@ -142,7 +142,11 @@ public class ScenelibController extends BaseController {
 
     @DeleteMapping("/lib/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids) throws BusinessException {
-        return toAjax(scenelibService.deleteTjScenelibByIds(ids));
+        int res = scenelibService.deleteTjScenelibByIds(ids);
+        if (res == 0){
+            return AjaxResult.error("启用状态的场景无法删除");
+        }
+        return AjaxResult.success();
     }
 
     @GetMapping("/init")

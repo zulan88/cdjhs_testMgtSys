@@ -421,7 +421,8 @@ public class TjFragmentedSceneDetailServiceImpl
                 : null);
         //写入文件，将文件地址入库存储
         SceneTrajectoryBo sceneTrajectoryBo = sceneDetailDto.getTrajectoryJson().buildId();
-        String filePath = WanjiConfig.getUploadPath()+"TrajectoryJson"+System.currentTimeMillis()+".txt";
+        String forder = WanjiConfig.getScenePath() + File.separator + DateUtils.datePath();
+        String filePath = forder + File.separator +"TrajectoryJson"+System.currentTimeMillis()+".txt";
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath), "UTF-8"))) {
             writer.write(sceneTrajectoryBo.toJsonString());
         } catch (IOException e) {

@@ -67,4 +67,6 @@ public class CaseQueryDto {
     private Integer sellectOrAll;
 
     private Integer mapId;
+
+    private Integer sceneSource;
 }

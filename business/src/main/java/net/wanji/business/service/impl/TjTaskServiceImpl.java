@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import net.wanji.business.common.Constants;
 import net.wanji.business.common.Constants.ChannelBuilder;
@@ -58,6 +59,7 @@ import net.wanji.business.schedule.SceneLabelMap;
 import net.wanji.business.service.*;
 import net.wanji.business.trajectory.RoutingPlanConsumer;
 import net.wanji.business.util.CustomMergeStrategy;
+import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.core.domain.SimpleSelect;
 import net.wanji.common.core.domain.entity.SysDictData;
@@ -92,7 +94,9 @@ import org.springframework.util.ObjectUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -127,7 +131,6 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
     private final RedisCache redisCache;
     private final TjTaskCaseRecordService taskCaseRecordService;
     private final TjCasePartConfigService tjCasePartConfigService;
-
     @Resource
     private TjCaseMapper caseMapper;
     @Resource
@@ -267,7 +270,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 taskCaseVo.setRoleConfigSort(roleConfigSort.toString());
             }
 
-            taskVo.setHistoryRecords( getTaskRecords(taskVo));
+            taskVo.setHistoryRecords(getTaskRecords(taskVo));
         }
 
         return pageList;
@@ -275,10 +278,10 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
 
     private List<Map<String, Object>> getTaskRecords(TaskListVo taskVo) {
         List<Map<String, Object>> records = taskCaseRecordService.selectTaskRecordInfo(
-            taskVo.getId(), taskVo.getSelectedRecordId());
+                taskVo.getId(), taskVo.getSelectedRecordId());
         for (Map<String, Object> record : records) {
             record.put("isSelected", 1 == Integer.valueOf(
-                String.valueOf(record.get("isSelected"))));
+                    String.valueOf(record.get("isSelected"))));
         }
         return records;
     }
@@ -354,7 +357,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         deviceDetailDto.setSupportRoles(PartRole.AV);
         deviceDetailDto.setIsInner(0);
         String username = SecurityUtils.getUsername();
-        if(!Constants.UserInfo.ADMIN_NAME.equals(username)){
+        if (!Constants.UserInfo.ADMIN_NAME.equals(username)) {
             deviceDetailDto.setCreatedBy(username);
         }
         List<DeviceDetailVo> avDevices = deviceDetailMapper.selectByCondition(deviceDetailDto);
@@ -495,7 +498,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         }
         if (count.size() == 1) {
             result.put("plan", true);
-        }else{
+        } else {
             result.put("plan", false);
         }
         return result;
@@ -503,16 +506,16 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
 
     private TjTaskDataConfig getTaskAvConfig(Integer id) {
         List<TjTaskDataConfig> tjTaskDataConfigList = tjTaskDataConfigService.list(
-            new LambdaQueryWrapper<TjTaskDataConfig>().eq(
-                    TjTaskDataConfig::getTaskId, id)
-                .eq(TjTaskDataConfig::getType, PartRole.AV)
-                .orderByDesc(TjTaskDataConfig::getId));
+                new LambdaQueryWrapper<TjTaskDataConfig>().eq(
+                                TjTaskDataConfig::getTaskId, id)
+                        .eq(TjTaskDataConfig::getType, PartRole.AV)
+                        .orderByDesc(TjTaskDataConfig::getId));
         int size = tjTaskDataConfigList.size();
         if (size > 0) {
             if (size > 1) {
                 for (int i = 1; i < size; i++) {
                     tjTaskDataConfigService.removeById(
-                        tjTaskDataConfigList.get(i));
+                            tjTaskDataConfigList.get(i));
                 }
             }
             return tjTaskDataConfigList.get(0);
@@ -575,7 +578,32 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             }
             // 主车轨迹（仿真验证轨迹）
             try {
-                List<TrajectoryValueDto> mainTrajectories = routeService.readMainTrajectoryFromOriRoute(t.getRouteFile());
+                BufferedReader reader = new BufferedReader(new FileReader(caseDetail.getRouteFile()));
+                // 使用try-with-resources自动关闭reader
+                StringBuilder content = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    content.append(line);
+                }
+
+                // 使用Gson解析JSON字符串为SceneTrajectoryBo对象
+                Gson gson = new Gson();
+                SceneTrajectoryBo sceneTrajectoryBo = gson.fromJson(content.toString(), SceneTrajectoryBo.class);
+                SitePoint start = new SitePoint();
+                ParticipantTrajectoryBo participantTrajectoryBo = sceneTrajectoryBo.getParticipantTrajectories().stream().filter(item -> item.getRole().equals(PartRole.AV)).findFirst().orElse(null);
+                if (participantTrajectoryBo == null) {
+                    return caseContinuousVo;
+                }
+                TrajectoryDetailBo trajectoryDetailBo = participantTrajectoryBo.getTrajectory().get(0);
+                start.setLatitude(trajectoryDetailBo.getLatitude());
+                start.setLongitude(trajectoryDetailBo.getLongitude());
+                List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
+
+                mainTrajectories.add(buildTrajectoryValueDto(start, 0));
+
+                caseContinuousVo.setMainTrajectory(mainTrajectories);
+                caseContinuousVo.setStartPoint(start);
+                caseContinuousVo.setEndPoint(start);
                 caseContinuousVo.setMainTrajectory(mainTrajectories);
                 caseContinuousVo.setStartPoint(mainTrajectories.get(0));
                 caseContinuousVo.setEndPoint(mainTrajectories.get(mainTrajectories.size() - 1));
@@ -853,7 +881,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
 //            svDeviceDetail = deviceDetailMapper.selectById(svConfig.getDeviceId());
 //        }else {
         svDeviceDetail = deviceDetailMapper.selectOne(new LambdaQueryWrapper<TjDeviceDetail>()
-                    .eq(TjDeviceDetail::getSupportRoles, "mvSimulation"));
+                .eq(TjDeviceDetail::getSupportRoles, "mvSimulation"));
 //        }
         String channel = ChannelBuilder.buildRoutingPlanChannel(SecurityUtils.getUsername(), task.getId());
         Map<String, Object> params = buildRoutingPlanParam(task.getId(), routingPlanDto.getCases());
@@ -882,19 +910,19 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             // 主车轨迹
             try {
 //                List<TrajectoryValueDto> res = routeService.readMainTrajectoryFromOriRoute(tc.getRouteFile());
-                Integer speed = 15;
+                Integer speed = 60;
 //                if(res.size()>0){
 //                    speed = res.get(0).getSpeed();
 //                }
-                if(caseContinuousVo.getConnectInfo().size() == 0){
+                if (caseContinuousVo.getConnectInfo().size() == 0) {
                     throw new BusinessException("未置场景轨迹");
                 }
                 List<SitePoint> sitePoints = caseContinuousVo.getConnectInfo();
-                TrajectoryValueDto start = buildTrajectoryValueDto(sitePoints.get(0),speed);
-                TrajectoryValueDto end = buildTrajectoryValueDto(sitePoints.get(sitePoints.size()-1),speed);
+                TrajectoryValueDto start = buildTrajectoryValueDto(sitePoints.get(0), speed);
+                TrajectoryValueDto end = buildTrajectoryValueDto(sitePoints.get(sitePoints.size() - 1), speed);
                 List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
-                for (SitePoint sitePoint : sitePoints){
-                    mainTrajectories.add(buildTrajectoryValueDto(sitePoint,speed));
+                for (SitePoint sitePoint : sitePoints) {
+                    mainTrajectories.add(buildTrajectoryValueDto(sitePoint, speed));
                 }
                 caseContinuousVo.setMainTrajectory(mainTrajectories);
                 caseContinuousVo.setStartPoint(start);
@@ -1130,31 +1158,31 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
     public boolean taskDelete(Integer taskId) {
         // 配置
         tjTaskDataConfigService.remove(
-            new LambdaQueryWrapper<TjTaskDataConfig>().eq(
-                TjTaskDataConfig::getTaskId, taskId));
+                new LambdaQueryWrapper<TjTaskDataConfig>().eq(
+                        TjTaskDataConfig::getTaskId, taskId));
         // 测试用例
         tjTaskCaseService.remove(
-            new LambdaQueryWrapper<TjTaskCase>().eq(TjTaskCase::getTaskId,
-                taskId));
+                new LambdaQueryWrapper<TjTaskCase>().eq(TjTaskCase::getTaskId,
+                        taskId));
         // 标签
         tjTaskMapper.deleteCustomScenarioWeightByTaskId(String.valueOf(taskId));
 
         // 历史记录
         List<TjTaskCaseRecord> tjTaskCaseRecords = taskCaseRecordService.list(
-            new LambdaQueryWrapper<TjTaskCaseRecord>().eq(
-                TjTaskCaseRecord::getTaskId, taskId));
+                new LambdaQueryWrapper<TjTaskCaseRecord>().eq(
+                        TjTaskCaseRecord::getTaskId, taskId));
         // 记录文件
         if (CollectionUtils.isNotEmpty(tjTaskCaseRecords)) {
             for (TjTaskCaseRecord tjTaskCaseRecord : tjTaskCaseRecords) {
                 String routeFile = tjTaskCaseRecord.getRouteFile();
                 if (StringUtils.isNotEmpty(routeFile)) {
                     FileUtils.deleteFile(
-                        FileUploadUtils.getAbsolutePathFileName(routeFile));
+                            FileUploadUtils.getAbsolutePathFileName(routeFile));
                 }
                 String evaluatePath = tjTaskCaseRecord.getEvaluatePath();
                 if (StringUtils.isNotEmpty(evaluatePath)) {
                     FileUtils.deleteFile(
-                        FileUploadUtils.getAbsolutePathFileName(evaluatePath));
+                            FileUploadUtils.getAbsolutePathFileName(evaluatePath));
                 }
 
                 taskCaseRecordService.removeById(tjTaskCaseRecord);

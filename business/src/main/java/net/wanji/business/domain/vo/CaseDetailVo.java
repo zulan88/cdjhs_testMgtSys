@@ -55,4 +55,7 @@ public class CaseDetailVo extends CaseSceneVo {
 
     @ApiModelProperty("角色配置选择")
     private List<PartConfigSelect> partConfigSelects;
+
+    @ApiModelProperty("权重")
+    private Integer evoNum;
 }
