@@ -95,6 +95,7 @@ public interface Constants {
          */
         public static final String TESTING_CHANNEL_TEMPLATE = "{}_{}_{}_{}_{}";
         public static final String SIMULATION_CHANNEL_TEMPLATE = "{}_{}_{}";
+        public static final String CDJHS_EVALUATION_KAFKA_TOPIC_TEMPLATE = "CDJHS_EVALUATION_TASK_{}";
         public static final int SCENE_PREVIEW = 1;
         public static final int SIMULATION = 2;
         public static final int REAL = 3;
@@ -293,6 +294,15 @@ public interface Constants {
          */
         public static String buildTaskEvaluateChannel(String username, Integer taskId) {
             return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, 0, TASK, EVALUATE_SUFFIX);
+        }
+
+        /**
+         * 创建济达评分kafkaTopic
+         * @param taskId
+         * @return
+         */
+        public static String buildTaskEvaluationKafkaTopic(Long taskId){
+            return StringUtils.format(CDJHS_EVALUATION_KAFKA_TOPIC_TEMPLATE, taskId);
         }
     }
 

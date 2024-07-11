@@ -1,5 +1,6 @@
 package net.wanji.business.exercise;
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
@@ -45,7 +46,11 @@ public class ExerciseHandler {
 
     public static LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = new LinkedBlockingQueue<>(50);
 
+    public static LinkedBlockingQueue<CdjhsExerciseRecord> tempTaskQueue = new LinkedBlockingQueue<>(5);
+
     public static AtomicBoolean qualified = new AtomicBoolean(true);
+
+    public static AtomicBoolean tempQualified = new AtomicBoolean(true);
 
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 5,
             10, TimeUnit.SECONDS,
@@ -105,7 +110,9 @@ public class ExerciseHandler {
     @Autowired
     private InteractionFuc interactionFuc;
 
-    //待配置到配置文件中
+    @Autowired
+    private TimeoutConfig timeoutConfig;
+
     @Value("${image.length.thresold}")
     private Integer imageLengthThresold;
 
@@ -121,6 +128,9 @@ public class ExerciseHandler {
     @Value("${trajectory.topic}")
     private String kafkaTopic;
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String kafkaHost;
+
 
     @PostConstruct
     public void init(){
@@ -131,7 +141,7 @@ public class ExerciseHandler {
                         //选择空闲且没有被占用的域控下发练习
                         String uniques = "";
                         for (String device : idleDeviceMap.keySet()) {
-                            if (!occupationMap.containsKey(device)) {
+                            if (!occupationMap.containsKey(device) && !device.equals("YK001")) {
                                 uniques = device;
                                 break;
                             }
@@ -141,10 +151,12 @@ public class ExerciseHandler {
                             occupationMap.put(uniques, record.getId());//占用该域控
 
                             TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
-                                    tessIp, tessPort, radius, kafkaTopic, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                                    tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
                                     redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
-                                    restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer, tjTaskMapper, interactionFuc);
+                                    restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
+                                    tjTaskMapper, interactionFuc, timeoutConfig);
                             executor.submit(taskExercise);
+
                         }
                     }
                 }catch (Exception e){
@@ -154,5 +166,38 @@ public class ExerciseHandler {
             }
         });
         thread.start();
+
+
+        Thread tempConsumeThread = new Thread(() -> {
+            while (true) {
+                try {
+                    if(!idleDeviceMap.isEmpty()){
+                        String uniques = "";
+                        for(String device: idleDeviceMap.keySet()){
+                            if(!occupationMap.containsKey(device) && device.equals("YK001")){
+                                uniques = device;
+                                break;
+                            }
+                        }
+
+                        if(StringUtils.isNotEmpty(uniques) && tempQualified.get()){
+                            CdjhsExerciseRecord record = tempTaskQueue.take();
+                            occupationMap.put(uniques, record.getId());//占用该域控
+
+                            TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
+                                    tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                                    redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
+                                    restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
+                                    tjTaskMapper, interactionFuc, timeoutConfig);
+                            executor.submit(taskExercise);
+                        }
+                    }
+                }catch (Exception e){
+                    log.info("临时消费线程报错");
+                    e.printStackTrace();
+                }
+            }
+        });
+        tempConsumeThread.start();
     }
 }

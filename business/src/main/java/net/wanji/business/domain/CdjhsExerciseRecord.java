@@ -101,6 +101,10 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     private String evaluationOutput;
 
+    private String networkId;
+
+    private String evaluationUrl;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -303,6 +307,22 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setEvaluationOutput(String evaluationOutput) {
         this.evaluationOutput = evaluationOutput;
+    }
+
+    public String getNetworkId() {
+        return networkId;
+    }
+
+    public void setNetworkId(String networkId) {
+        this.networkId = networkId;
+    }
+
+    public String getEvaluationUrl() {
+        return evaluationUrl;
+    }
+
+    public void setEvaluationUrl(String evaluationUrl) {
+        this.evaluationUrl = evaluationUrl;
     }
 
     @Override

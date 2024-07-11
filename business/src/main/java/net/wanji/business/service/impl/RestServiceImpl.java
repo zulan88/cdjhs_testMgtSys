@@ -2,6 +2,8 @@ package net.wanji.business.service.impl;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.wanji.business.common.Constants.YN;
 import net.wanji.business.domain.TrafficFlow;
 import net.wanji.business.domain.bo.SaveCustomIndexWeightBo;
@@ -21,6 +23,8 @@ import net.wanji.business.domain.vo.SceneIndexSchemeVo;
 import net.wanji.business.domain.vo.SceneWeightDetailsVo;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
+import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreateDto;
+import net.wanji.business.exercise.dto.jidaevaluation.network.NetworkCreateDto;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.SendTessNgRequestService;
 import net.wanji.common.utils.SecurityUtils;
@@ -121,8 +125,13 @@ public class RestServiceImpl implements RestService {
     @Value("${algorithm.url}")
     private String algorithmUrl;
 
+    @Value("${tess.networkCreate}")
+    private String networkCreateUrl;
 
+    @Value("${tess.evaluationCreate}")
+    private String evaluationCreateUrl;
 
+    private static Gson gson = new GsonBuilder().create();
 
     @Resource
     private SendTessNgRequestService sendTessNgRequestService;
@@ -162,6 +171,58 @@ public class RestServiceImpl implements RestService {
             log.error("远程服务调用失败:{}", e);
         }
         return 0;
+    }
+
+    @Override
+    public String createNetwork(NetworkCreateDto networkCreateDto) {
+        String url = networkCreateUrl;
+        log.info("新建路网接口请求url:{}", url);
+        try {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            String json = gson.toJson(networkCreateDto);
+            HttpEntity<String> resultHttpEntity = new HttpEntity<>(json, httpHeaders);
+            log.info("新建路网接口请求参数: {}", json);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(url, HttpMethod.POST, resultHttpEntity, String.class);
+            if(response.getStatusCodeValue() == 200){
+                log.info("新建路网接口返回参数: {}", response.getBody());
+                JSONObject result = JSONObject.parseObject(response.getBody());
+                if(Objects.nonNull(result) && result.getIntValue("status") == 200){
+                    return result.getString("networkId");
+                }
+                log.info("新建路网接口调用失败: {}", result.getString("message"));
+            }
+        }catch (Exception e){
+            log.error("新建路网记录接口调用失败", e);
+        }
+        return null;
+    }
+
+    @Override
+    public String createEvaluation(EvaluationCreateDto evaluationCreateDto) {
+        String url = evaluationCreateUrl;
+        log.info("新建评价记录接口请求url:{}", url);
+        try {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            String json = gson.toJson(evaluationCreateDto);
+            HttpEntity<String> resultHttpEntity = new HttpEntity<>(json, httpHeaders);
+            log.info("新建评价记录接口请求参数: {}", json);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(url, HttpMethod.POST, resultHttpEntity, String.class);
+            if(response.getStatusCodeValue() == 200){
+                log.info("新建评价记录接口返回参数: {}", response.getBody());
+                JSONObject result = JSONObject.parseObject(response.getBody());
+                if(Objects.nonNull(result) && result.getIntValue("status") == 200){
+                    return result.getString("evaluationUrl");
+                }
+                log.info("新建评价记录接口调用失败: {}", result.getString("message"));
+            }
+        }catch (Exception e){
+            log.error("新建评价记录接口调用失败", e);
+        }
+        return null;
     }
 
     @Override

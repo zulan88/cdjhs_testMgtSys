@@ -22,6 +22,8 @@ public class ToLocalDto {
   private String fileName;
   private Integer fileId;
   private FileWriteRunnable toLocalThread;
+  private String kafkaTopic;
+  private String mainVehicleId;
 
   public ToLocalDto(Integer taskId, Integer caseId) {
     this.taskId = taskId;
@@ -40,6 +42,15 @@ public class ToLocalDto {
     this.caseId = caseId;
     this.fileName = fileName;
     this.fileId = fileId;
+  }
+
+  public ToLocalDto(Integer taskId, Integer caseId, String fileName,
+                    Integer fileId, String kafkaTopic) {
+    this.taskId = taskId;
+    this.caseId = caseId;
+    this.fileName = fileName;
+    this.fileId = fileId;
+    this.kafkaTopic = kafkaTopic;
   }
 
   @Override

@@ -58,6 +58,7 @@ public class WebSocketManage {
     public static void sendInfo(String key, String message) {
         if (!CLIENTS.containsKey(key)) {
             log.error(StringUtils.format("sendInfo:客户端{}不存在", key));
+            CLIENTS.remove(key);
             return;
         }
         CLIENTS.get(key).sendMessage(message);

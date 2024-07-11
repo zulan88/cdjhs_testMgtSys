@@ -54,6 +54,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     private static ReentrantLock lock = new ReentrantLock();
 
+    private static ReentrantLock tempLock = new ReentrantLock();
+
     /**
      * 查询练习记录
      * 
@@ -107,17 +109,33 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Override
     public void putIntoTaskQueue(CdjhsExerciseRecord record){
-        lock.lock();
-        try {
-            int size = ExerciseHandler.taskQueue.size();
-            ExerciseHandler.taskQueue.put(record);
-            record.setStatus(TaskStatusEnum.WAITING.getStatus());
-            record.setWaitingNum(size);
-            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-        }catch (Exception e){
-            e.printStackTrace();
-        }finally {
-            lock.unlock();
+        String name = record.getUserName();
+        if(name.equals("testuser")){
+            tempLock.lock();
+            try {
+                int size = ExerciseHandler.tempTaskQueue.size();
+                ExerciseHandler.tempTaskQueue.put(record);
+                record.setStatus(TaskStatusEnum.WAITING.getStatus());
+                record.setWaitingNum(size);
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+            }catch (Exception e){
+                e.printStackTrace();
+            }finally {
+                tempLock.unlock();
+            }
+        }else{
+            lock.lock();
+            try {
+                int size = ExerciseHandler.taskQueue.size();
+                ExerciseHandler.taskQueue.put(record);
+                record.setStatus(TaskStatusEnum.WAITING.getStatus());
+                record.setWaitingNum(size);
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+            }catch (Exception e){
+                e.printStackTrace();
+            }finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -145,6 +163,36 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     {
         //查找待开始状态任务
         List<CdjhsExerciseRecord> unexecutedRecords = selectCdjhsExerciseRecordByStatusAndIds(TaskStatusEnum.WAITING.getStatus(), ids);
+        //临时过滤出testuser用户练习记录
+        List<CdjhsExerciseRecord> tempList = unexecutedRecords.stream()
+                .filter(item -> item.getUserName().equals("testuser"))
+                .collect(Collectors.toList());
+        unexecutedRecords.removeAll(tempList);
+        if(!tempList.isEmpty()){
+            tempLock.lock();
+            ExerciseHandler.tempQualified.set(false);
+            try {
+                LinkedBlockingQueue<CdjhsExerciseRecord> tempTaskQueue = ExerciseHandler.tempTaskQueue;
+                int waiting = 0;
+                Iterator<CdjhsExerciseRecord> iterator = tempTaskQueue.iterator();
+                while (iterator.hasNext()){
+                    CdjhsExerciseRecord next = iterator.next();
+                    boolean existed = tempList.stream()
+                            .anyMatch(item -> item.getId().compareTo(next.getId()) == 0);
+                    if(existed){
+                        iterator.remove();
+                        continue;
+                    }
+                    next.setWaitingNum(waiting);
+                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(next);
+                    waiting++;
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }finally {
+                tempLock.unlock();
+            }
+        }
         if(!unexecutedRecords.isEmpty()){
             lock.lock();
             ExerciseHandler.qualified.set(false);

@@ -28,12 +28,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="taskCaseVos" column="task_case_vos"/>
         <result property="fusionFilePath" column="fusion_file_path"/>
         <result property="evaluationOutput" column="evaluation_output"/>
+        <result property="networkId" column="network_id"/>
+        <result property="evaluationUrl" column="evaluation_url"/>
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, task_case_vos, fusion_file_path, evaluation_output, create_time, update_time from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, create_time, update_time from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -59,6 +61,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
             <if test="score != null "> and score = #{score}</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">and fusion_file_path = #{fusionFilePath}</if>
+            <if test="networkId != null and networkId != ''">and network_id = #{networkId}</if>
+            <if test="evaluationUrl != null and evaluationUrl != ''">and evaluation_url = #{evaluationUrl}</if>
         </where>
         order by create_time desc
     </select>
@@ -106,6 +110,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="fusionFilePath != null and fusionFilePath != ''">fusion_file_path,</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos,</if>
             <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output,</if>
+            <if test="networkId != null and networkId != ''">network_id,</if>
+            <if test="evaluationUrl != null and evaluationUrl != ''">evaluation_url,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
          </trim>
@@ -132,6 +138,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="taskCaseVos != null and taskCaseVos != ''">#{taskCaseVos},</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">#{fusionFilePath},</if>
             <if test="evaluationOutput != null and evaluationOutput != ''">#{evaluationOutput},</if>
+            <if test="networkId != null and networkId != ''">#{networkId},</if>
+            <if test="evaluationUrl != null and evaluationUrl != ''">#{evaluationUrl},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
          </trim>
@@ -162,6 +170,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos = #{taskCaseVos},</if>
             <if test="fusionFilePath != null">fusion_file_path = #{fusionFilePath},</if>
             <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output = #{evaluationOutput},</if>
+            <if test="networkId != null and networkId != ''">network_id = #{networkId},</if>
+            <if test="evaluationUrl != null and evaluationUrl != ''">evaluation_url = #{evaluationUrl},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

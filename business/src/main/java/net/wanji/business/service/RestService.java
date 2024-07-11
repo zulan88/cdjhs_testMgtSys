@@ -16,6 +16,8 @@ import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
 import net.wanji.business.domain.vo.SceneWeightDetailsVo;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
+import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreateDto;
+import net.wanji.business.exercise.dto.jidaevaluation.network.NetworkCreateDto;
 import org.springframework.http.HttpMethod;
 
 import javax.servlet.http.HttpServletResponse;
@@ -41,6 +43,16 @@ public interface RestService {
      * @return
      */
     int startServer(String ip, Integer port, TessParam tessParam);
+
+    /**
+     * 创建路网记录
+     */
+    String createNetwork(NetworkCreateDto networkCreateDto);
+
+    /**
+     * 创建评价记录
+     */
+    String createEvaluation(EvaluationCreateDto evaluationCreateDto);
 
     /**
      * 启动SV云控车服务

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.dto.device.DeviceStateDto;
 import net.wanji.business.exercise.ExerciseHandler;
+import net.wanji.business.exercise.TimeoutConfig;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.StringUtils;
@@ -34,6 +35,9 @@ public class DeviceStateListener implements MessageListener {
     @Resource
     private RedisMessageListenerContainer redisMessageListenerContainer;
 
+    @Autowired
+    private TimeoutConfig timeoutConfig;
+
     @Value("${redis.channel.device.state}")
     private String deviceStateChannel;
 
@@ -57,11 +61,11 @@ public class DeviceStateListener implements MessageListener {
             String uniques = stateDto.getUniques();
             Integer state = stateDto.getState();
             String key = RedisKeyUtils.getDeviceStatusKey(uniques);
-            redisCache.setCacheObject(key, state, 20, TimeUnit.SECONDS);
+            redisCache.setCacheObject(key, state, timeoutConfig.deviceStatus, TimeUnit.SECONDS);
             if(state == 2){
                 //准备状态
                 String readyKey = RedisKeyUtils.getDeviceReadyStatusKey(uniques);
-                redisCache.setCacheObject(readyKey, state, 20, TimeUnit.SECONDS);
+                redisCache.setCacheObject(readyKey, state, timeoutConfig.deviceStatus, TimeUnit.SECONDS);
                 ExerciseHandler.idleDeviceMap.put(uniques, state);
             }
         }catch (Exception e){

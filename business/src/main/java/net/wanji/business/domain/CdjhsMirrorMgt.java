@@ -45,7 +45,7 @@ public class CdjhsMirrorMgt extends BaseEntity
     //文件大小
     private Long totalSize;
 
-    //上传状态 0: 上传成功 1:上传失败
+    //上传状态 0: 上传成功 1:上传失败 2.加载中
     private Integer uploadStatus;
 
     //md5值

@@ -15,10 +15,13 @@ import net.wanji.business.entity.DataFile;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.entity.TjTask;
 import net.wanji.business.exercise.dto.*;
-import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
 import net.wanji.business.exercise.dto.evaluation.SceneDetail;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
+import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreateData;
+import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreateDto;
+import net.wanji.business.exercise.dto.jidaevaluation.evaluation.KafkaTopic;
+import net.wanji.business.exercise.dto.jidaevaluation.network.*;
 import net.wanji.business.exercise.dto.report.ReportCurrentPointInfo;
 import net.wanji.business.exercise.dto.report.ReportData;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
@@ -28,6 +31,7 @@ import net.wanji.business.exercise.dto.strategy.Strategy;
 import net.wanji.business.exercise.enums.CheckResultEnum;
 import net.wanji.business.exercise.enums.OperationTypeEnum;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
+import net.wanji.business.exercise.utils.SimulationAreaCalculator;
 import net.wanji.business.listener.*;
 import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
@@ -106,15 +110,19 @@ public class TaskExercise implements Runnable{
 
     private String kafkaTopic;
 
+    private String kafkaHost;
+
+    private TimeoutConfig timeoutConfig;
+
     private MainCarTrajectoryListener trajectoryListener;
 
     private int sceneIndex = 0;
 
-    public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort, Double radius, String kafkaTopic,
+    public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort, Double radius, String kafkaTopic, String kafkaHost,
                         CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper, RedisCache redisCache,
                         ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
                         TestIssueResultListener testIssueResultListener, RestService restService, TjDeviceDetailMapper tjDeviceDetailMapper, RedisMessageListenerContainer redisMessageListenerContainer,
-                        KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc){
+                        KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc, TimeoutConfig timeoutConfig){
         this.imageLengthThresold = imageLengthThresold;
         this.record = record;
         this.uniques = uniques;
@@ -122,6 +130,7 @@ public class TaskExercise implements Runnable{
         this.tessPort = tessPort;
         this.radius = radius;
         this.kafkaTopic = kafkaTopic;
+        this.kafkaHost = kafkaHost;
         this.cdjhsExerciseRecordMapper = cdjhsExerciseRecordMapper;
         this.cdjhsDeviceImageRecordMapper = cdjhsDeviceImageRecordMapper;
         this.redisCache = redisCache;
@@ -137,6 +146,7 @@ public class TaskExercise implements Runnable{
         this.kafkaTrajectoryConsumer = kafkaTrajectoryConsumer;
         this.tjTaskMapper = tjTaskMapper;
         this.interactionFuc = interactionFuc;
+        this.timeoutConfig = timeoutConfig;
     }
 
     @Override
@@ -258,7 +268,7 @@ public class TaskExercise implements Runnable{
             boolean isSimulationReady = false;
             long startTime = System.currentTimeMillis();
             String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulationId, tessStatusChannel);
-            while ((System.currentTimeMillis() - startTime) < 300000){
+            while ((System.currentTimeMillis() - startTime) < timeoutConfig.simulationReadyStatus){
                 Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
                 if(Objects.nonNull(state) && state == 1){
                     isSimulationReady = true;
@@ -299,8 +309,9 @@ public class TaskExercise implements Runnable{
                     + UUID.randomUUID());
             dataFileService.save(dataFile);
             // 监听kafka、文件记录
+            String evaluationKafkaTopic = Constants.ChannelBuilder.buildTaskEvaluationKafkaTopic(record.getId());
             ToLocalDto toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
-                    dataFile.getId());
+                    dataFile.getId(), evaluationKafkaTopic);
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
@@ -376,22 +387,8 @@ public class TaskExercise implements Runnable{
             String fusionFilePath = dataFileService.getPath() + File.separator + toLocalDto.getFileName();
             record.setFusionFilePath(fusionFilePath);
             //请求算法输出场景评分
-            EvaluationOutputReq param = EvaluationOutputReq.builder()
-                    .taskId(record.getId())
-                    .fusionFilePath(fusionFilePath)
-                    .startPoints(startPoints)
-                    .mainChannel(dataChannel)
-                    .pointsNum(20)
-                    .build();
-            String evaluationParas = JSONObject.toJSONString(param);
-            log.info("测试评价参数: {}", evaluationParas);
-            String evaluationOutput = restService.getEvaluationOutput(param);
-            evaluationOutput = dataComplete(evaluationOutput, record.getTestId());
-            if(StringUtils.isNotEmpty(evaluationOutput)){
-                double score = JSONObject.parseObject(evaluationOutput).getDoubleValue("score");
-                record.setScore(score);
-            }
-            record.setEvaluationOutput(evaluationOutput);
+            String evaluationUrl = getOfflineEvaluationUrl(record.getTestId(), evaluationKafkaTopic, toLocalDto.getMainVehicleId());
+            record.setEvaluationUrl(evaluationUrl);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         }catch (Exception e){
             e.printStackTrace();
@@ -399,6 +396,84 @@ public class TaskExercise implements Runnable{
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
         }
+    }
+
+    private String getOfflineEvaluationUrl(Long testId, String evaluationKafkaTopic, String mainVehicleId) {
+        try {
+            String networkId = getNetworkId(testId);
+            if(Objects.nonNull(networkId)){
+                EvaluationCreateDto evaluationCreateDto = new EvaluationCreateDto();
+                evaluationCreateDto.setTimestamp(String.valueOf(System.currentTimeMillis()));
+
+                EvaluationCreateData data = new EvaluationCreateData();
+                data.setNetId(networkId);
+                data.setMainVehiId(mainVehicleId);
+
+                String[] split = kafkaHost.split(":");
+                String host = split[0].trim();
+                String port = split[1].trim();
+                KafkaTopic kafkaTopic = new KafkaTopic();
+                kafkaTopic.setHost(host);
+                kafkaTopic.setPort(port);
+                kafkaTopic.setTopic(evaluationKafkaTopic);
+
+                data.setKafkaTopic(kafkaTopic);
+                evaluationCreateDto.setData(data);
+                return restService.createEvaluation(evaluationCreateDto);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String getNetworkId(Long testId) {
+        //组装新建路网请求参数
+        NetworkCreateDto networkCreateDto = new NetworkCreateDto();
+        networkCreateDto.setTimestamp(String.valueOf(System.currentTimeMillis()));
+        NetworkData data = new NetworkData();
+        RegionalWeight regionalWeight = new RegionalWeight();
+        //获取场景信息
+        List<EvaluationAreaInfo> evaluationAreaInfos = new ArrayList<>();
+        List<SceneDetailVo> sceneDetails = interactionFuc.findSceneDetail(testId.intValue());
+        for(int i = 0; i < sceneDetails.size(); i++){
+            SceneDetailVo sceneDetailVo = sceneDetails.get(i);
+            EvaluationAreaInfo evaluationAreaInfo = new EvaluationAreaInfo();
+            evaluationAreaInfo.setId(i);
+            evaluationAreaInfo.setName(String.valueOf(i));
+            evaluationAreaInfo.setWeights(String.valueOf(sceneDetailVo.getEvoNum()));
+            //组装场景的角度信息
+            JSONObject simuArea = SimulationAreaCalculator.getSimuArea(sceneDetailVo.getRoadCondition(), 0.1);
+            assert simuArea != null;
+            double leftTopX = simuArea.getDoubleValue("leftTopX");
+            double leftTopY = simuArea.getDoubleValue("leftTopY");
+            double rightBottomX = simuArea.getDoubleValue("rightBottomX");
+            double rightBottomY = simuArea.getDoubleValue("rightBottomY");
+            Region region = new Region();
+            RegionPosition posFrom = new RegionPosition();
+            posFrom.setX(leftTopX);
+            posFrom.setY(leftTopY);
+            region.setPosFrom(posFrom);
+
+            RegionPosition posTo = new RegionPosition();
+            posTo.setX(rightBottomX);
+            posTo.setY(rightBottomY);
+            region.setPosTo(posTo);
+
+            String jsonRegion = JSONObject.toJSONString(region);
+            evaluationAreaInfo.setRegion(jsonRegion);
+
+            evaluationAreaInfos.add(evaluationAreaInfo);
+        }
+        regionalWeight.setEvaluationArea(evaluationAreaInfos);
+        data.setRegionalWeight(regionalWeight);
+        //场景评价指标信息
+        String json = "{\"EvaluationSafeWeights\":[{\"id\":1,\"weights\":10,\"indicatorName\":\"是否碰撞\",\"calculationFormula\":\"碰撞-100\",\"indicatorDescription\":\"判断主车与障碍物是否发生碰撞，若是，则不通过。\"},{\"id\":2,\"weights\":10,\"indicatorName\":\"碰撞时间TTC\",\"calculationFormula\":\"TTC危险时长/任务耗时*100%\",\"indicatorDescription\":\"计算主车的碰撞时间， 若TTC<1s， 则认为存在碰撞风险， 累计违规时长。\"},{\"id\":3,\"weights\":10,\"indicatorName\":\"逆向行驶\",\"calculationFormula\":\"逆向行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车是否出现逆向行驶的情况，若是，则累计违规时长。\"},{\"id\":4,\"weights\":10,\"indicatorName\":\"压实线行驶\",\"calculationFormula\":\"压实线行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车行驶过程中是否压实线，若是，则累计违规时长。\"},{\"id\":5,\"weights\":10,\"indicatorName\":\"超速行驶\",\"calculationFormula\":\"超速行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车行驶速度是否超过地图上的道路限速，若是，则累计违规时长。\"},{\"id\":6,\"weights\":10,\"indicatorName\":\"四轮在路\",\"calculationFormula\":\"四轮未在路行驶时长/任务耗时*100%\",\"indicatorDescription\":\"判断主车四轮是否全程都在道路内，若不是，则累计违规时长。\"},{\"id\":7,\"weights\":40,\"indicatorName\":\"横向间距\",\"calculationFormula\":\"危险横向间距行驶时长/任务耗时*100%\",\"indicatorDescription\":\"计算主车与周围车的横向车间距，若小于1米，则认为存在碰撞风险，累计违规时长。\"},{\"id\":8,\"weights\":10,\"indicatorName\":\"在禁行区禁行\",\"calculationFormula\":\"禁行区行驶-100\",\"indicatorDescription\":\"检测主车年是否在应急车道、非机动车道、公交专用车道等禁行区域行驶，若是，则不通过。\"}],\"EvaluationClassWeights\":[{\"id\":1,\"name\":\"安全\",\"weights\":\"60\"},{\"id\":2,\"name\":\"效率\",\"weights\":\"40\"},{\"id\":3,\"name\":\"舒适\",\"weights\":\"20\"}],\"EvaluationComfortWeights\":[{\"id\":1,\"weights\":10,\"indicatorName\":\"横向加速度\",\"calculationFormula\":\"横向加速度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的横向加速度是否在合理上下限范围内[-4,4]m/s2，若不是，则累计违规时长。\"},{\"id\":2,\"weights\":10,\"indicatorName\":\"横向急动度\",\"calculationFormula\":\"横向急动度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的横向加速度变化率是否在合理上下限范围内[-4,4]m/s3，若不是，则累计违规时长。\"},{\"id\":3,\"weights\":10,\"indicatorName\":\"纵向加速度\",\"calculationFormula\":\"纵向加速度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的纵向加速度是否在合理上下限范围内[-4,4]m/s2，若不是，则累计违规时长。\"},{\"id\":4,\"weights\":10,\"indicatorName\":\"纵向急动度\",\"calculationFormula\":\"纵向急动度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测轨迹规划点的纵向加速度变化率是否在合理上下限范围内[-4,4]m/s3，若不是，则累计违规时长。\"},{\"id\":5,\"weights\":60,\"indicatorName\":\"角速度\",\"calculationFormula\":\"航向角变化超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测航向角是否反复变化，若航向角频繁变化，则累计违规时长。\"}],\"EvaluationEfficiencyWeights\":[{\"id\":1,\"weights\":50,\"indicatorName\":\"任务完成时间\",\"calculationFormula\":\"期望时间/实际用时*100%\",\"indicatorDescription\":\"按照超出期望用时的比例进行扣分，在期望用时内完成任务为满分。\"},{\"id\":2,\"weights\":50,\"indicatorName\":\"平均速度\",\"calculationFormula\":\"行驶里程/行驶时间\",\"indicatorDescription\":\"计算主车在行驶全程中的平均速度。\"}]}";
+        ProjectWeight projectWeight = JSONObject.parseObject(json, ProjectWeight.class);
+        data.setProjectWeight(projectWeight);
+        networkCreateDto.setData(data);
+
+        return restService.createNetwork(networkCreateDto);
     }
 
     private void simulationStatusReq(String tessCommandChannel, Integer simulationId) {
@@ -425,7 +500,7 @@ public class TaskExercise implements Runnable{
         String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
         redisCache.publishMessage(testIssueChannel, testIssue);
         log.info("给设备{}下发练习任务信息成功", uniques);
-        return testIssueResultListener.awaitingMessage(uniques, 1, TimeUnit.HOURS);
+        return testIssueResultListener.awaitingMessage(uniques, timeoutConfig.taskIssue, TimeUnit.HOURS);
     }
 
     private Integer imageIssue(String uniques, String md5, String mirrorId, String mirrorPath) {
@@ -441,7 +516,7 @@ public class TaskExercise implements Runnable{
         JSONObject imageIssue = JSONObject.parseObject(imageIssueMessage);
         log.info("向域控{}下发镜像: {}", uniques, imageIssueMessage);
         redisCache.publishMessage(imageIssueChannel, imageIssue);
-        Integer integrityStatus = imageIssueResultListener.awaitingMessage(uniques, mirrorId, 30, TimeUnit.MINUTES);
+        Integer integrityStatus = imageIssueResultListener.awaitingMessage(uniques, mirrorId, timeoutConfig.imageIssue, TimeUnit.MINUTES);
         log.info("域控{}上报镜像下发结果: {}", uniques, integrityStatus);
         //添加镜像下发域控记录
         CdjhsDeviceImageRecord deviceImageRecord = new CdjhsDeviceImageRecord();
@@ -464,7 +539,7 @@ public class TaskExercise implements Runnable{
         String imageDelChannel = RedisKeyUtils.getImageDelChannel(uniques);
         redisCache.publishMessage(imageDelChannel, imageDel);
         log.info("给域控{}下发镜像清除指令: {}", uniques, imageDelMessage);
-        Integer status = imageDelResultListener.awaitingMessage(uniques, imageDelReq.getImageId(), 10, TimeUnit.SECONDS);
+        Integer status = imageDelResultListener.awaitingMessage(uniques, imageDelReq.getImageId(), timeoutConfig.imageDelete, TimeUnit.SECONDS);
         log.info("收到域控{}上报镜像清除结果: {}", uniques, status);
         return status;
     }
@@ -480,7 +555,7 @@ public class TaskExercise implements Runnable{
         JSONObject imageListResponse = JSONObject.parseObject(imageListReportMessage);
         redisCache.publishMessage(channelOfImageListReport, imageListResponse);
         log.info("开始获取镜像列表,下发通道和数据:{}-{}", channelOfImageListReport, imageListReportMessage);
-        List<String> imageList = imageListReportListener.awaitMessage(uniques, 10, TimeUnit.SECONDS);
+        List<String> imageList = imageListReportListener.awaitMessage(uniques, timeoutConfig.imageReport, TimeUnit.SECONDS);
         log.info("获取到域控-{}上报的镜像列表:{}", uniques, JSONObject.toJSONString(imageList));
         return imageList;
     }

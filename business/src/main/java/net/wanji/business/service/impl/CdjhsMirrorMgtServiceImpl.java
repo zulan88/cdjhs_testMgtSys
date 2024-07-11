@@ -75,6 +75,7 @@ public class CdjhsMirrorMgtServiceImpl implements ICdjhsMirrorMgtService
         //格式化文件大小
         String size = ConvertUtil.convertFileSize(cdjhsMirrorMgt.getTotalSize());
         cdjhsMirrorMgt.setMirrorSize(size);
+        cdjhsMirrorMgt.setUploadStatus(2);
         int rows = cdjhsMirrorMgtMapper.insertCdjhsMirrorMgt(cdjhsMirrorMgt);
         fileService.saveLocalFile(cdjhsMirrorMgt);
         return rows;

@@ -129,11 +129,11 @@ public class CdjhsExerciseRecordController extends BaseController
         if(Objects.isNull(taskId)){
             return AjaxResult.error("请求参数不能为空");
         }
-        EvaluationReport report = cdjhsExerciseRecordService.reviewReport(taskId);
-        if(Objects.isNull(report)){
+        CdjhsExerciseRecord record = cdjhsExerciseRecordService.selectCdjhsExerciseRecordById(taskId);
+        if(StringUtils.isEmpty(record.getEvaluationUrl())){
             return AjaxResult.error("报告不存在");
         }
-        return AjaxResult.success(report);
+        return AjaxResult.success(record.getEvaluationUrl());
     }
 
     @GetMapping("/playback")
