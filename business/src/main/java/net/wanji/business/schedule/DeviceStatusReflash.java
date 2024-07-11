@@ -1,5 +1,6 @@
 package net.wanji.business.schedule;
 
+import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.dto.TjDeviceDetailDto;
 import net.wanji.business.domain.vo.DeviceDetailVo;
@@ -11,19 +12,24 @@ import net.wanji.business.service.RestService;
 import net.wanji.business.service.TjDeviceDetailService;
 import net.wanji.business.service.TjInfinityTaskService;
 import net.wanji.business.service.TjTaskService;
+import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.redis.RedisUtil;
+import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.SecurityUtils;
+import net.wanji.common.utils.StringUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class DeviceStatusReflash {
+    private static final Logger log = LoggerFactory.getLogger("deviceStatusLog");
 
     @Autowired
     private TjInfinityTaskService tjInfinityTaskService;
@@ -42,6 +48,9 @@ public class DeviceStatusReflash {
 
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private RedisCache redisCache;
 
     //@Scheduled(cron = "0 */5 * * * ?")
     public void reflash() {
@@ -99,6 +108,32 @@ public class DeviceStatusReflash {
                     restService.stopTessNg(detailVo.getIp(), detailVo.getServiceAddress(), Constants.ChannelBuilder.buildTestingDataChannel(tjInfinityTask.getCreatedBy(), tjInfinityTask.getId()), 0);
                 }
             }
+        }
+    }
+
+
+    @Scheduled(cron = "0/20 * * * * ?")
+    public void redisDeviceStatusLog(){
+        String prefix = RedisKeyUtils.DEVICE_STATUS_PRE + RedisKeyUtils.DEVICE_STATUS_PRE_LINK;
+        Set<String> keys = redisCache.getKeys(prefix);
+        if(StringUtils.isNotEmpty(keys)){
+            List<String> onlineDevices = new ArrayList<>();
+            List<String> idleDevices = new ArrayList<>();
+            for(String key: keys){
+                Integer state = redisCache.getCacheObject(key);
+                if(Objects.nonNull(state)){
+                    String[] split = key.split(RedisKeyUtils.DEVICE_STATUS_PRE_LINK);
+                    String uniques = split[1];
+                    onlineDevices.add(uniques);
+                    if(state == 2){
+                        idleDevices.add(uniques);
+                    }
+                }
+            }
+            log.info("当前在线设备: {}", JSONObject.toJSONString(onlineDevices));
+            log.info("当前空闲设备: {}", JSONObject.toJSONString(idleDevices));
+        }else{
+            log.info("当前无在线域控设备");
         }
     }
 

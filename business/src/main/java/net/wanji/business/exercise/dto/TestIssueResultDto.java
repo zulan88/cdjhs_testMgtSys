@@ -14,4 +14,7 @@ public class TestIssueResultDto {
 
     //0-失败，1-成功
     private Integer status;
+
+    //异常信息
+    private String message;
 }

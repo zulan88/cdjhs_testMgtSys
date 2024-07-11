@@ -157,76 +157,85 @@ public class InteractionFuc {
 
     public List<StartPoint> getSceneStartPoints(Integer testId){
         List<StartPoint> startPoints = new ArrayList<>();
-        List<SceneDetailVo> sceneDetails = findSceneDetail(testId);
-        if(StringUtils.isNotEmpty(sceneDetails)){
-            for(int i = 0; i < sceneDetails.size(); i++){
-                SceneDetailVo sceneDetailVo = sceneDetails.get(i);
-                if(Objects.nonNull(sceneDetailVo.getStartPoint())){
-                    SitePoint sitePoint = sceneDetailVo.getStartPoint();
-                    StartPoint startPoint = new StartPoint();
-                    startPoint.setSequence(i + 1);
-                    startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
-                    startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
+        try {
+            List<SceneDetailVo> sceneDetails = findSceneDetail(testId);
+            if(StringUtils.isNotEmpty(sceneDetails)){
+                for(int i = 0; i < sceneDetails.size(); i++){
+                    SceneDetailVo sceneDetailVo = sceneDetails.get(i);
+                    if(Objects.nonNull(sceneDetailVo.getStartPoint())){
+                        SitePoint sitePoint = sceneDetailVo.getStartPoint();
+                        StartPoint startPoint = new StartPoint();
+                        startPoint.setSequence(i + 1);
+                        startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
+                        startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
 
-                    startPoints.add(startPoint);
+                        startPoints.add(startPoint);
 
+                    }
                 }
             }
+        }catch (Exception e){
+            e.printStackTrace();
         }
         return startPoints;
     }
 
     public SimulationSceneDto getSimulationSceneInfo(Integer testId){
-        //根据测试用例id获取关联场景信息和每个仿真参与者点位信息
-        List<SceneDetailVo> sceneDetails = getSceneDetails(testId);
-        if(StringUtils.isEmpty(sceneDetails)){
-            return null;
+        try {
+            //根据测试用例id获取关联场景信息和每个仿真参与者点位信息
+            List<SceneDetailVo> sceneDetails = getSceneDetails(testId);
+            if(StringUtils.isEmpty(sceneDetails)){
+                return null;
+            }
+            List<SimulationSceneParticipant> simulationScenes = sceneDetails.stream()
+                    .map(scene -> {
+                        SimulationSceneParticipant simulationSceneParticipant = new SimulationSceneParticipant();
+                        simulationSceneParticipant.setCaseId(scene.getId());
+                        simulationSceneParticipant.setType(scene.getSceneSort());
+                        simulationSceneParticipant.setAvPassTime(1);
+
+                        List<ParticipantTrajectoryBo> participantTrajectories = scene.getSceneTrajectoryBo().getParticipantTrajectories();
+                        if (StringUtils.isNotEmpty(participantTrajectories)) {
+                            List<ParticipantTrajectory> participants = participantTrajectories.stream()
+                                    .map(participant -> {
+                                        ParticipantTrajectory participantTrajectory = new ParticipantTrajectory();
+                                        BeanUtils.copyProperties(participant, participantTrajectory);
+
+                                        List<TrajectoryDetailBo> trajectories = participant.getTrajectory();
+                                        List<TrajectoryPoint> trajectoryPoints = trajectories.stream()
+                                                .map(trajectory -> {
+                                                    TrajectoryPoint trajectoryPoint = new TrajectoryPoint();
+                                                    BeanUtils.copyProperties(trajectory, trajectoryPoint);
+                                                    Double[] postion = new Double[2];
+                                                    postion[0] = Double.parseDouble(trajectory.getLongitude());
+                                                    postion[1] = Double.parseDouble(trajectory.getLatitude());
+                                                    trajectoryPoint.setPosition(postion);
+
+                                                    return trajectoryPoint;
+                                                }).collect(Collectors.toList());
+                                        participantTrajectory.setTrajectory(trajectoryPoints);
+
+                                        return participantTrajectory;
+                                    }).collect(Collectors.toList());
+
+                            simulationSceneParticipant.setParticipantTrajectories(participants);
+                        }
+
+                        return simulationSceneParticipant;
+                    }).collect(Collectors.toList());
+
+            SimulationSceneDto simulationSceneDto = new SimulationSceneDto();
+            simulationSceneDto.setType(OperationTypeEnum.PREPARE_STATUS_REQ.getType());
+            simulationSceneDto.setTimestamp(System.currentTimeMillis());
+            SimulationSceneParam params = new SimulationSceneParam();
+            params.setParam1(simulationScenes);
+            simulationSceneDto.setParams(params);
+
+            return simulationSceneDto;
+        }catch (Exception e){
+            e.printStackTrace();
         }
-        List<SimulationSceneParticipant> simulationScenes = sceneDetails.stream()
-                .map(scene -> {
-                    SimulationSceneParticipant simulationSceneParticipant = new SimulationSceneParticipant();
-                    simulationSceneParticipant.setCaseId(scene.getId());
-                    simulationSceneParticipant.setType(scene.getSceneSort());
-                    simulationSceneParticipant.setAvPassTime(1);
-
-                    List<ParticipantTrajectoryBo> participantTrajectories = scene.getSceneTrajectoryBo().getParticipantTrajectories();
-                    if (StringUtils.isNotEmpty(participantTrajectories)) {
-                        List<ParticipantTrajectory> participants = participantTrajectories.stream()
-                                .map(participant -> {
-                                    ParticipantTrajectory participantTrajectory = new ParticipantTrajectory();
-                                    BeanUtils.copyProperties(participant, participantTrajectory);
-
-                                    List<TrajectoryDetailBo> trajectories = participant.getTrajectory();
-                                    List<TrajectoryPoint> trajectoryPoints = trajectories.stream()
-                                            .map(trajectory -> {
-                                                TrajectoryPoint trajectoryPoint = new TrajectoryPoint();
-                                                BeanUtils.copyProperties(trajectory, trajectoryPoint);
-                                                Double[] postion = new Double[2];
-                                                postion[0] = Double.parseDouble(trajectory.getLongitude());
-                                                postion[1] = Double.parseDouble(trajectory.getLatitude());
-                                                trajectoryPoint.setPosition(postion);
-
-                                                return trajectoryPoint;
-                                            }).collect(Collectors.toList());
-                                    participantTrajectory.setTrajectory(trajectoryPoints);
-
-                                    return participantTrajectory;
-                                }).collect(Collectors.toList());
-
-                        simulationSceneParticipant.setParticipantTrajectories(participants);
-                    }
-
-                    return simulationSceneParticipant;
-                }).collect(Collectors.toList());
-
-        SimulationSceneDto simulationSceneDto = new SimulationSceneDto();
-        simulationSceneDto.setType(OperationTypeEnum.PREPARE_STATUS_REQ.getType());
-        simulationSceneDto.setTimestamp(System.currentTimeMillis());
-        SimulationSceneParam params = new SimulationSceneParam();
-        params.setParam1(simulationScenes);
-        simulationSceneDto.setParams(params);
-
-        return simulationSceneDto;
+        return null;
     }
 
 }

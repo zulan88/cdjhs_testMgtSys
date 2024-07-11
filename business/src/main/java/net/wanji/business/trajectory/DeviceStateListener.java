@@ -59,15 +59,9 @@ public class DeviceStateListener implements MessageListener {
             }
             DeviceStateDto stateDto = JSONObject.parseObject(body, DeviceStateDto.class);
             String uniques = stateDto.getUniques();
-            Integer state = stateDto.getState();
+            Integer state = stateDto.getState();//算法状态
             String key = RedisKeyUtils.getDeviceStatusKey(uniques);
             redisCache.setCacheObject(key, state, timeoutConfig.deviceStatus, TimeUnit.SECONDS);
-            if(state == 2){
-                //准备状态
-                String readyKey = RedisKeyUtils.getDeviceReadyStatusKey(uniques);
-                redisCache.setCacheObject(readyKey, state, timeoutConfig.deviceStatus, TimeUnit.SECONDS);
-                ExerciseHandler.idleDeviceMap.put(uniques, state);
-            }
         }catch (Exception e){
             e.printStackTrace();
         }

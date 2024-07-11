@@ -26,4 +26,10 @@ public class TimeoutConfig {
 
     @Value("${timeout.config.simulation.readyStatus}")
     public Integer simulationReadyStatus;
+
+    @Value("${timeout.config.task.duration}")
+    public Integer taskDuration;
+
+    @Value("${timeout.config.mainCar.trajectory}")
+    public Integer mainCarTrajectory;
 }

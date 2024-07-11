@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.RedisKeyUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,12 +27,15 @@ public class PutObjectProgressListener implements ProgressListener {
 
     }
 
-    public PutObjectProgressListener(String requestId, RedisCache redisCache){
+    public PutObjectProgressListener(String requestId, long totalSize, RedisCache redisCache){
         this.requestId = requestId;
         this.redisCache = redisCache;
+        this.totalBytes = totalSize;
         String key = RedisKeyUtils.getOssProgressDetailKey(requestId);
-        this.redisCache.setCacheMapValue(key, RedisKeyUtils.TOTAL_BYTES, totalBytes);
-        this.redisCache.setCacheMapValue(key, RedisKeyUtils.UPLOADED, bytesWritten);
+        Map<String, Long> map = new HashMap<>();
+        map.put(RedisKeyUtils.TOTAL_BYTES, totalBytes);
+        map.put(RedisKeyUtils.UPLOADED, bytesWritten);
+        this.redisCache.setCacheMap(key, map);
         this.redisCache.expire(key, 1, TimeUnit.DAYS);
     }
 
@@ -46,7 +51,6 @@ public class PutObjectProgressListener implements ProgressListener {
             case REQUEST_CONTENT_LENGTH_EVENT:
                 this.totalBytes = bytes;
                 this.redisCache.setCacheMapValue(key, RedisKeyUtils.TOTAL_BYTES, totalBytes);
-                log.info(this.totalBytes + " bytes in total will be uploaded to OSS");
                 break;
             case REQUEST_BYTE_TRANSFER_EVENT:
                 this.bytesWritten += bytes;

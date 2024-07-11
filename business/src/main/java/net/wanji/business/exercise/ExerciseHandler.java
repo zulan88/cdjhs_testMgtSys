@@ -1,6 +1,5 @@
 package net.wanji.business.exercise;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
@@ -19,6 +18,7 @@ import net.wanji.business.service.record.DataFileService;
 import net.wanji.business.trajectory.KafkaTrajectoryConsumer;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.core.redis.RedisCache;
+import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +26,10 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Component
 public class ExerciseHandler {
-    public static ConcurrentHashMap<String, Integer> idleDeviceMap = new ConcurrentHashMap<>();
 
     public static ExpiringMap<String, Long> occupationMap = ExpiringMap.builder()
             .maxSize(5)
@@ -137,11 +140,12 @@ public class ExerciseHandler {
         Thread thread = new Thread(() -> {
             while (true){
                 try {
-                    if(!idleDeviceMap.isEmpty()){
-                        //选择空闲且没有被占用的域控下发练习
+                    //选择在线且没有被占用的域控下发练习
+                    List<String> devices = getOnlineAndIdleDevice();
+                    if(!devices.isEmpty() && !taskQueue.isEmpty()){
                         String uniques = "";
-                        for (String device : idleDeviceMap.keySet()) {
-                            if (!occupationMap.containsKey(device) && !device.equals("YK001")) {
+                        for(String device: devices){
+                            if(!occupationMap.containsKey(device) && !device.equals("YK001")){
                                 uniques = device;
                                 break;
                             }
@@ -156,7 +160,6 @@ public class ExerciseHandler {
                                     restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                     tjTaskMapper, interactionFuc, timeoutConfig);
                             executor.submit(taskExercise);
-
                         }
                     }
                 }catch (Exception e){
@@ -171,15 +174,15 @@ public class ExerciseHandler {
         Thread tempConsumeThread = new Thread(() -> {
             while (true) {
                 try {
-                    if(!idleDeviceMap.isEmpty()){
+                    List<String> devices = getOnlineAndIdleDevice();
+                    if(!devices.isEmpty() && !tempTaskQueue.isEmpty()){
                         String uniques = "";
-                        for(String device: idleDeviceMap.keySet()){
+                        for(String device: devices){
                             if(!occupationMap.containsKey(device) && device.equals("YK001")){
                                 uniques = device;
                                 break;
                             }
                         }
-
                         if(StringUtils.isNotEmpty(uniques) && tempQualified.get()){
                             CdjhsExerciseRecord record = tempTaskQueue.take();
                             occupationMap.put(uniques, record.getId());//占用该域控
@@ -199,5 +202,24 @@ public class ExerciseHandler {
             }
         });
         tempConsumeThread.start();
+    }
+
+    private List<String> getOnlineAndIdleDevice() {
+        List<String> list = new ArrayList<>();
+        String prefix = RedisKeyUtils.DEVICE_STATUS_PRE + RedisKeyUtils.DEVICE_STATUS_PRE_LINK;
+        Set<String> keys = redisCache.getKeys(prefix);
+        if(StringUtils.isNotEmpty(keys)){
+            for(String key: keys){
+                Integer state = redisCache.getCacheObject(key);
+                if(Objects.nonNull(state)){
+                    String[] split = key.split(RedisKeyUtils.DEVICE_STATUS_PRE_LINK);
+                    String uniques = split[1];
+                    if(state == 2){
+                        list.add(uniques);
+                    }
+                }
+            }
+        }
+        return list;
     }
 }

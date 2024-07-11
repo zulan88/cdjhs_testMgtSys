@@ -2,7 +2,6 @@ package net.wanji.business.listener;
 
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import net.wanji.business.exercise.dto.ImageIssueResultDto;
 import net.wanji.business.exercise.dto.TestIssueResultDto;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.RedisKeyUtils;
@@ -58,12 +57,11 @@ public class TestIssueResultListener implements MessageListener {
                 }
                 return;
             }
-            log.info("接收到设备上报练习任务下发状态结果:{}", body);
             TestIssueResultDto testIssueResultDto = JSONObject.parseObject(body, TestIssueResultDto.class);
             String deviceId = testIssueResultDto.getDeviceId();
-            Integer status = testIssueResultDto.getStatus();
+            log.info("接收到设备{}上报练习任务下发结果:{}", deviceId, body);
             String key = RedisKeyUtils.getTestIssueResultKey(deviceId);
-            redisCache.setCacheObject(key, status, 10, TimeUnit.SECONDS);
+            redisCache.setCacheObject(key, testIssueResultDto, 10, TimeUnit.SECONDS);
 
             CountDownLatch latch = latchMap.get(deviceId);
             if(latch != null){
@@ -74,7 +72,7 @@ public class TestIssueResultListener implements MessageListener {
         }
     }
 
-    public Integer awaitingMessage(String deviceId, long timeout, TimeUnit timeUnit){
+    public TestIssueResultDto awaitingMessage(String deviceId, long timeout, TimeUnit timeUnit){
         CountDownLatch latch = new CountDownLatch(1);
         latchMap.put(deviceId, latch);
         try {

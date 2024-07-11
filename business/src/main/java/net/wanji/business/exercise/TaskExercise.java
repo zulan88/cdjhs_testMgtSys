@@ -118,6 +118,12 @@ public class TaskExercise implements Runnable{
 
     private int sceneIndex = 0;
 
+    private long firstFrameTimestamp;
+
+    private Point2D.Double firstFramePostion;
+
+    private boolean firstMinute = true;
+
     public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort, Double radius, String kafkaTopic, String kafkaHost,
                         CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper, RedisCache redisCache,
                         ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
@@ -187,16 +193,16 @@ public class TaskExercise implements Runnable{
                     }
                 }
                 //镜像下发
-                Integer integrityStatus = imageIssue(uniques, record.getMd5(), mirrorId, record.getMirrorPath());
-                if(Objects.isNull(integrityStatus)){
+                ImageIssueResultDto imageIssueResultDto = imageIssue(uniques, record.getMd5(), mirrorId, record.getMirrorPath());
+                if(Objects.isNull(imageIssueResultDto)){
                     record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                     record.setCheckMsg(String.format("%s镜像下发后,未收到练习设备上报结果", mirrorId));
                     record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                     cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                     return;
-                }else if(integrityStatus == 0){
+                }else if(imageIssueResultDto.getImageStatus() == 0){
                     record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                    record.setCheckMsg(String.format("%s镜像文件完整性校验失败", mirrorId));
+                    record.setCheckMsg(String.format("%s镜像文件完整性校验失败,异常信息如下:\n%s", mirrorId, imageIssueResultDto.getMessage()));
                     record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                     cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                     return;
@@ -213,11 +219,11 @@ public class TaskExercise implements Runnable{
             }
             String routeFile = FileUploadUtils.getAbsolutePathFileName(tjTask.getMainPlanFile());
             List<SimulationTrajectoryDto> trajectories = FileUtils.readOriTrajectory(routeFile);
-            Integer complianceStatus = issueTaskExercise2YK(uniques, mirrorId, trajectories);
-            log.info("练习设备{}是否准备就绪: {}", uniques, complianceStatus);
-            if(Objects.isNull(complianceStatus) || complianceStatus == 0){
+            TestIssueResultDto testIssueResultDto = issueTaskExercise2YK(uniques, mirrorId, trajectories);
+            log.info("练习设备{}是否准备就绪: {}", uniques, testIssueResultDto);
+            if(Objects.isNull(testIssueResultDto) || testIssueResultDto.getStatus() == 0){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                String checkMsg = Objects.isNull(complianceStatus) ? "练习设备未上报练习任务下发结果" : "合规性校验不通过";
+                String checkMsg = Objects.isNull(testIssueResultDto) ? "练习设备未上报练习任务下发结果" : String.format("镜像运行失败,异常信息如下:\n%s", testIssueResultDto.getMessage());
                 record.setCheckMsg(checkMsg);
                 record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
@@ -325,6 +331,7 @@ public class TaskExercise implements Runnable{
             redisCache.publishMessage(detail.getCommandChannel(), ykStartMessage);
             log.info("向域控{}下发开始任务指令: {}", uniques, ykMessage);
             //更新练习开始时间
+            long taskStartTime = System.currentTimeMillis();
             record.setCheckResult(CheckResultEnum.SUCCESS.getResult());
             record.setStartTime(new Date());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
@@ -335,7 +342,7 @@ public class TaskExercise implements Runnable{
             Point2D.Double endPoint = new Point2D.Double(trajectoryValueDto.getLongitude(), trajectoryValueDto.getLatitude());
 
             while (!Thread.currentThread().isInterrupted()){
-                String reportDataString = queue.poll(5, TimeUnit.SECONDS);
+                String reportDataString = queue.poll(timeoutConfig.mainCarTrajectory, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
                     log.info("5s内没有接收到主车轨迹数据");
                     stopFusion(toLocalDto, detail);
@@ -348,6 +355,31 @@ public class TaskExercise implements Runnable{
                     continue;
                 }
                 log.info("当前主车轨迹经纬度-{}-{}", vehicleCurrentInfo.getLongitude(), vehicleCurrentInfo.getLatitude());
+                Point2D.Double position = new Point2D.Double(vehicleCurrentInfo.getLongitude(), vehicleCurrentInfo.getLatitude());
+                //循环检测第一帧数据是否重复，且持续时间超过1分钟
+                if(firstMinute){
+                    if(Objects.isNull(firstFramePostion)){
+                        firstFrameTimestamp = System.currentTimeMillis();
+                        firstFramePostion = position;
+                    }else if(System.currentTimeMillis() - firstFrameTimestamp >= 60000){
+                        firstMinute = false;
+                        boolean motionless = LongitudeLatitudeUtils.isInCriticalDistance(firstFramePostion, position, 0.5);
+                        if(motionless){
+                            log.info("1分钟内重复发送第一帧数据,强制结束任务");
+                            stopFusion(toLocalDto, detail);
+                            stop(ykStartReq, tessStartReq, commandChannel, dataChannel, tessCommandChannel, tessDataChannel);
+                            break;
+                        }
+                    }
+
+                }
+                boolean inPolygon = LongitudeLatitudeUtils.isInPolygon(position, MapArea.areaPoints);
+                if(!inPolygon){
+                    log.info("主车轨迹超出地图区域");
+                    stopFusion(toLocalDto, detail);
+                    stop(ykStartReq, tessStartReq, commandChannel, dataChannel, tessCommandChannel, tessDataChannel);
+                    break;
+                }
                 //判断主车位置是否到达场景起点
                 if(!startPoints.isEmpty() && sceneIndex < startPoints.size()){
                     StartPoint startPoint = startPoints.get(sceneIndex);
@@ -355,8 +387,7 @@ public class TaskExercise implements Runnable{
                     log.info("当前场景{}的起点经纬度是-{}-{}", sequence, startPoint.getLongitude(), startPoint.getLatitude());
                     Point2D.Double sceneStartPoint = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
                     boolean arrivedSceneStartPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPoint,
-                            new Point2D.Double(vehicleCurrentInfo.getLongitude(),
-                                    vehicleCurrentInfo.getLatitude()),
+                            position,
                             radius);
                     log.info("是否到达场景{}的触发点:{}", sequence, arrivedSceneStartPoint);
                     if(arrivedSceneStartPoint){
@@ -366,13 +397,15 @@ public class TaskExercise implements Runnable{
                         sceneIndex++;
                     }
                 }
-                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(
-                        endPoint,
-                        new Point2D.Double(vehicleCurrentInfo.getLongitude(),
-                                vehicleCurrentInfo.getLatitude()),
-                        radius);
+                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
                 if(taskEnd){
                     log.info("主车已到达终点,任务结束");
+                    stopFusion(toLocalDto, detail);
+                    stop(ykStartReq, tessStartReq, commandChannel, dataChannel, tessCommandChannel, tessDataChannel);
+                    break;
+                }
+                if(System.currentTimeMillis() - taskStartTime > timeoutConfig.taskDuration * 60 * 1000){
+                    log.info("任务运行时间已超过{}分钟,强制结束任务", timeoutConfig.taskDuration);
                     stopFusion(toLocalDto, detail);
                     stop(ykStartReq, tessStartReq, commandChannel, dataChannel, tessCommandChannel, tessDataChannel);
                     break;
@@ -391,6 +424,10 @@ public class TaskExercise implements Runnable{
             record.setEvaluationUrl(evaluationUrl);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         }catch (Exception e){
+            record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+            record.setCheckMsg("后台原因");
+            record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             e.printStackTrace();
         }finally {
             //释放域控设备的占用
@@ -484,7 +521,7 @@ public class TaskExercise implements Runnable{
         log.info("给仿真指令通道-{}下发状态上报请求: {}", tessCommandChannel, simuDeviceStatus);
     }
 
-    private Integer issueTaskExercise2YK(String uniques, String mirrorId, List<SimulationTrajectoryDto> trajectories) {
+    private TestIssueResultDto issueTaskExercise2YK(String uniques, String mirrorId, List<SimulationTrajectoryDto> trajectories) {
         TestParams params = TestParams.builder()
                 .imageId(mirrorId)
                 .participantTrajectories(trajectories)
@@ -500,10 +537,10 @@ public class TaskExercise implements Runnable{
         String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
         redisCache.publishMessage(testIssueChannel, testIssue);
         log.info("给设备{}下发练习任务信息成功", uniques);
-        return testIssueResultListener.awaitingMessage(uniques, timeoutConfig.taskIssue, TimeUnit.HOURS);
+        return testIssueResultListener.awaitingMessage(uniques, timeoutConfig.taskIssue, TimeUnit.MINUTES);
     }
 
-    private Integer imageIssue(String uniques, String md5, String mirrorId, String mirrorPath) {
+    private ImageIssueResultDto imageIssue(String uniques, String md5, String mirrorId, String mirrorPath) {
         ImageIssueReqDto imageIssueReq = ImageIssueReqDto.builder()
                 .timestamp(System.currentTimeMillis())
                 .deviceId(uniques)
@@ -516,15 +553,15 @@ public class TaskExercise implements Runnable{
         JSONObject imageIssue = JSONObject.parseObject(imageIssueMessage);
         log.info("向域控{}下发镜像: {}", uniques, imageIssueMessage);
         redisCache.publishMessage(imageIssueChannel, imageIssue);
-        Integer integrityStatus = imageIssueResultListener.awaitingMessage(uniques, mirrorId, timeoutConfig.imageIssue, TimeUnit.MINUTES);
-        log.info("域控{}上报镜像下发结果: {}", uniques, integrityStatus);
+        ImageIssueResultDto imageIssueResultDto = imageIssueResultListener.awaitingMessage(uniques, mirrorId, timeoutConfig.imageIssue, TimeUnit.MINUTES);
+        log.info("域控{}上报镜像下发结果: {}", uniques, imageIssueResultDto);
         //添加镜像下发域控记录
         CdjhsDeviceImageRecord deviceImageRecord = new CdjhsDeviceImageRecord();
         deviceImageRecord.setUniques(uniques);
         deviceImageRecord.setImageId(mirrorId);
         deviceImageRecord.setCreateTime(DateUtils.getNowDate());
         cdjhsDeviceImageRecordMapper.insertCdjhsDeviceImageRecord(deviceImageRecord);
-        return integrityStatus;
+        return imageIssueResultDto;
     }
 
     private Integer imageDelete(String uniques, String image) {

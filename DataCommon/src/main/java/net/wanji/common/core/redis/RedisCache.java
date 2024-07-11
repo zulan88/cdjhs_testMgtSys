@@ -288,4 +288,15 @@ public class RedisCache {
     public void publishMessage(String channel, String message){
         redisTemplate.convertAndSend(channel, message);
     }
+
+    /**
+     * 获取所有前缀的key
+     *
+     * @param prefix
+     * @return
+     */
+    public Set<String> getKeys(final String prefix) {
+        Set<String> keys = redisTemplate.keys(prefix.concat("*"));
+        return keys;
+    }
 }

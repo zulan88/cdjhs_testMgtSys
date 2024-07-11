@@ -16,4 +16,7 @@ public class ImageIssueResultDto {
 
     //校验状态 0-失败 1-成功
     private Integer imageStatus;
+
+    //异常信息
+    private String message;
 }

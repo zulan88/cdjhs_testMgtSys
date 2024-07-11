@@ -57,13 +57,12 @@ public class ImageIssueResultListener implements MessageListener {
                 }
                 return;
             }
-
             ImageIssueResultDto imageIssueResultDto = JSONObject.parseObject(body, ImageIssueResultDto.class);
             String deviceId = imageIssueResultDto.getDeviceId();
+            log.info("设备{}上报镜像下发结果: {}", deviceId, body);
             String imageId = imageIssueResultDto.getImageId();
-            Integer imageStatus = imageIssueResultDto.getImageStatus();
             String key = RedisKeyUtils.getImageIssueResultKey(deviceId, imageId);
-            redisCache.setCacheObject(key, imageStatus, 10, TimeUnit.SECONDS);
+            redisCache.setCacheObject(key, imageIssueResultDto, 10, TimeUnit.SECONDS);
 
             CountDownLatch latch = latchMap.get(deviceId);
             if(latch != null){
@@ -74,7 +73,7 @@ public class ImageIssueResultListener implements MessageListener {
         }
     }
 
-    public Integer awaitingMessage(String deviceId, String imageId, long timeout, TimeUnit timeUnit){
+    public ImageIssueResultDto awaitingMessage(String deviceId, String imageId, long timeout, TimeUnit timeUnit){
         CountDownLatch latch = new CountDownLatch(1);
         latchMap.put(deviceId, latch);
         try {

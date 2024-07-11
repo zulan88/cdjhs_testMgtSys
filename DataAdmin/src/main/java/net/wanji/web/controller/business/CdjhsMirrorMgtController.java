@@ -172,7 +172,7 @@ public class CdjhsMirrorMgtController extends BaseController
 	    if(StringUtils.isEmpty(requestId)){
 	        return AjaxResult.error("请求id不能为空");
         }
-        String progress = cdjhsMirrorMgtService.getUploadFileProgress(requestId);
+        double progress = cdjhsMirrorMgtService.getUploadFileProgress(requestId);
 	    return AjaxResult.success(progress);
     }
 }

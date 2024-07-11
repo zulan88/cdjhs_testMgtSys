@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.RedisKeyUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,9 +42,12 @@ public class UploadMultipartProgressListener implements ProgressListener {
         this.chunkIndex = chunkIndex;
         String key = RedisKeyUtils.getOssProgressDetailKey(uploadId);
         if(!redisCache.hasKey(key)){
-            this.redisCache.setCacheMapValue(key, RedisKeyUtils.TOTAL_BYTES, totalSize);
-            this.redisCache.setCacheMapValue(key, RedisKeyUtils.UPLOADED, 0);
+            Map<String, Long> map = new HashMap<>();
+            map.put(RedisKeyUtils.TOTAL_BYTES, totalSize);
+            map.put(RedisKeyUtils.UPLOADED, 0L);
+            this.redisCache.setCacheMap(key, map);
             this.redisCache.expire(key, 1, TimeUnit.DAYS);
+            log.info("开始缓存{}上传事件的进度条信息: {}", uploadId, map);
         }
     }
 
@@ -72,6 +77,7 @@ public class UploadMultipartProgressListener implements ProgressListener {
                 break;
             case TRANSFER_COMPLETED_EVENT:
                 this.succeed = true;
+                this.redisCache.setCacheMapValue(key, RedisKeyUtils.UPLOADED, totalSize);
                 log.info("uploadId-{}-multipart-{}: {}bytes have been Succeed to upload in total", uploadId, chunkIndex, totalBytes);
                 break;
             case TRANSFER_FAILED_EVENT:

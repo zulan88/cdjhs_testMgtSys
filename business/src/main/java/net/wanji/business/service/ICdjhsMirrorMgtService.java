@@ -70,5 +70,5 @@ public interface ICdjhsMirrorMgtService
 
     public Map<String, String> upload(MultipartFile multipartFile, String requestId);
 
-    public String getUploadFileProgress(String requestId);
+    public double getUploadFileProgress(String requestId);
 }

@@ -150,7 +150,7 @@ public class CdjhsMirrorMgtServiceImpl implements ICdjhsMirrorMgtService
     }
 
     @Override
-    public String getUploadFileProgress(String requestId) {
+    public double getUploadFileProgress(String requestId) {
         return fileService.getUploadFileProgress(requestId);
     }
 }

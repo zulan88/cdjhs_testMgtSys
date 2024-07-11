@@ -43,12 +43,11 @@ public class RedisKeyEventListener implements MessageListener {
     public void onMessage(Message message, byte[] pattern) {
         byte[] body = message.getBody();
         String key = new String(body);
-        String readyStatusPrefix = RedisKeyUtils.DEVICE_READY_STATUS_PRE + RedisKeyUtils.DEVICE_STATUS_PRE_LINK;
-        if(key.startsWith(readyStatusPrefix)){
-            log.info("{}键过期", key);
+        String statusPrefix = RedisKeyUtils.DEVICE_STATUS_PRE + RedisKeyUtils.DEVICE_STATUS_PRE_LINK;
+        if(key.startsWith(statusPrefix)){
             String[] split = key.split(":");
             String uniques = split[1].trim();
-            ExerciseHandler.idleDeviceMap.remove(uniques);
+            log.info("{}设备离线", uniques);
         }
     }
 }

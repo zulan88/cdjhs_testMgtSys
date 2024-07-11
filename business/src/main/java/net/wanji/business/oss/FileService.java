@@ -84,7 +84,7 @@ public class FileService {
             PutObjectRequest request = new PutObjectRequest(ossConfig.getBucketName(), objectName, inputStream);
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentMD5(BinaryUtil.toBase64String(BinaryUtil.calculateMd5(bytes)));
-            request.withProgressListener(new PutObjectProgressListener(requestId, redisCache));
+            request.withProgressListener(new PutObjectProgressListener(requestId, multipartFile.getSize(), redisCache));
 
             PutObjectResult result = ossClient.putObject(request);
             String eTag = result.getETag();
@@ -274,7 +274,8 @@ public class FileService {
         }
     }
 
-    private void delete(List<String> objectNameList) {
+    //批量删除
+    public void delete(List<String> objectNameList) {
         OSS ossClient = new OSSClientBuilder().build(ossConfig.getEndPoint(), ossConfig.getAccessKeyId(), ossConfig.getAccessKeySecret());
         try {
             DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(ossConfig.getBucketName()).withKeys(objectNameList).withEncodingType("url");
@@ -285,12 +286,27 @@ public class FileService {
                 log.info("云端镜像{}删除成功", objectName);
             }
         }catch (Exception e){
-            log.info("阿里云批量删除文件失败: {}", JSONObject.toJSONString(objectNameList));
+            log.error("阿里云批量删除文件失败: {}", JSONObject.toJSONString(objectNameList));
             e.printStackTrace();
         }finally {
             ossClient.shutdown();
         }
     }
+
+    public void delete(String objectName){
+        OSS ossClient = new OSSClientBuilder().build(ossConfig.getEndPoint(), ossConfig.getAccessKeyId(), ossConfig.getAccessKeySecret());
+        try {
+            ossClient.deleteObject(ossConfig.getBucketName(), objectName);
+            log.info("云端镜像{}删除成功", objectName);
+        }catch (Exception e){
+            log.error("云端镜像{}删除失败", objectName);
+            e.printStackTrace();
+        }finally {
+            ossClient.shutdown();
+        }
+    }
+
+
 
     //将oss文件下载到本地并且存储md5
     @Async("fileDownloadHandlePool")
@@ -311,6 +327,9 @@ public class FileService {
             mirrorMgt.setUploadStatus(0);
             mirrorMgt.setUpdateTime(DateUtils.getNowDate());
             cdjhsMirrorMgtMapper.updateCdjhsMirrorMgt(mirrorMgt);
+
+            //删除云端镜像
+            delete(objectName);
         } catch (Exception e){
             CdjhsMirrorMgt mirrorMgt = new CdjhsMirrorMgt();
             mirrorMgt.setId(cdjhsMirrorMgt.getId());
@@ -378,15 +397,17 @@ public class FileService {
         }
     }
 
-    public String getUploadFileProgress(String requestId){
+    public double getUploadFileProgress(String requestId){
         String key = RedisKeyUtils.getOssProgressDetailKey(requestId);
         Map<String, Long> map = redisCache.getCacheMap(key);
-        if(Objects.isNull(map)){
-            return "0%";
+        if(Objects.isNull(map) || map.isEmpty()){
+            return 0.0;
         }
-        long totalBytes = map.get(RedisKeyUtils.TOTAL_BYTES);
-        long uploaded = map.get(RedisKeyUtils.UPLOADED);
-        return String.format("%.1f%%", (uploaded * 100.0 / totalBytes));
+        log.info(String.valueOf(map.get(RedisKeyUtils.TOTAL_BYTES)));
+        log.info(String.valueOf(map.get(RedisKeyUtils.UPLOADED)));
+        long totalBytes = Long.parseLong(String.valueOf(map.get(RedisKeyUtils.TOTAL_BYTES)));
+        long uploaded = Long.parseLong(String.valueOf(map.get(RedisKeyUtils.UPLOADED)));
+        return uploaded * 100.0 / totalBytes;
     }
 
     public boolean check(String pathLocal, String pathCloud) {
