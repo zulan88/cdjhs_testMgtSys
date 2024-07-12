@@ -44,4 +44,5 @@ public class CaseContinuousVo {
     private String mapFile;
     private Integer mapId;
     private String endTarget;
+    private String testSceneDesc;
 }

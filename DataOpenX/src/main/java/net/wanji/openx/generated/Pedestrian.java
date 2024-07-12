@@ -46,6 +46,15 @@ import javax.xml.bind.annotation.XmlType;
 })
 public class Pedestrian {
 
+    public Pedestrian() {
+    }
+
+    public Pedestrian(String type) {
+        this.pedestrianCategory = "pedestrian";
+        this.boundingBox = new BoundingBox(type);
+        this.properties = new Properties();
+    }
+
     @XmlElement(name = "ParameterDeclarations")
     protected ParameterDeclarations parameterDeclarations;
     @XmlElement(name = "BoundingBox", required = true)

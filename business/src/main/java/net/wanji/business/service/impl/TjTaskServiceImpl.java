@@ -556,6 +556,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             BeanUtils.copyBeanProp(caseContinuousVo, t);
 
             CasePageVo caseDetail = caseDetailMap.get(t.getCaseId());
+            caseContinuousVo.setTestSceneDesc(caseDetail.getTestSceneDesc());
             // 场景分类
             if (ObjectUtil.isNotEmpty(caseDetail) && StringUtils.isNotEmpty(caseDetail.getLabel())) {
                 StringBuilder labelSort = new StringBuilder();

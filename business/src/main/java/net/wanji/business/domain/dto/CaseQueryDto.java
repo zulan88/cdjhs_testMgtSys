@@ -68,5 +68,5 @@ public class CaseQueryDto {
 
     private Integer mapId;
 
-    private Integer sceneSource;
+    private String sceneSource;
 }

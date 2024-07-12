@@ -49,7 +49,7 @@ public class Vehicle {
         this.performance = new Performance(type);
         this.axles = new Axles(type);
         this.name = type;
-        this.vehicleCategory = stand + "car";
+        this.vehicleCategory = stand;
 
     }
 
