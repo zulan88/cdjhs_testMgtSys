@@ -266,8 +266,14 @@ public class LabelsController extends BaseController {
             TaskDto taskDto = new TaskDto();
             taskDto.setId(id);
 
+            List<TaskListVo> taskList = tjTaskService.pageList(taskDto);
+
+            if (taskList.size() == 0) {
+                return AjaxResult.error("未找到该用例");
+            }
+
             // 调用服务获取任务
-            TaskListVo taskListVo= tjTaskService.pageList(taskDto).get(0);
+            TaskListVo taskListVo= taskList.get(0);
 
             // 如果任务的案例列表为空，则直接返回null
             if (taskListVo.getTaskCaseVos().size()==0) {

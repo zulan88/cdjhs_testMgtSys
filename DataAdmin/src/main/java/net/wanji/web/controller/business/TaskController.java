@@ -392,11 +392,15 @@ public class TaskController extends BaseController {
 
     @ApiOperationSort(21)
     @ApiOperation(value = "21.删除任务")
-    @DeleteMapping("/{id}")
-    public AjaxResult remove(@PathVariable Integer id) {
-        return tjTaskService.taskDelete(id.intValue()) ?
-            AjaxResult.success("删除成功") :
-            AjaxResult.error("删除失败");
+    @DeleteMapping("/{ids}")
+    public AjaxResult remove(@PathVariable Integer[] ids) {
+        for (Integer id : ids) {
+            boolean flag = tjTaskService.taskDelete(id);
+            if (!flag) {
+                return AjaxResult.error("删除失败");
+            }
+        }
+        return AjaxResult.success("删除成功");
     }
 
     @ApiOperationSort(22)

@@ -32,8 +32,12 @@ public class SceneLibMap {
 
     public static WoPostion getEnd(String id) {
         WoPostion woPostion = endMap.get(id);
-        endMap.remove(id);
+//        endMap.remove(id);
         return woPostion;
+    }
+
+    public static void clear(String id) {
+        endMap.remove(id);
     }
 
 }

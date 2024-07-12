@@ -529,7 +529,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 TjCaseDto tjCaseDto = new TjCaseDto();
                 tjCaseDto.setRemark("1");
                 tjCaseDto.setTreeId(53);
-                tjCaseDto.setSceneDetailId(item.getSceneDetailId());
+                tjCaseDto.setSceneDetailId(scenelib.getSceneDetailId());
                 tjCaseDto.setSceneLibId(item.getId());
                 //PartConfigSelect partConfigSelect = new PartConfigSelect();
                 //List<CasePartConfigVo> parts = new ArrayList<>();
@@ -541,7 +541,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 //partConfigSelect.setParts(parts);
                 //List<PartConfigSelect> partConfigSelects = new ArrayList<>();
                 //partConfigSelects.add(partConfigSelect);
-                tjCaseDto.setLabels(item.getLabels());
+                tjCaseDto.setLabels(scenelib.getLabels());
                 if(scenelib.getGeojsonPath()!=null) {
                     tjCaseDto.setMapId(Integer.valueOf(scenelib.getGeojsonPath()));
                 }else {
@@ -549,22 +549,26 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 }
                 tjCaseDto.setEvoNum(scenelib.getEvoNum());
                 WoPostion end = SceneLibMap.getEnd(scenelib.getXoscPath());
-                double x1 = Double.parseDouble(end.getXTarget().split(",")[0]);
-                double x2 = Double.parseDouble(end.getXTarget().split(",")[1]);
-                double y1 = Double.parseDouble(end.getYTarget().split(",")[0]);
-                double y2 = Double.parseDouble(end.getYTarget().split(",")[1]);
-                JSONObject end1 = toBuildOpenXUtil.retotrans(x1, y1, proj, 0D);
-                JSONObject end2 = toBuildOpenXUtil.retotrans(x2, y2, proj, 0D);
-                JSONArray jsonArray = new JSONArray();
-                jsonArray.add(end1);
-                jsonArray.add(end2);
-                tjCaseDto.setTestTarget(jsonArray.toJSONString());
+                if (end!=null) {
+                    double x1 = Double.parseDouble(end.getXTarget().split(",")[0]);
+                    double x2 = Double.parseDouble(end.getXTarget().split(",")[1]);
+                    double y1 = Double.parseDouble(end.getYTarget().split(",")[0]);
+                    double y2 = Double.parseDouble(end.getYTarget().split(",")[1]);
+                    JSONObject end1 = toBuildOpenXUtil.retotrans(x1, y1, proj, 0D);
+                    JSONObject end2 = toBuildOpenXUtil.retotrans(x2, y2, proj, 0D);
+                    JSONArray jsonArray = new JSONArray();
+                    jsonArray.add(end1);
+                    jsonArray.add(end2);
+                    tjCaseDto.setTestTarget(jsonArray.toJSONString());
+                }
                 //tjCaseDto.setPartConfigSelects(partConfigSelects);
                 try {
                     caseService.saveCase(tjCaseDto);
+                    SceneLibMap.clear(scenelib.getXoscPath());
                 } catch (BusinessException e) {
                     throw new RuntimeException(e);
                 }
+
             }
             String status = "invalid";
             if (item.getSceneStatus() == 1) {  //有效
