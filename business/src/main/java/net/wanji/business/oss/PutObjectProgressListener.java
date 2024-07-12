@@ -46,7 +46,7 @@ public class PutObjectProgressListener implements ProgressListener {
         String key = RedisKeyUtils.getOssProgressDetailKey(this.requestId);
         switch (eventType){
             case TRANSFER_STARTED_EVENT:
-                log.info("Start to upload......");
+                log.info("文件上传开始...");
                 break;
             case REQUEST_CONTENT_LENGTH_EVENT:
                 this.totalBytes = bytes;
@@ -58,10 +58,9 @@ public class PutObjectProgressListener implements ProgressListener {
                 break;
             case TRANSFER_COMPLETED_EVENT:
                 this.succeed = true;
-                log.info("Succeed to upload, " + this.bytesWritten + " bytes have been transferred in total");
                 break;
             case TRANSFER_FAILED_EVENT:
-                log.info("Failed to upload, " + this.bytesWritten + " bytes have been transferred");
+                log.info("文件上传失败...");
                 break;
             default:
                 break;

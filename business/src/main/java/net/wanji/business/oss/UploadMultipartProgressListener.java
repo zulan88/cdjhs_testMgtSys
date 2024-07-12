@@ -47,7 +47,6 @@ public class UploadMultipartProgressListener implements ProgressListener {
             map.put(RedisKeyUtils.UPLOADED, 0L);
             this.redisCache.setCacheMap(key, map);
             this.redisCache.expire(key, 1, TimeUnit.DAYS);
-            log.info("开始缓存{}上传事件的进度条信息: {}", uploadId, map);
         }
     }
 
@@ -58,11 +57,10 @@ public class UploadMultipartProgressListener implements ProgressListener {
         String key = RedisKeyUtils.getOssProgressDetailKey(uploadId);
         switch (eventType){
             case TRANSFER_STARTED_EVENT:
-                log.info("Start to upload uploadId-{}-multipart-{}......", uploadId, chunkIndex);
+                log.info("分片上传事件-{}-切片{}开始上传", uploadId, chunkIndex);
                 break;
             case REQUEST_CONTENT_LENGTH_EVENT:
                 this.totalBytes = bytes;
-                log.info("uploadId-{}-multipart-{}: {}bytes in total will be uploaded to OSS", uploadId, chunkIndex, totalBytes);
                 break;
             case REQUEST_BYTE_TRANSFER_EVENT:
                 this.bytesWritten += bytes;
@@ -78,10 +76,9 @@ public class UploadMultipartProgressListener implements ProgressListener {
             case TRANSFER_COMPLETED_EVENT:
                 this.succeed = true;
                 this.redisCache.setCacheMapValue(key, RedisKeyUtils.UPLOADED, totalSize);
-                log.info("uploadId-{}-multipart-{}: {}bytes have been Succeed to upload in total", uploadId, chunkIndex, totalBytes);
                 break;
             case TRANSFER_FAILED_EVENT:
-                log.info("uploadId-{}-multipart-{}: Failed to upload, {}bytes have been transferred", uploadId, chunkIndex, bytesWritten);
+                log.info("分片上传事件{}-切片{}上传失败", uploadId, chunkIndex);
                 break;
             default:
                 break;

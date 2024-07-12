@@ -30,6 +30,7 @@ import net.wanji.business.exercise.dto.strategy.DeviceConnInfo;
 import net.wanji.business.exercise.dto.strategy.Strategy;
 import net.wanji.business.exercise.enums.CheckResultEnum;
 import net.wanji.business.exercise.enums.OperationTypeEnum;
+import net.wanji.business.exercise.enums.TaskExerciseEnum;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.exercise.utils.SimulationAreaCalculator;
 import net.wanji.business.listener.*;
@@ -124,6 +125,18 @@ public class TaskExercise implements Runnable{
 
     private boolean firstMinute = true;
 
+    private Integer taskStatus;
+
+    private TjDeviceDetail detail;
+
+    private TessParam tessParam;
+
+    private ToLocalDto toLocalDto;
+
+    private TestStartReqDto tessStartReq;
+
+    private TestStartReqDto ykStartReq;
+
     public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort, Double radius, String kafkaTopic, String kafkaHost,
                         CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper, RedisCache redisCache,
                         ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
@@ -153,6 +166,7 @@ public class TaskExercise implements Runnable{
         this.tjTaskMapper = tjTaskMapper;
         this.interactionFuc = interactionFuc;
         this.timeoutConfig = timeoutConfig;
+        this.taskStatus = TaskExerciseEnum.BEFORE_TESS_AWAKENED.getStatus();
     }
 
     @Override
@@ -230,7 +244,7 @@ public class TaskExercise implements Runnable{
                 return;
             }
             //唤醒仿真 构建唤醒仿真开始结构体
-            TessParam tessParam = buildTessServerParam(21, record.getUserName(), record.getId(), Arrays.asList("21"));
+            tessParam = buildTessServerParam(21, record.getUserName(), record.getId(), Arrays.asList("21"));
             String tessCommandChannel = tessParam.getCommandChannel();
             String tessDataChannel = tessParam.getDataChannel();
             String tessStatusChannel = tessParam.getStatusChannel();
@@ -242,6 +256,7 @@ public class TaskExercise implements Runnable{
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
+            taskStatus = TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus();
             log.info("唤醒仿真成功");
 
             TjDeviceDetailDto query = new TjDeviceDetailDto();
@@ -292,7 +307,7 @@ public class TaskExercise implements Runnable{
             //获取每个场景的起点列表
             List<StartPoint> startPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
             //任务开始
-            TjDeviceDetail detail = tjDeviceDetailMapper.selectByUniques(uniques);
+            detail = tjDeviceDetailMapper.selectByUniques(uniques);
             if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 String checkMsg = String.format("数据库中没有查询到练习设备%s的数据通道或指令通道", uniques);
@@ -304,11 +319,12 @@ public class TaskExercise implements Runnable{
             String dataChannel = detail.getDataChannel();
             String commandChannel = detail.getCommandChannel();
             //仿真开始测试数据组装
-            TestStartReqDto tessStartReq = buildTessTestStart(dataChannel, tessDataChannel);
+            tessStartReq = buildTessTestStart(dataChannel, tessDataChannel);
             String tessMessage = JSONObject.toJSONString(tessStartReq);
             JSONObject tessStartMessage = JSONObject.parseObject(tessMessage);
             //添加主车轨迹数据通道监听
             LinkedBlockingQueue<String> queue = getAVRedisQueue(dataChannel);
+            taskStatus = TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus();
             //创建融合数据存储记录
             DataFile dataFile = new DataFile();
             dataFile.setFileName(record.getId() + File.separator + 0 + File.separator
@@ -316,7 +332,7 @@ public class TaskExercise implements Runnable{
             dataFileService.save(dataFile);
             // 监听kafka、文件记录
             String evaluationKafkaTopic = Constants.ChannelBuilder.buildTaskEvaluationKafkaTopic(record.getId());
-            ToLocalDto toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
+            toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
                     dataFile.getId(), evaluationKafkaTopic, record.getUserName());
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
@@ -324,11 +340,13 @@ public class TaskExercise implements Runnable{
             String startStrategy = JSONObject.toJSONString(caseStrategy);
             kafkaProducer.sendMessage(kafkaTopic, startStrategy);
             log.info("向topic-{}发送数据融合开始策略: {}", kafkaTopic, startStrategy);
+            taskStatus = TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus();
             //域控开始任务指令
-            TestStartReqDto ykStartReq = buildYKTestStart(dataChannel, tessDataChannel);
+            ykStartReq = buildYKTestStart(dataChannel, tessDataChannel);
             String ykMessage = JSONObject.toJSONString(ykStartReq);
             JSONObject ykStartMessage = JSONObject.parseObject(ykMessage);
             redisCache.publishMessage(detail.getCommandChannel(), ykStartMessage);
+            taskStatus = TaskExerciseEnum.IS_TASK_STARTED.getStatus();
             log.info("向域控{}下发开始任务指令: {}", uniques, ykMessage);
             //更新练习开始时间
             long taskStartTime = System.currentTimeMillis();
@@ -409,27 +427,55 @@ public class TaskExercise implements Runnable{
                     break;
                 }
             }
-            //更新测试结束和融合数据本地存储路径
-            record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-            record.setEndTime(new Date());
-            //计算测试时长
-            int sec = (int) (record.getEndTime().getTime() - record.getStartTime().getTime()) / 1000;
-            record.setDuration(DateUtils.secondsToDuration(sec));
-            String fusionFilePath = dataFileService.getPath() + File.separator + toLocalDto.getFileName();
-            record.setFusionFilePath(fusionFilePath);
-            //请求算法输出场景评分
-            String evaluationUrl = getOfflineEvaluationUrl(record.getTestId(), evaluationKafkaTopic, toLocalDto.getMainVehicleId());
-            record.setEvaluationUrl(evaluationUrl);
-            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-        }catch (Exception e){
+            processAfterTaskEnd();
+        } catch (InterruptedException e){
+            log.info("任务被强制结束...");
+            forceEnd();
+            if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
+                processAfterTaskEnd();
+            }
+        } catch (Exception e){
+            forceEnd();
             record.setCheckResult(CheckResultEnum.FAILURE.getResult());
             record.setCheckMsg("后台原因");
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             e.printStackTrace();
-        }finally {
+        } finally {
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
+            ExerciseHandler.taskThreadMap.remove(record.getId());
+        }
+    }
+
+    private void processAfterTaskEnd() {
+        //更新测试结束和融合数据本地存储路径
+        record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+        record.setEndTime(new Date());
+        //计算测试时长
+        int sec = (int) (record.getEndTime().getTime() - record.getStartTime().getTime()) / 1000;
+        record.setDuration(DateUtils.secondsToDuration(sec));
+        String fusionFilePath = dataFileService.getPath() + File.separator + toLocalDto.getFileName();
+        record.setFusionFilePath(fusionFilePath);
+        //请求算法输出场景评分
+        String evaluationUrl = getOfflineEvaluationUrl(record.getTestId(), toLocalDto.getKafkaTopic(), toLocalDto.getMainVehicleId());
+        record.setEvaluationUrl(evaluationUrl);
+        cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+    }
+
+    private void forceEnd(){
+        if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
+            stopFusion(toLocalDto, detail);
+            stop(ykStartReq, tessStartReq, detail.getCommandChannel(), detail.getDataChannel(), tessParam.getCommandChannel(), tessParam.getDataChannel());
+        }else if(taskStatus.compareTo(TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus()) == 0){
+            stopFusion(toLocalDto, detail);
+            stopListenMainTrajectory(detail.getDataChannel());
+            closeSimulationServer(tessParam.getDataChannel());
+        }else if(taskStatus.compareTo(TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus()) == 0){
+            stopListenMainTrajectory(detail.getDataChannel());
+            closeSimulationServer(tessParam.getDataChannel());
+        }else if(taskStatus.compareTo(TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus()) == 0){
+            closeSimulationServer(tessParam.getDataChannel());
         }
     }
 
@@ -457,58 +503,65 @@ public class TaskExercise implements Runnable{
                 return restService.createEvaluation(evaluationCreateDto);
             }
         }catch (Exception e){
+            log.info("请求新建评价接口报错");
             e.printStackTrace();
         }
         return null;
     }
 
     private String getNetworkId(Long testId) {
-        //组装新建路网请求参数
-        NetworkCreateDto networkCreateDto = new NetworkCreateDto();
-        networkCreateDto.setTimestamp(String.valueOf(System.currentTimeMillis()));
-        NetworkData data = new NetworkData();
-        RegionalWeight regionalWeight = new RegionalWeight();
-        //获取场景信息
-        List<EvaluationAreaInfo> evaluationAreaInfos = new ArrayList<>();
-        List<SceneDetailVo> sceneDetails = interactionFuc.findSceneDetail(testId.intValue());
-        for(int i = 0; i < sceneDetails.size(); i++){
-            SceneDetailVo sceneDetailVo = sceneDetails.get(i);
-            EvaluationAreaInfo evaluationAreaInfo = new EvaluationAreaInfo();
-            evaluationAreaInfo.setId(i);
-            evaluationAreaInfo.setName(String.valueOf(i));
-            evaluationAreaInfo.setWeights(String.valueOf(sceneDetailVo.getEvoNum()));
-            //组装场景的角度信息
-            JSONObject simuArea = SimulationAreaCalculator.getSimuArea(sceneDetailVo.getRoadCondition(), 0.1);
-            assert simuArea != null;
-            double leftTopX = simuArea.getDoubleValue("leftTopX");
-            double leftTopY = simuArea.getDoubleValue("leftTopY");
-            double rightBottomX = simuArea.getDoubleValue("rightBottomX");
-            double rightBottomY = simuArea.getDoubleValue("rightBottomY");
-            Region region = new Region();
-            RegionPosition posFrom = new RegionPosition();
-            posFrom.setX(leftTopX);
-            posFrom.setY(leftTopY);
-            region.setPosFrom(posFrom);
+        try {
+            //组装新建路网请求参数
+            NetworkCreateDto networkCreateDto = new NetworkCreateDto();
+            networkCreateDto.setTimestamp(String.valueOf(System.currentTimeMillis()));
+            NetworkData data = new NetworkData();
+            RegionalWeight regionalWeight = new RegionalWeight();
+            //获取场景信息
+            List<EvaluationAreaInfo> evaluationAreaInfos = new ArrayList<>();
+            List<SceneDetailVo> sceneDetails = interactionFuc.findSceneDetail(testId.intValue());
+            for(int i = 0; i < sceneDetails.size(); i++){
+                SceneDetailVo sceneDetailVo = sceneDetails.get(i);
+                EvaluationAreaInfo evaluationAreaInfo = new EvaluationAreaInfo();
+                evaluationAreaInfo.setId(i);
+                evaluationAreaInfo.setName(String.valueOf(i));
+                evaluationAreaInfo.setWeights(String.valueOf(sceneDetailVo.getEvoNum()));
+                //组装场景的角度信息
+                JSONObject simuArea = SimulationAreaCalculator.getSimuArea(sceneDetailVo.getRoadCondition(), 0.1);
+                assert simuArea != null;
+                double leftTopX = simuArea.getDoubleValue("leftTopX");
+                double leftTopY = simuArea.getDoubleValue("leftTopY");
+                double rightBottomX = simuArea.getDoubleValue("rightBottomX");
+                double rightBottomY = simuArea.getDoubleValue("rightBottomY");
+                Region region = new Region();
+                RegionPosition posFrom = new RegionPosition();
+                posFrom.setX(leftTopX);
+                posFrom.setY(leftTopY);
+                region.setPosFrom(posFrom);
 
-            RegionPosition posTo = new RegionPosition();
-            posTo.setX(rightBottomX);
-            posTo.setY(rightBottomY);
-            region.setPosTo(posTo);
+                RegionPosition posTo = new RegionPosition();
+                posTo.setX(rightBottomX);
+                posTo.setY(rightBottomY);
+                region.setPosTo(posTo);
 
-            String jsonRegion = JSONObject.toJSONString(region);
-            evaluationAreaInfo.setRegion(jsonRegion);
+                String jsonRegion = JSONObject.toJSONString(region);
+                evaluationAreaInfo.setRegion(jsonRegion);
 
-            evaluationAreaInfos.add(evaluationAreaInfo);
+                evaluationAreaInfos.add(evaluationAreaInfo);
+            }
+            regionalWeight.setEvaluationArea(evaluationAreaInfos);
+            data.setRegionalWeight(regionalWeight);
+            //场景评价指标信息
+            String json = "{\"EvaluationSafeWeights\":[{\"id\":1,\"weights\":10,\"indicatorName\":\"是否碰撞\",\"calculationFormula\":\"碰撞-100\",\"indicatorDescription\":\"判断主车与障碍物是否发生碰撞，若是，则不通过。\"},{\"id\":2,\"weights\":10,\"indicatorName\":\"碰撞时间TTC\",\"calculationFormula\":\"TTC危险时长/任务耗时*100%\",\"indicatorDescription\":\"计算主车的碰撞时间， 若TTC<1s， 则认为存在碰撞风险， 累计违规时长。\"},{\"id\":3,\"weights\":10,\"indicatorName\":\"逆向行驶\",\"calculationFormula\":\"逆向行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车是否出现逆向行驶的情况，若是，则累计违规时长。\"},{\"id\":4,\"weights\":10,\"indicatorName\":\"压实线行驶\",\"calculationFormula\":\"压实线行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车行驶过程中是否压实线，若是，则累计违规时长。\"},{\"id\":5,\"weights\":10,\"indicatorName\":\"超速行驶\",\"calculationFormula\":\"超速行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车行驶速度是否超过地图上的道路限速，若是，则累计违规时长。\"},{\"id\":6,\"weights\":10,\"indicatorName\":\"四轮在路\",\"calculationFormula\":\"四轮未在路行驶时长/任务耗时*100%\",\"indicatorDescription\":\"判断主车四轮是否全程都在道路内，若不是，则累计违规时长。\"},{\"id\":7,\"weights\":40,\"indicatorName\":\"横向间距\",\"calculationFormula\":\"危险横向间距行驶时长/任务耗时*100%\",\"indicatorDescription\":\"计算主车与周围车的横向车间距，若小于1米，则认为存在碰撞风险，累计违规时长。\"},{\"id\":8,\"weights\":10,\"indicatorName\":\"在禁行区禁行\",\"calculationFormula\":\"禁行区行驶-100\",\"indicatorDescription\":\"检测主车年是否在应急车道、非机动车道、公交专用车道等禁行区域行驶，若是，则不通过。\"}],\"EvaluationClassWeights\":[{\"id\":1,\"name\":\"安全\",\"weights\":\"60\"},{\"id\":2,\"name\":\"效率\",\"weights\":\"40\"},{\"id\":3,\"name\":\"舒适\",\"weights\":\"20\"}],\"EvaluationComfortWeights\":[{\"id\":1,\"weights\":10,\"indicatorName\":\"横向加速度\",\"calculationFormula\":\"横向加速度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的横向加速度是否在合理上下限范围内[-4,4]m/s2，若不是，则累计违规时长。\"},{\"id\":2,\"weights\":10,\"indicatorName\":\"横向急动度\",\"calculationFormula\":\"横向急动度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的横向加速度变化率是否在合理上下限范围内[-4,4]m/s3，若不是，则累计违规时长。\"},{\"id\":3,\"weights\":10,\"indicatorName\":\"纵向加速度\",\"calculationFormula\":\"纵向加速度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的纵向加速度是否在合理上下限范围内[-4,4]m/s2，若不是，则累计违规时长。\"},{\"id\":4,\"weights\":10,\"indicatorName\":\"纵向急动度\",\"calculationFormula\":\"纵向急动度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测轨迹规划点的纵向加速度变化率是否在合理上下限范围内[-4,4]m/s3，若不是，则累计违规时长。\"},{\"id\":5,\"weights\":60,\"indicatorName\":\"角速度\",\"calculationFormula\":\"航向角变化超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测航向角是否反复变化，若航向角频繁变化，则累计违规时长。\"}],\"EvaluationEfficiencyWeights\":[{\"id\":1,\"weights\":50,\"indicatorName\":\"任务完成时间\",\"calculationFormula\":\"期望时间/实际用时*100%\",\"indicatorDescription\":\"按照超出期望用时的比例进行扣分，在期望用时内完成任务为满分。\"},{\"id\":2,\"weights\":50,\"indicatorName\":\"平均速度\",\"calculationFormula\":\"行驶里程/行驶时间\",\"indicatorDescription\":\"计算主车在行驶全程中的平均速度。\"}]}";
+            ProjectWeight projectWeight = JSONObject.parseObject(json, ProjectWeight.class);
+            data.setProjectWeight(projectWeight);
+            networkCreateDto.setData(data);
+
+            return restService.createNetwork(networkCreateDto);
+        }catch (Exception e){
+            log.info("请求新建路网接口报错");
+            e.printStackTrace();
         }
-        regionalWeight.setEvaluationArea(evaluationAreaInfos);
-        data.setRegionalWeight(regionalWeight);
-        //场景评价指标信息
-        String json = "{\"EvaluationSafeWeights\":[{\"id\":1,\"weights\":10,\"indicatorName\":\"是否碰撞\",\"calculationFormula\":\"碰撞-100\",\"indicatorDescription\":\"判断主车与障碍物是否发生碰撞，若是，则不通过。\"},{\"id\":2,\"weights\":10,\"indicatorName\":\"碰撞时间TTC\",\"calculationFormula\":\"TTC危险时长/任务耗时*100%\",\"indicatorDescription\":\"计算主车的碰撞时间， 若TTC<1s， 则认为存在碰撞风险， 累计违规时长。\"},{\"id\":3,\"weights\":10,\"indicatorName\":\"逆向行驶\",\"calculationFormula\":\"逆向行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车是否出现逆向行驶的情况，若是，则累计违规时长。\"},{\"id\":4,\"weights\":10,\"indicatorName\":\"压实线行驶\",\"calculationFormula\":\"压实线行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车行驶过程中是否压实线，若是，则累计违规时长。\"},{\"id\":5,\"weights\":10,\"indicatorName\":\"超速行驶\",\"calculationFormula\":\"超速行驶时长/任务耗时*100%\",\"indicatorDescription\":\"检测主车行驶速度是否超过地图上的道路限速，若是，则累计违规时长。\"},{\"id\":6,\"weights\":10,\"indicatorName\":\"四轮在路\",\"calculationFormula\":\"四轮未在路行驶时长/任务耗时*100%\",\"indicatorDescription\":\"判断主车四轮是否全程都在道路内，若不是，则累计违规时长。\"},{\"id\":7,\"weights\":40,\"indicatorName\":\"横向间距\",\"calculationFormula\":\"危险横向间距行驶时长/任务耗时*100%\",\"indicatorDescription\":\"计算主车与周围车的横向车间距，若小于1米，则认为存在碰撞风险，累计违规时长。\"},{\"id\":8,\"weights\":10,\"indicatorName\":\"在禁行区禁行\",\"calculationFormula\":\"禁行区行驶-100\",\"indicatorDescription\":\"检测主车年是否在应急车道、非机动车道、公交专用车道等禁行区域行驶，若是，则不通过。\"}],\"EvaluationClassWeights\":[{\"id\":1,\"name\":\"安全\",\"weights\":\"60\"},{\"id\":2,\"name\":\"效率\",\"weights\":\"40\"},{\"id\":3,\"name\":\"舒适\",\"weights\":\"20\"}],\"EvaluationComfortWeights\":[{\"id\":1,\"weights\":10,\"indicatorName\":\"横向加速度\",\"calculationFormula\":\"横向加速度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的横向加速度是否在合理上下限范围内[-4,4]m/s2，若不是，则累计违规时长。\"},{\"id\":2,\"weights\":10,\"indicatorName\":\"横向急动度\",\"calculationFormula\":\"横向急动度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的横向加速度变化率是否在合理上下限范围内[-4,4]m/s3，若不是，则累计违规时长。\"},{\"id\":3,\"weights\":10,\"indicatorName\":\"纵向加速度\",\"calculationFormula\":\"纵向加速度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测规划轨迹点的纵向加速度是否在合理上下限范围内[-4,4]m/s2，若不是，则累计违规时长。\"},{\"id\":4,\"weights\":10,\"indicatorName\":\"纵向急动度\",\"calculationFormula\":\"纵向急动度超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测轨迹规划点的纵向加速度变化率是否在合理上下限范围内[-4,4]m/s3，若不是，则累计违规时长。\"},{\"id\":5,\"weights\":60,\"indicatorName\":\"角速度\",\"calculationFormula\":\"航向角变化超出阈值时长/任务耗时*100%\",\"indicatorDescription\":\"检测航向角是否反复变化，若航向角频繁变化，则累计违规时长。\"}],\"EvaluationEfficiencyWeights\":[{\"id\":1,\"weights\":50,\"indicatorName\":\"任务完成时间\",\"calculationFormula\":\"期望时间/实际用时*100%\",\"indicatorDescription\":\"按照超出期望用时的比例进行扣分，在期望用时内完成任务为满分。\"},{\"id\":2,\"weights\":50,\"indicatorName\":\"平均速度\",\"calculationFormula\":\"行驶里程/行驶时间\",\"indicatorDescription\":\"计算主车在行驶全程中的平均速度。\"}]}";
-        ProjectWeight projectWeight = JSONObject.parseObject(json, ProjectWeight.class);
-        data.setProjectWeight(projectWeight);
-        networkCreateDto.setData(data);
-
-        return restService.createNetwork(networkCreateDto);
+        return null;
     }
 
     private void simulationStatusReq(String tessCommandChannel, Integer simulationId) {
@@ -725,11 +778,27 @@ public class TaskExercise implements Runnable{
     }
 
     private void stop(TestStartReqDto yk, TestStartReqDto tess,  String commandChannel, String dataChannel, String tessCommandChannel, String tessDataChannel) {
+        //停止监听主车轨迹
+        stopListenMainTrajectory(dataChannel);
+        //域控
+        issueEnd2YK(yk, commandChannel);
+
+        //仿真
+        issueEnd2Simulation(tess, tessCommandChannel);
+
+        //仿真关闭
+        closeSimulationServer(tessDataChannel);
+    }
+
+    private void stopListenMainTrajectory(String dataChannel) {
         //停止监听主车数据通道
         redisMessageListenerContainer.removeMessageListener(trajectoryListener, new ChannelTopic(dataChannel));
         //删除消息队列
         trajectoryListener.remove(dataChannel);
-        //域控
+        log.info("停止监听主车轨迹通道: {}", dataChannel);
+    }
+
+    private void issueEnd2YK(TestStartReqDto yk, String commandChannel) {
         TestStartParams ykParams = yk.getParams();
         ykParams.setTaskType(0);
         yk.setParams(ykParams);
@@ -738,8 +807,9 @@ public class TaskExercise implements Runnable{
         JSONObject ykEndMessage = JSONObject.parseObject(ykMessage);
         redisCache.publishMessage(commandChannel, ykEndMessage);
         log.info("给域控指令通道-{}下发任务结束:{}", commandChannel, ykMessage);
+    }
 
-        //仿真
+    private void issueEnd2Simulation(TestStartReqDto tess, String tessCommandChannel) {
         TestStartParams tessParams = tess.getParams();
         tessParams.setTaskType(0);
         tess.setParams(tessParams);
@@ -748,8 +818,9 @@ public class TaskExercise implements Runnable{
         JSONObject tessEndMessage = JSONObject.parseObject(tessMessage);
         redisCache.publishMessage(tessCommandChannel, tessEndMessage);
         log.info("给仿真下发指令通道-{}下发任务结束: {}", tessCommandChannel, tessMessage);
+    }
 
-        //仿真关闭
+    private void closeSimulationServer(String tessDataChannel){
         restService.stopTessNg(tessIp, String.valueOf(tessPort), tessDataChannel, 1);
         log.info("关闭仿真...");
     }

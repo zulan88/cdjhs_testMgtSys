@@ -158,8 +158,8 @@ public class ExerciseHandler {
                                     restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                     tjTaskMapper, interactionFuc, timeoutConfig);
                             Future<?> future = executor.submit(taskExercise);
-                            //TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
-                            //taskThreadMap.put(record.getId(), taskExerciseDto);
+                            TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
+                            taskThreadMap.put(record.getId(), taskExerciseDto);
                         }
                     }
                 }catch (Exception e){
@@ -193,8 +193,8 @@ public class ExerciseHandler {
                                     restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                     tjTaskMapper, interactionFuc, timeoutConfig);
                             Future<?> future = executor.submit(taskExercise);
-                            //TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
-                            //taskThreadMap.put(record.getId(), taskExerciseDto);
+                            TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
+                            taskThreadMap.put(record.getId(), taskExerciseDto);
                         }
                     }
                 }catch (Exception e){
@@ -211,11 +211,8 @@ public class ExerciseHandler {
             log.info("练习任务{}不存在", taskId);
         }else{
             Future<?> future = taskThreadMap.get(taskId).getFuture();
-            TaskExercise taskExercise = taskThreadMap.get(taskId).getTaskExercise();
             if(future != null && !(future.isCancelled() || future.isDone())){
-                boolean cancel = future.cancel(true);
-                log.info("练习任务是否已强制结束:{}", cancel);
-                return cancel;
+                return future.cancel(true);
             }
         }
         return false;
