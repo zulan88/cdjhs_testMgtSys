@@ -26,10 +26,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Component
 public class ExerciseHandler {
+    public static ConcurrentHashMap<Long, TaskExerciseDto> taskThreadMap = new ConcurrentHashMap<>();
 
     public static ExpiringMap<String, Long> occupationMap = ExpiringMap.builder()
             .maxSize(5)
@@ -159,7 +157,9 @@ public class ExerciseHandler {
                                     redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
                                     restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                     tjTaskMapper, interactionFuc, timeoutConfig);
-                            executor.submit(taskExercise);
+                            Future<?> future = executor.submit(taskExercise);
+                            //TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
+                            //taskThreadMap.put(record.getId(), taskExerciseDto);
                         }
                     }
                 }catch (Exception e){
@@ -192,7 +192,9 @@ public class ExerciseHandler {
                                     redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
                                     restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                     tjTaskMapper, interactionFuc, timeoutConfig);
-                            executor.submit(taskExercise);
+                            Future<?> future = executor.submit(taskExercise);
+                            //TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
+                            //taskThreadMap.put(record.getId(), taskExerciseDto);
                         }
                     }
                 }catch (Exception e){
@@ -202,6 +204,21 @@ public class ExerciseHandler {
             }
         });
         tempConsumeThread.start();
+    }
+
+    public static boolean forceEndTask(Long taskId){
+        if(!taskThreadMap.containsKey(taskId)){
+            log.info("练习任务{}不存在", taskId);
+        }else{
+            Future<?> future = taskThreadMap.get(taskId).getFuture();
+            TaskExercise taskExercise = taskThreadMap.get(taskId).getTaskExercise();
+            if(future != null && !(future.isCancelled() || future.isDone())){
+                boolean cancel = future.cancel(true);
+                log.info("练习任务是否已强制结束:{}", cancel);
+                return cancel;
+            }
+        }
+        return false;
     }
 
     private List<String> getOnlineAndIdleDevice() {

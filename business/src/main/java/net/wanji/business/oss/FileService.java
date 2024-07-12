@@ -30,8 +30,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -403,8 +401,6 @@ public class FileService {
         if(Objects.isNull(map) || map.isEmpty()){
             return 0.0;
         }
-        log.info(String.valueOf(map.get(RedisKeyUtils.TOTAL_BYTES)));
-        log.info(String.valueOf(map.get(RedisKeyUtils.UPLOADED)));
         long totalBytes = Long.parseLong(String.valueOf(map.get(RedisKeyUtils.TOTAL_BYTES)));
         long uploaded = Long.parseLong(String.valueOf(map.get(RedisKeyUtils.UPLOADED)));
         return uploaded * 100.0 / totalBytes;

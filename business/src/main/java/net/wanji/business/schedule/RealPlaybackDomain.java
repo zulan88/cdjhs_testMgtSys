@@ -49,7 +49,6 @@ public class RealPlaybackDomain {
         this.sequence = 0;
 
         this.future = AsyncManager.me().execute(() -> {
-            // send data
             try {
                 if (!running) {
                     return;

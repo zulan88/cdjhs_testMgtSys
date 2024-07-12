@@ -269,8 +269,7 @@ public class TaskExercise implements Runnable{
             String simulationSceneMessage = JSONObject.toJSONString(simulationSceneInfo);
             JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
             redisCache.publishMessage(tessCommandChannel, simulationScene);
-            log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
-            log.info("给仿真数据json{}-下发片段式场景信息", simulationScene);
+            log.info("给仿真指令通道-{}-下发片段式场景信息: {}", tessCommandChannel, simulationSceneMessage);
             //仿真是否准备就绪
             boolean isSimulationReady = false;
             long startTime = System.currentTimeMillis();
@@ -318,7 +317,7 @@ public class TaskExercise implements Runnable{
             // 监听kafka、文件记录
             String evaluationKafkaTopic = Constants.ChannelBuilder.buildTaskEvaluationKafkaTopic(record.getId());
             ToLocalDto toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
-                    dataFile.getId(), evaluationKafkaTopic);
+                    dataFile.getId(), evaluationKafkaTopic, record.getUserName());
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
@@ -345,7 +344,7 @@ public class TaskExercise implements Runnable{
             while (!Thread.currentThread().isInterrupted()){
                 String reportDataString = queue.poll(timeoutConfig.mainCarTrajectory, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
-                    log.info("5s内没有接收到主车轨迹数据");
+                    log.info("{}s内没有接收到主车轨迹数据", timeoutConfig.mainCarTrajectory);
                     stopFusion(toLocalDto, detail);
                     stop(ykStartReq, tessStartReq, commandChannel, dataChannel, tessCommandChannel, tessDataChannel);
                     break;
@@ -355,7 +354,6 @@ public class TaskExercise implements Runnable{
                 if(Objects.isNull(vehicleCurrentInfo)){
                     continue;
                 }
-                log.info("当前主车轨迹经纬度-{}-{}", vehicleCurrentInfo.getLongitude(), vehicleCurrentInfo.getLatitude());
                 Point2D.Double position = new Point2D.Double(vehicleCurrentInfo.getLongitude(), vehicleCurrentInfo.getLatitude());
                 //循环检测第一帧数据是否重复，且持续时间超过1分钟
                 if(firstMinute){
@@ -385,13 +383,12 @@ public class TaskExercise implements Runnable{
                 if(!startPoints.isEmpty() && sceneIndex < startPoints.size()){
                     StartPoint startPoint = startPoints.get(sceneIndex);
                     Integer sequence = startPoint.getSequence();
-                    log.info("当前场景{}的起点经纬度是-{}-{}", sequence, startPoint.getLongitude(), startPoint.getLatitude());
                     Point2D.Double sceneStartPoint = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
                     boolean arrivedSceneStartPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPoint,
                             position,
                             radius);
-                    log.info("是否到达场景{}的触发点:{}", sequence, arrivedSceneStartPoint);
                     if(arrivedSceneStartPoint){
+                        log.info("是否到达场景{}的触发点:{}", sequence, true);
                         redisCache.publishMessage(tessCommandChannel, tessStartMessage);
                         log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, sequence, tessMessage);
                         //场景切换

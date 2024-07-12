@@ -1,11 +1,11 @@
 package net.wanji.business.domain.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.wanji.business.service.record.impl.FileWriteRunnable;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author hcy
@@ -24,6 +24,8 @@ public class ToLocalDto {
   private FileWriteRunnable toLocalThread;
   private String kafkaTopic;
   private String mainVehicleId;
+  private String username;
+  private AtomicInteger count = new AtomicInteger(0);
 
   public ToLocalDto(Integer taskId, Integer caseId) {
     this.taskId = taskId;
@@ -45,12 +47,13 @@ public class ToLocalDto {
   }
 
   public ToLocalDto(Integer taskId, Integer caseId, String fileName,
-                    Integer fileId, String kafkaTopic) {
+                    Integer fileId, String kafkaTopic, String username) {
     this.taskId = taskId;
     this.caseId = caseId;
     this.fileName = fileName;
     this.fileId = fileId;
     this.kafkaTopic = kafkaTopic;
+    this.username = username;
   }
 
   @Override

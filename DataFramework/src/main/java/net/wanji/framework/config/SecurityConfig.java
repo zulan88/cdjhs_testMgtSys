@@ -109,7 +109,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/login", "/register", "/captchaImage",
                         "/common/uploadframe", "/scenario/upload", "/scenario/start",
                         "/ws/**", "/jdLabels/**", "/task/caseStartEnd",
-                        "/taskInfinite/shardingInOut", "/exercise/testAlgorithm").anonymous()
+                        "/taskInfinite/shardingInOut", "/exercise/test").anonymous()
                 // 孪生接口
                 .antMatchers("/task/getStatusTW", "/task/pageListTW",
                         "/case/selectDetailTW", "/case/getCasesByTaskIdTW",

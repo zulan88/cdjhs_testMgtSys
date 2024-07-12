@@ -3,9 +3,11 @@ package net.wanji.business.trajectory;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.google.common.collect.Maps;
 import lombok.RequiredArgsConstructor;
 import net.wanji.business.common.Constants;
 import net.wanji.business.common.Constants.TestingStatusEnum;
+import net.wanji.business.domain.RealWebsocketMessage;
 import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.business.entity.TjCaseRealRecord;
 import net.wanji.business.entity.TjTaskCaseRecord;
@@ -17,11 +19,13 @@ import net.wanji.business.mapper.TjCaseRealRecordMapper;
 import net.wanji.business.mapper.TjTaskCaseRecordMapper;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.record.DataFileService;
+import net.wanji.business.socket.WebSocketManage;
 import net.wanji.business.util.RedisLock;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.constant.CacheConstants;
 import net.wanji.common.core.redis.RedisCache;
+import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
@@ -67,34 +71,40 @@ public class KafkaTrajectoryConsumer {
         JSONObject jsonObject = JSONObject.parseObject(record.value());
         Integer taskId = jsonObject.getInteger("taskId");
         Integer caseId = jsonObject.getInteger("caseId");
-        //String userName = selectUserOfTask(taskId, caseId);
 
-        //String key = taskId > 0 ?
-        //        ChannelBuilder.buildTaskDataChannel(userName, taskId) :
-        //        ChannelBuilder.buildTestingDataChannel(userName, caseId);
-        JSONArray participantTrajectories = jsonObject.getJSONArray(
-                "participantTrajectories");
-        // 轨迹数据
-        writeLocal(taskId, caseId, participantTrajectories);
-        // 收集数据
-        //List<ClientSimulationTrajectoryDto> data = participantTrajectories.stream()
-        //        .map(t -> JSONObject.parseObject(t.toString(),
-        //                ClientSimulationTrajectoryDto.class)).collect(Collectors.toList());
-        //outLog(data);
-        //if (taskId > 0) {
-        //  data.forEach(t -> redisLock.renewLock("task_" + t.getSource()));
-        //} else {
-        //  redisLock.renewLock("case_" + caseId);
-        //}
-        //kafkaCollector.collector(key, caseId, data);
-        //// 发送ws数据
-        //String duration = DateUtils.secondsToDuration(
-        //        (int) Math.floor((double) (kafkaCollector.getSize(key)) / 10));
-        //
-        //RealWebsocketMessage msg = new RealWebsocketMessage(
-        //        RedisMessageType.TRAJECTORY, Maps.newHashMap(), simplifyWebsocketMessage(data),
-        //        duration);
-        //WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
+        ToLocalDto toLocalDto = queryTolocalDto(taskId, caseId);
+        if(Objects.nonNull(toLocalDto)){
+            JSONArray participantTrajectories = jsonObject.getJSONArray("participantTrajectories");
+            //数据融合写入文件
+            toLocalDto.getToLocalThread()
+                    .write(participantTrajectories.toJSONString());
+            //实时轨迹发送websocket
+            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
+            int size = toLocalDto.getCount().incrementAndGet();
+            String username = toLocalDto.getUsername();
+            String key = taskId > 0 ?
+                    Constants.ChannelBuilder.buildTaskDataChannel(username, taskId) :
+                    Constants.ChannelBuilder.buildTestingDataChannel(username, caseId);
+            String duration = DateUtils.secondsToDuration((int) Math.floor((size) / 10.0));
+
+            RealWebsocketMessage msg = new RealWebsocketMessage(
+                    Constants.RedisMessageType.TRAJECTORY, Maps.newHashMap(), data, duration);
+            WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
+            //向济达发送实时轨迹
+            if(StringUtils.isNotEmpty(toLocalDto.getKafkaTopic())){
+                sendRealTimeTrajecotory(toLocalDto, data);
+            }
+        }
+    }
+
+    private ToLocalDto queryTolocalDto(Integer taskId, Integer caseId) {
+        for (ToLocalDto toLocalDto : toLocalSet) {
+            if (toLocalDto.getTaskId().equals(taskId) && toLocalDto.getCaseId()
+                    .equals(caseId)) {
+                return toLocalDto;
+            }
+        }
+        return null;
     }
 
     private Object simplifyWebsocketMessage(List<ClientSimulationTrajectoryDto> data){
@@ -203,17 +213,12 @@ public class KafkaTrajectoryConsumer {
                     .equals(caseId)) {
                 toLocalDto.getToLocalThread()
                         .write(participantTrajectories.toJSONString());
-                //向济达发送实时轨迹
-                if(StringUtils.isNotEmpty(toLocalDto.getKafkaTopic())){
-                    sendRealTimeTrajecotory(toLocalDto, participantTrajectories);
-                }
             }
         }
     }
 
-    private void sendRealTimeTrajecotory(ToLocalDto toLocalDto, JSONArray participantTrajectories) {
+    private void sendRealTimeTrajecotory(ToLocalDto toLocalDto, List<ClientSimulationTrajectoryDto> participants) {
         String kafkaTopic = toLocalDto.getKafkaTopic();
-        List<ClientSimulationTrajectoryDto> participants = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
         //筛选出主车
         if(StringUtils.isEmpty(toLocalDto.getMainVehicleId())){
             Optional<ClientSimulationTrajectoryDto> mainCar = participants.stream()

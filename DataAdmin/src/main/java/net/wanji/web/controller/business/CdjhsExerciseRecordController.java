@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Future;
 
 import com.alibaba.fastjson.JSONObject;
 import io.swagger.annotations.Api;
@@ -38,6 +39,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.PostConstruct;
 
 /**
  * 练习记录Controller
@@ -169,6 +172,15 @@ public class CdjhsExerciseRecordController extends BaseController
             e.printStackTrace();
             return ResponseEntity.status(500).build();
         }
+    }
+
+    @GetMapping("/forceEnd")
+    public AjaxResult forceEnd(Long taskId){
+        boolean canceled = ExerciseHandler.forceEndTask(taskId);
+        if(!canceled){
+            return AjaxResult.error("任务已完成或已被取消");
+        }
+        return AjaxResult.success("强制结束任务成功");
     }
 
     @GetMapping("/test")
