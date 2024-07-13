@@ -1,6 +1,7 @@
 package net.wanji.business.exercise.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import net.wanji.business.util.ToBuildOpenXUtil;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,6 +17,7 @@ public class SimulationAreaCalculator {
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFilename))) {
             String line;
             Pattern xInitPattern = Pattern.compile("x_init = ([-+]?\\d+\\.\\d+), y_init = ([-+]?\\d+\\.\\d+)");
+            Pattern xInitPattern1 = Pattern.compile("x_init = ([-+]?\\d+\\.\\d+) , y_init = ([-+]?\\d+\\.\\d+)");
 //            Pattern xTargetPattern = Pattern.compile("x_target = \\(\\s*([-\\d.]+)\\s*,\\s*([-\\d.]+)\\s*\\)");
 //            Pattern yTargetPattern = Pattern.compile("y_target = \\(\\s*([-\\d.]+)\\s*,\\s*([-\\d.]+)\\s*\\)");
             Pattern xTargetPattern = Pattern.compile("x_target\\s*=\\s*\\(([^,)]+),\\s*([^,)]+)\\s*\\)");
@@ -23,10 +25,16 @@ public class SimulationAreaCalculator {
 
             while ((line = reader.readLine()) != null) {
                 if (line.contains("Initial State")) {
+                    System.out.println(line);
                     Matcher matcher = xInitPattern.matcher(line);
+                    Matcher matcher1 = xInitPattern1.matcher(line);
                     if (matcher.find()) {
                         xInit = Double.parseDouble(matcher.group(1));
                         yInit = Double.parseDouble(matcher.group(2));
+
+                    }else if(matcher1.find()){
+                        xInit = Double.parseDouble(matcher1.group(1));
+                        yInit = Double.parseDouble(matcher1.group(2));
                     } else {
                         System.out.println("没有找到匹配的x_init和y_init值。");
                     }
@@ -45,7 +53,7 @@ public class SimulationAreaCalculator {
                         yTarget = Double.parseDouble(yMatcher.group(1));
                     }
 
-                    break; // 假设找到后直接跳出循环  
+                    break; // 假设找到后直接跳出循环
                 }
             }
 
@@ -73,8 +81,8 @@ public class SimulationAreaCalculator {
                 }
 
                 // 这里可以添加更多逻辑来处理leftTopX, rightBottomX, leftTopY, rightBottomY
-                ToBuildOpenXTransUtil toBuildOpenXUtil = new ToBuildOpenXTransUtil();
-                JSONObject worldPosition = toBuildOpenXUtil.retotrans(leftTopX, leftTopY,"+proj=tmerc +lon_0=108.90577060170472 +lat_0=34.37650478465651 +ellps=WGS84");
+                ToBuildOpenXUtil toBuildOpenXUtil = new ToBuildOpenXUtil();
+                JSONObject worldPosition = toBuildOpenXUtil.retotrans(leftTopX, leftTopY,"+proj=tmerc +lon_0=108.90577060170472 +lat_0=34.37650478465651 +ellps=WGS84",0D);
                 Double leftTopLongitude = (Double) worldPosition.get("longitude");
                 Double leftTopLatitude = (Double) worldPosition.get("latitude");
                 System.out.println(leftTopLongitude + " ," + leftTopLatitude );
@@ -85,7 +93,7 @@ public class SimulationAreaCalculator {
 //                Double leftTopX = (Double) leftTopLatitudeWorldPosition.get("x");
 //                Double leftTopY = (Double) leftTopLatitudeWorldPosition.get("y");
 //
-                JSONObject worldPosition1 = toBuildOpenXUtil.retotrans(rightBottomX, rightBottomY,"+proj=tmerc +lon_0=108.90577060170472 +lat_0=34.37650478465651 +ellps=WGS84");
+                JSONObject worldPosition1 = toBuildOpenXUtil.retotrans(rightBottomX, rightBottomY,"+proj=tmerc +lon_0=108.90577060170472 +lat_0=34.37650478465651 +ellps=WGS84",0D);
                 Double rightBottomLongitude1 = (Double) worldPosition1.get("longitude");
                 Double rightBottomLatitude1 = (Double) worldPosition1.get("latitude");
                 System.out.println(rightBottomLongitude1 + ", " + rightBottomLatitude1 );
@@ -109,6 +117,6 @@ public class SimulationAreaCalculator {
     }
 
     public static void main(String[] args) {
-        getSimuArea("G:\\xinyingjie\\software\\onsite\\onsite-structured-test-master\\convert\\changda\\output0710/K3.xosc", 0.1);
+        System.out.println(getSimuArea("G:\\xinyingjie\\software\\onsite\\onsite-structured-test-master\\convert\\changda\\temm\\535_output.xosc", 0.1));
     }
 }
