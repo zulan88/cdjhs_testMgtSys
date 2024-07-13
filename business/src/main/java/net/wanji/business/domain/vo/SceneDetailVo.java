@@ -1,8 +1,11 @@
 package net.wanji.business.domain.vo;
 
 import lombok.Data;
+import net.wanji.business.domain.SitePoint;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
+
+import java.util.List;
 
 @Data
 public class SceneDetailVo extends TjFragmentedSceneDetail {
@@ -27,5 +30,9 @@ public class SceneDetailVo extends TjFragmentedSceneDetail {
     private String xosc;
 
     private String weight;
+
+    private List<SitePoint> endTarget;
+
+    private Double[][] mapBounds;
 
 }

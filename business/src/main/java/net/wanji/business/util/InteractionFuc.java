@@ -76,6 +76,10 @@ public class InteractionFuc {
             sceneDetailVo.setStartPoint(connect.get(0));
             sceneDetailVo.setEndPoint(connect.get(connect.size()-1));
             sceneDetailVo.setEvoNum(Integer.valueOf(taskCaseVo.getEvaNum()));
+            if (sceneDetailVo.getMapId() != null && sceneDetailVo.getMapId() == 21) {
+                sceneDetailVo.setMapBounds(MapBoundary.CHANGAN.getValues());
+            }
+            sceneDetailVo.setEndTarget(gson.fromJson(taskCaseVo.getTestTarget(), new TypeToken<List<SitePoint>>(){}.getType()));
             list.add(sceneDetailVo);
         }
 

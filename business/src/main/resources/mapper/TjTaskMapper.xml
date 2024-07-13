@@ -101,6 +101,7 @@
         <result property="continuous" column="continuous" jdbcType="TINYINT"/>
         <result property="routeFile" column="route_file" jdbcType="VARCHAR"/>
         <result property="selectedRecordId" column="selected_record_id" jdbcType="INTEGER"/>
+        <result property="mapId" column="map_id" jdbcType="INTEGER" />
         <collection property="taskCaseVos" ofType="net.wanji.business.domain.vo.TaskCaseVo" select="selectTaskCaseInfo"
                     column="id"/>
         <collection property="taskCaseConfigs" ofType="net.wanji.business.entity.TjTaskDataConfig" select="selectTaskCaseConfigs"
@@ -122,6 +123,7 @@
         <result property="mapId" column="map_id" jdbcType="INTEGER" />
         <result property="connectInfo" column="connect_info" jdbcType="VARCHAR" />
         <result property="evaNum" column="eva_object" jdbcType="VARCHAR" />
+        <result property="testTarget" column="test_target" jdbcType="VARCHAR" />
     </resultMap>
 
     <resultMap id="TaskCaseConfigResult" type="net.wanji.business.entity.TjTaskDataConfig">
@@ -160,6 +162,7 @@
         tt.op_status,
         tt.is_inner,
         tt.remark,
+        tt.map_id,
         tt.selected_record_id
         FROM tj_task tt
         LEFT JOIN (
@@ -226,6 +229,9 @@
             <if test="opStatus != null">
                 AND tt.op_status = #{opStatus}
             </if>
+            <if test="mapId != null">
+                AND tt.map_id = #{mapId}
+            </if>
         </where>
         order by tt.plan_date desc, tt.create_time desc
     </select>
@@ -247,6 +253,7 @@
                b.map_id,
                b.map_file,
                b.eva_object,
+               b.test_target,
                b.detail_info
         from tj_task_case ttc
                  left join (
@@ -256,6 +263,7 @@
                    tc.detail_info,
                    tc.map_id,
                    tc.map_file,
+                   tc.test_target,
                    sd.label,
                    tc.eva_object
             from tj_case tc

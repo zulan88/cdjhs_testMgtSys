@@ -36,6 +36,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="labels != null  and labels != ''"> and FIND_IN_SET(#{labels},all_stage_labels)</if>
             <if test="sceneSource != null "> and scene_source = #{sceneSource}</if>
             <if test="sceneStatus != null "> and scene_status = #{sceneStatus}</if>
+            <if test="evoNum != null"> and evo_num = #{evoNum}</if>
+            <if test="geojsonPath !=null and geojsonPath != ''"> and geojson_path = #{geojsonPath}</if>
             <if test="startDate != null and startDate != '' and endDate != null"> and create_datetime between #{startDate} and #{endDate}</if>
         </where>
         order by create_datetime desc

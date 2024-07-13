@@ -210,4 +210,7 @@ public class TjTask implements Serializable {
      */
     @TableField("selected_record_id")
     private Integer selectedRecordId;
+
+    @TableField("map_id")
+    private Integer mapId;
 }

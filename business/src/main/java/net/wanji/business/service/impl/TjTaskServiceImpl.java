@@ -788,6 +788,10 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             if (CollectionUtils.isEmpty(in.getCases())) {
                 throw new BusinessException("请选择用例");
             }
+            in.getCases().stream().findFirst().ifPresent(item -> {
+                TjCase tjCase = tjCaseService.getById(item.getCaseId());
+                tjTask.setMapId(tjCase.getMapId());
+            });
             TjTaskDataConfig taskAvConfig = tjTaskDataConfigService.getOne(new LambdaQueryWrapper<TjTaskDataConfig>()
                     .eq(TjTaskDataConfig::getTaskId, tjTask.getId())
                     .eq(TjTaskDataConfig::getType, PartRole.AV));

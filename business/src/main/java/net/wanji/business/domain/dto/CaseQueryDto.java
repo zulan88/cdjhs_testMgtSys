@@ -69,4 +69,6 @@ public class CaseQueryDto {
     private Integer mapId;
 
     private String sceneSource;
+
+    private Integer evoNum;
 }

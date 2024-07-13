@@ -65,6 +65,6 @@ public class TaskCaseVo extends TjTaskCase {
 
     private String evaNum;
 
-
+    private String testTarget;
 
 }

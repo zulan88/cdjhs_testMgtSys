@@ -433,6 +433,11 @@ public class TaskExercise implements Runnable{
             forceEnd();
             if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
                 processAfterTaskEnd();
+            }else{
+                record.setCheckMsg("任务被管理员强制结束");
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             }
         } catch (Exception e){
             forceEnd();
@@ -523,7 +528,7 @@ public class TaskExercise implements Runnable{
                 SceneDetailVo sceneDetailVo = sceneDetails.get(i);
                 EvaluationAreaInfo evaluationAreaInfo = new EvaluationAreaInfo();
                 evaluationAreaInfo.setId(i);
-                evaluationAreaInfo.setName(String.valueOf(i));
+                evaluationAreaInfo.setName(sceneDetailVo.getTestSceneDesc());
                 evaluationAreaInfo.setWeights(String.valueOf(sceneDetailVo.getEvoNum()));
                 //组装场景的角度信息
                 JSONObject simuArea = SimulationAreaCalculator.getSimuArea(sceneDetailVo.getRoadCondition(), 0.1);

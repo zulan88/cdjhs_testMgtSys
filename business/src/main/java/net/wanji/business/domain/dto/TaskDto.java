@@ -74,4 +74,6 @@ public class TaskDto {
     private String consigner;
 
     private String lastStatus;
+
+    private Integer mapId;
 }

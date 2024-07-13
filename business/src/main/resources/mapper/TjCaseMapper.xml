@@ -74,6 +74,7 @@
         c.status,
         c.remark,
         c.updated_date,
+        c.scene_lib_id,
         sd.id as scene_lib_id,
         sd.number as scene_number,
         sd.img_path,
@@ -103,6 +104,9 @@
             </if>
             <if test="startTime != null and startTime != ''">
                 and c.updated_date &gt;= #{startTime}
+            </if>
+            <if test="evoNum !=null ">
+                and sd.evo_num = #{evoNum}
             </if>
             <if test="endTime != null and endTime != ''">
                 and c.updated_date &lt;= #{endTime}

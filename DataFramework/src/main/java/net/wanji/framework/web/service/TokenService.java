@@ -186,6 +186,10 @@ public class TokenService
 
     public void refrenshToken(String ip, String port, String token) {
         String url = "http://" + ip + ":" + port + "/prod-api/auth/refresh";
+        if (port.equals("9030")){
+            port = "9211";
+            url = "http://" + ip + ":" + port + "/auth/refresh";
+        }
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

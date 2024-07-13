@@ -228,6 +228,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         List<ParticipantTrajectoryBo> participantTrajectoryBos = new ArrayList<>();
         map.forEach((name, trajectoryDetailBo) -> {
             trajectoryDetailBo.get(trajectoryDetailBo.size()-1).setType("end");
+            trajectoryDetailBo.get(0).setTime("0");
             ParticipantTrajectoryBo participantTrajectoryBo = new ParticipantTrajectoryBo();
             participantTrajectoryBo.setId(String.valueOf(i[0]));
             participantTrajectoryBo.setName(name);
