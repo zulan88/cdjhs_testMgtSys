@@ -165,7 +165,10 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         return this.saveBatch(tjScenelibs);
     }
 
-    String proj = "+proj=tmerc +lon_0=108.90575652010739 +lat_0=34.37650478465651 +ellps=WGS84";
+    String projca = "+proj=tmerc +lon_0=108.90575652010739 +lat_0=34.37650478465651 +ellps=WGS84";
+
+    String projtj = "+proj=tmerc +lon_0=121.20585769414902 +lat_0=31.290823210868965 +ellps=WGS84";
+
     @Autowired
     public ToBuildOpenXUtil toBuildOpenXUtil;
     private static final SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
@@ -189,12 +192,17 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         Map<String, List<TrajectoryDetailBo>> map = new HashMap<>();
         List<CdShape> analyze = analyzeOpenX.cdParseXML(xoscPath);
 
+        String proj = projca;
+        if (tjScenelib.getGeojsonPath().equals("10")) {
+            proj = projtj;
+        }
 
+        String finalProj = proj;
         analyze.forEach(item ->{
             List<TrajectoryDetailBo> trajectoryDetailBos = new ArrayList<>();
             long index = 1;
             for (WoPostion wo : item.getWoPostionList()) {
-                JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), proj, Double.parseDouble(wo.getH()));
+                JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), finalProj, Double.parseDouble(wo.getH()));
                 TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
                 trajectoryDetailBo.setLane("0");
                 trajectoryDetailBo.setLongitude(retotrans.getString("longitude"));
@@ -327,7 +335,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                     continue;
                 }
                 count[0]++;
-                JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), proj, Double.parseDouble(wo.getH()));
+                JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), projca, Double.parseDouble(wo.getH()));
                 TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
                 List<TrajectoryDetailBo> trajectoryDetailBos = map.get(wo.getId());
                 int index = 0;
@@ -550,6 +558,10 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 }
                 tjCaseDto.setEvoNum(scenelib.getEvoNum());
                 WoPostion end = SceneLibMap.getEnd(scenelib.getXoscPath());
+                String proj = projca;
+                if (scenelib.getGeojsonPath().equals("10")) {
+                    proj = projtj;
+                }
                 if (end!=null) {
                     double x1 = Double.parseDouble(end.getXTarget().split(",")[0]);
                     double x2 = Double.parseDouble(end.getXTarget().split(",")[1]);
