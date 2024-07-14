@@ -73,18 +73,13 @@ public class ImageDelResultListener implements MessageListener {
         }
     }
 
-    public Integer awaitingMessage(String deviceId, String imageId, long timeout, TimeUnit timeUnit){
+    public Integer awaitingMessage(String deviceId, String imageId, long timeout, TimeUnit timeUnit) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         latchMap.put(deviceId, latch);
-        try {
-            boolean success = latch.await(timeout, timeUnit);
-            latchMap.remove(deviceId);
-            String key = RedisKeyUtils.getImageDeleteResultKey(deviceId, imageId);
-            return success ? redisCache.getCacheObject(key) : null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
+        boolean success = latch.await(timeout, timeUnit);
+        latchMap.remove(deviceId);
+        String key = RedisKeyUtils.getImageDeleteResultKey(deviceId, imageId);
+        return success ? redisCache.getCacheObject(key) : null;
     }
 
 }

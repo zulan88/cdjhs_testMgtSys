@@ -3,6 +3,7 @@ package net.wanji.business.common;
 import net.wanji.common.core.domain.SimpleSelect;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.util.ObjectUtils;
+import tk.mybatis.mapper.weekend.Fn;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,6 +97,8 @@ public interface Constants {
         public static final String TESTING_CHANNEL_TEMPLATE = "{}_{}_{}_{}_{}";
         public static final String SIMULATION_CHANNEL_TEMPLATE = "{}_{}_{}";
         public static final String CDJHS_EVALUATION_KAFKA_TOPIC_TEMPLATE = "CDJHS_EVALUATION_TASK_{}";
+
+        public static final String CDJHS_TESS_DATA_TOPIC_TEMPLATE = "cdjhs_tess_{}";
         public static final int SCENE_PREVIEW = 1;
         public static final int SIMULATION = 2;
         public static final int REAL = 3;

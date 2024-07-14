@@ -332,7 +332,7 @@ public class RestServiceImpl implements RestService {
                     restTemplate.exchange(resultUrl, HttpMethod.POST, resultHttpEntity, String.class);
             if (response.getStatusCodeValue() == 200) {
                 JSONObject result = JSONObject.parseObject(response.getBody(), JSONObject.class);
-                log.info("============================== tess server start result:{}", JSONObject.toJSONString(result));
+                log.info("============================== tess server end result:{}", JSONObject.toJSONString(result));
                 if (Objects.isNull(result) || !"success".equals(result.get("msg"))) {
                     log.error("远程服务调用失败:{}", result.get("msg"));
                     return false;

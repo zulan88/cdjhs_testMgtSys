@@ -73,17 +73,12 @@ public class ImageIssueResultListener implements MessageListener {
         }
     }
 
-    public ImageIssueResultDto awaitingMessage(String deviceId, String imageId, long timeout, TimeUnit timeUnit){
+    public ImageIssueResultDto awaitingMessage(String deviceId, String imageId, long timeout, TimeUnit timeUnit) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         latchMap.put(deviceId, latch);
-        try {
-            boolean success = latch.await(timeout, timeUnit);
-            latchMap.remove(deviceId);
-            String key = RedisKeyUtils.getImageIssueResultKey(deviceId, imageId);
-            return success ? redisCache.getCacheObject(key) : null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
+        boolean success = latch.await(timeout, timeUnit);
+        latchMap.remove(deviceId);
+        String key = RedisKeyUtils.getImageIssueResultKey(deviceId, imageId);
+        return success ? redisCache.getCacheObject(key) : null;
     }
 }

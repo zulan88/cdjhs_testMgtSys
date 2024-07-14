@@ -30,6 +30,7 @@ import net.wanji.common.utils.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
@@ -65,7 +66,7 @@ public class KafkaTrajectoryConsumer {
     private final KafkaProducer kafkaProducer;
 
     @KafkaListener(id = "singleTrajectory",
-            topics = { "tj_master_fusion_data" },
+            topics = { "${trajectory.fusion}" },
             groupId = "#{T(java.lang.String).valueOf(new java.util.Random().nextInt(1000))}")
     public void listen(ConsumerRecord<String, String> record) {
         JSONObject jsonObject = JSONObject.parseObject(record.value());

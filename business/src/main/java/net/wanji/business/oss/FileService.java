@@ -212,63 +212,67 @@ public class FileService {
 
     @Async("fileDownloadHandlePool")
     public void deleteMirrors(List<CdjhsMirrorMgt> list){
-        list = list.stream()
-                .filter(item -> StringUtils.isNotEmpty(item.getMirrorPathCloud()))
-                .collect(Collectors.toList());
-        //删除云端镜像
-        int batchSize = 1000;//阿里云批量删除每次最多1000个文件
-        int totalSize = list.size();
-        int splitCount = (totalSize + batchSize - 1) / batchSize;
-        for(int i = 0; i < splitCount; i++){
-            int fromIndex = i * batchSize;
-            int toIndex = Math.min((i + 1) * batchSize, totalSize);
-            List<CdjhsMirrorMgt> mirrors = list.subList(fromIndex, toIndex);
-            //获取待删除镜像objectName
-            List<String> objectNameList = mirrors.stream()
-                    .map(item -> {
-                        String mirrorPathCloud = item.getMirrorPathCloud();
-                        String domainName = getDomainName();
-                        return mirrorPathCloud.substring(domainName.length());
-                    }).collect(Collectors.toList());
-            delete(objectNameList);
-        }
-        //删除本地镜像和通知域控删除镜像
-        list = list.stream()
-                .filter(item -> StringUtils.isNotEmpty(item.getMirrorPathLocal()))
-                .collect(Collectors.toList());
-        //查询域控设备
-        TjDeviceDetailDto query = new TjDeviceDetailDto();
-        query.setDeviceType(Constants.YUKONG);
-        List<DeviceDetailVo> ykList = tjDeviceDetailMapper.selectByCondition(query);
-        List<String> ykUniques = ykList.stream()
-                .map(TjDeviceDetail::getUniques)
-                .collect(Collectors.toList());
-        for(CdjhsMirrorMgt mirrorMgt: list){
-            String localFilePath = mirrorMgt.getMirrorPathLocal();
-            String imageId = mirrorMgt.getImageId();
-            File file = new File(localFilePath);
-            if(file.exists() && file.isFile()){
-                boolean delete = file.delete();
-                log.info("本地镜像{}删除成功: {}", localFilePath, delete);
+        try {
+            list = list.stream()
+                    .filter(item -> StringUtils.isNotEmpty(item.getMirrorPathCloud()))
+                    .collect(Collectors.toList());
+            //删除云端镜像
+            int batchSize = 1000;//阿里云批量删除每次最多1000个文件
+            int totalSize = list.size();
+            int splitCount = (totalSize + batchSize - 1) / batchSize;
+            for(int i = 0; i < splitCount; i++){
+                int fromIndex = i * batchSize;
+                int toIndex = Math.min((i + 1) * batchSize, totalSize);
+                List<CdjhsMirrorMgt> mirrors = list.subList(fromIndex, toIndex);
+                //获取待删除镜像objectName
+                List<String> objectNameList = mirrors.stream()
+                        .map(item -> {
+                            String mirrorPathCloud = item.getMirrorPathCloud();
+                            String domainName = getDomainName();
+                            return mirrorPathCloud.substring(domainName.length());
+                        }).collect(Collectors.toList());
+                delete(objectNameList);
             }
-            if(!ykUniques.isEmpty()){
-                for(String uniques: ykUniques){
-                    ImageDeleteReqDto imageDelReq = ImageDeleteReqDto.builder()
-                            .timestamp(System.currentTimeMillis())
-                            .deviceId(uniques)
-                            .imageId(imageId)
-                            .build();
-
-                    String imageDelMessage = JSONObject.toJSONString(imageDelReq);
-                    JSONObject imageDel = JSONObject.parseObject(imageDelMessage);
-                    String imageDelChannel = RedisKeyUtils.getImageDelChannel(uniques);
-                    redisCache.publishMessage(imageDelChannel, imageDel);
-                    log.info("给域控{}下发镜像清除指令: {}", uniques, imageDelMessage);
-                    Integer status = imageDelResultListener.awaitingMessage(uniques, imageDelReq.getImageId(), 5, TimeUnit.SECONDS);
-                    log.info("收到域控{}上报镜像清除结果: {}", uniques, status);
+            //删除本地镜像和通知域控删除镜像
+            list = list.stream()
+                    .filter(item -> StringUtils.isNotEmpty(item.getMirrorPathLocal()))
+                    .collect(Collectors.toList());
+            //查询域控设备
+            TjDeviceDetailDto query = new TjDeviceDetailDto();
+            query.setDeviceType(Constants.YUKONG);
+            List<DeviceDetailVo> ykList = tjDeviceDetailMapper.selectByCondition(query);
+            List<String> ykUniques = ykList.stream()
+                    .map(TjDeviceDetail::getUniques)
+                    .collect(Collectors.toList());
+            for(CdjhsMirrorMgt mirrorMgt: list){
+                String localFilePath = mirrorMgt.getMirrorPathLocal();
+                String imageId = mirrorMgt.getImageId();
+                File file = new File(localFilePath);
+                if(file.exists() && file.isFile()){
+                    boolean delete = file.delete();
+                    log.info("本地镜像{}删除成功: {}", localFilePath, delete);
                 }
-            }
+                if(!ykUniques.isEmpty()){
+                    for(String uniques: ykUniques){
+                        ImageDeleteReqDto imageDelReq = ImageDeleteReqDto.builder()
+                                .timestamp(System.currentTimeMillis())
+                                .deviceId(uniques)
+                                .imageId(imageId)
+                                .build();
 
+                        String imageDelMessage = JSONObject.toJSONString(imageDelReq);
+                        JSONObject imageDel = JSONObject.parseObject(imageDelMessage);
+                        String imageDelChannel = RedisKeyUtils.getImageDelChannel(uniques);
+                        redisCache.publishMessage(imageDelChannel, imageDel);
+                        log.info("给域控{}下发镜像清除指令: {}", uniques, imageDelMessage);
+                        Integer status = imageDelResultListener.awaitingMessage(uniques, imageDelReq.getImageId(), 5, TimeUnit.SECONDS);
+                        log.info("收到域控{}上报镜像清除结果: {}", uniques, status);
+                    }
+                }
+
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 

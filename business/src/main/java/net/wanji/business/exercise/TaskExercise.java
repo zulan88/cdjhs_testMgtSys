@@ -234,7 +234,7 @@ public class TaskExercise implements Runnable{
             String routeFile = FileUploadUtils.getAbsolutePathFileName(tjTask.getMainPlanFile());
             List<SimulationTrajectoryDto> trajectories = FileUtils.readOriTrajectory(routeFile);
             TestIssueResultDto testIssueResultDto = issueTaskExercise2YK(uniques, mirrorId, trajectories);
-            log.info("练习设备{}是否准备就绪: {}", uniques, testIssueResultDto);
+            log.info("练习设备{}是否准备就绪: {}", uniques, JSONObject.toJSONString(testIssueResultDto));
             if(Objects.isNull(testIssueResultDto) || testIssueResultDto.getStatus() == 0){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 String checkMsg = Objects.isNull(testIssueResultDto) ? "练习设备未上报练习任务下发结果" : String.format("镜像运行失败,异常信息如下:\n%s", testIssueResultDto.getMessage());
@@ -577,7 +577,7 @@ public class TaskExercise implements Runnable{
         log.info("给仿真指令通道-{}下发状态上报请求: {}", tessCommandChannel, simuDeviceStatus);
     }
 
-    private TestIssueResultDto issueTaskExercise2YK(String uniques, String mirrorId, List<SimulationTrajectoryDto> trajectories) {
+    private TestIssueResultDto issueTaskExercise2YK(String uniques, String mirrorId, List<SimulationTrajectoryDto> trajectories) throws InterruptedException {
         TestParams params = TestParams.builder()
                 .imageId(mirrorId)
                 .participantTrajectories(trajectories)
@@ -596,7 +596,7 @@ public class TaskExercise implements Runnable{
         return testIssueResultListener.awaitingMessage(uniques, timeoutConfig.taskIssue, TimeUnit.MINUTES);
     }
 
-    private ImageIssueResultDto imageIssue(String uniques, String md5, String mirrorId, String mirrorPath) {
+    private ImageIssueResultDto imageIssue(String uniques, String md5, String mirrorId, String mirrorPath) throws InterruptedException {
         ImageIssueReqDto imageIssueReq = ImageIssueReqDto.builder()
                 .timestamp(System.currentTimeMillis())
                 .deviceId(uniques)
@@ -610,7 +610,7 @@ public class TaskExercise implements Runnable{
         log.info("向域控{}下发镜像: {}", uniques, imageIssueMessage);
         redisCache.publishMessage(imageIssueChannel, imageIssue);
         ImageIssueResultDto imageIssueResultDto = imageIssueResultListener.awaitingMessage(uniques, mirrorId, timeoutConfig.imageIssue, TimeUnit.MINUTES);
-        log.info("域控{}上报镜像下发结果: {}", uniques, imageIssueResultDto);
+        log.info("域控{}上报镜像下发结果: {}", uniques, JSONObject.toJSONString(imageIssueResultDto));
         //添加镜像下发域控记录
         CdjhsDeviceImageRecord deviceImageRecord = new CdjhsDeviceImageRecord();
         deviceImageRecord.setUniques(uniques);
@@ -620,7 +620,7 @@ public class TaskExercise implements Runnable{
         return imageIssueResultDto;
     }
 
-    private Integer imageDelete(String uniques, String image) {
+    private Integer imageDelete(String uniques, String image) throws InterruptedException {
         ImageDeleteReqDto imageDelReq = ImageDeleteReqDto.builder()
                 .timestamp(System.currentTimeMillis())
                 .deviceId(uniques)
@@ -637,7 +637,7 @@ public class TaskExercise implements Runnable{
         return status;
     }
 
-    private List<String> getImageListReport(String uniques) {
+    private List<String> getImageListReport(String uniques) throws InterruptedException {
         String channelOfImageListReport = RedisKeyUtils.getImageListReportChannel(uniques);
         ImageListReportReq listReportReq = ImageListReportReq.builder()
                 .timestamp(System.currentTimeMillis())

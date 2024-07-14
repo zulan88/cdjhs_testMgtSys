@@ -80,17 +80,12 @@ public class ImageListReportListener implements MessageListener {
         log.info("添加镜像列表获取监听器: {}", imageListResultChannel);
     }
 
-    public List<String> awaitMessage(String deviceId, long timeout, TimeUnit timeUnit) {
+    public List<String> awaitMessage(String deviceId, long timeout, TimeUnit timeUnit) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         latchMap.put(deviceId, latch);
-        try {
-            boolean success = latch.await(timeout, timeUnit);
-            latchMap.remove(deviceId);
-            String key = RedisKeyUtils.getImageListReportKey(deviceId);
-            return success ? redisCache.getCacheList(key) : null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
+        boolean success = latch.await(timeout, timeUnit);
+        latchMap.remove(deviceId);
+        String key = RedisKeyUtils.getImageListReportKey(deviceId);
+        return success ? redisCache.getCacheList(key) : null;
     }
 }

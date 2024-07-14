@@ -72,17 +72,12 @@ public class TestIssueResultListener implements MessageListener {
         }
     }
 
-    public TestIssueResultDto awaitingMessage(String deviceId, long timeout, TimeUnit timeUnit){
+    public TestIssueResultDto awaitingMessage(String deviceId, long timeout, TimeUnit timeUnit) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         latchMap.put(deviceId, latch);
-        try {
-            boolean success = latch.await(timeout, timeUnit);
-            latchMap.remove(deviceId);
-            String key = RedisKeyUtils.getTestIssueResultKey(deviceId);
-            return success ? redisCache.getCacheObject(key) : null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
+        boolean success = latch.await(timeout, timeUnit);
+        latchMap.remove(deviceId);
+        String key = RedisKeyUtils.getTestIssueResultKey(deviceId);
+        return success ? redisCache.getCacheObject(key) : null;
     }
 }
