@@ -11,6 +11,8 @@ import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.domain.vo.TaskCaseVo;
 import net.wanji.business.domain.vo.TaskListVo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
+import net.wanji.business.exercise.dto.evaluation.ScenePos;
+import net.wanji.business.exercise.dto.evaluation.SceneSitePoint;
 import net.wanji.business.exercise.enums.OperationTypeEnum;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.simulation.*;
@@ -182,6 +184,40 @@ public class InteractionFuc {
             e.printStackTrace();
         }
         return startPoints;
+    }
+
+    public List<SceneSitePoint> getSceneSitePoints(Integer testId){
+        List<SceneSitePoint> sitePoints = new ArrayList<>();
+        try {
+            List<SceneDetailVo> sceneDetails = findSceneDetail(testId);
+            if(StringUtils.isNotEmpty(sceneDetails)){
+                for(int i = 0; i < sceneDetails.size(); i++){
+                    SceneDetailVo sceneDetailVo = sceneDetails.get(i);
+                    if(Objects.nonNull(sceneDetailVo.getStartPoint()) && Objects.nonNull(sceneDetailVo.getEndPoint())){
+                        SitePoint startPoint = sceneDetailVo.getStartPoint();
+                        SitePoint endPoint = sceneDetailVo.getEndPoint();
+
+                        SceneSitePoint sceneSitePoint = new SceneSitePoint();
+                        sceneSitePoint.setSequence(i + 1);
+
+                        ScenePos start = new ScenePos();
+                        start.setLongitude(Double.parseDouble(startPoint.getLongitude()));
+                        start.setLatitude(Double.parseDouble(startPoint.getLatitude()));
+                        sceneSitePoint.setStartPoint(start);
+
+                        ScenePos end = new ScenePos();
+                        end.setLongitude(Double.parseDouble(endPoint.getLongitude()));
+                        end.setLatitude(Double.parseDouble(endPoint.getLatitude()));
+                        sceneSitePoint.setEndPoint(end);
+
+                        sitePoints.add(sceneSitePoint);
+                    }
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return sitePoints;
     }
 
     public SimulationSceneDto getSimulationSceneInfo(Integer testId){

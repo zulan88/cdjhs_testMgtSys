@@ -3,7 +3,6 @@ package net.wanji.business.listener;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.common.Constants;
 import net.wanji.business.service.KafkaProducer;
-import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.Message;
@@ -22,9 +21,6 @@ import javax.annotation.Resource;
 @Slf4j
 @Component
 public class SimulationDataListener implements MessageListener {
-    @Autowired
-    private RedisCache redisCache;
-
     @Resource
     private RedisMessageListenerContainer redisMessageListenerContainer;
 
