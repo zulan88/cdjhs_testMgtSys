@@ -180,6 +180,7 @@ public class InteractionFuc {
                         SitePoint sitePoint = sceneDetailVo.getStartPoint();
                         StartPoint startPoint = new StartPoint();
                         startPoint.setSequence(i + 1);
+                        startPoint.setName(sceneDetailVo.getSceneSort());
                         startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
                         startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
 

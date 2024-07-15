@@ -6,8 +6,9 @@ import net.wanji.business.common.Constants.RedisMessageType;
 import net.wanji.business.domain.RealWebsocketMessage;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
-import net.wanji.business.exercise.dto.evaluation.SceneDetail;
+import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.socket.WebSocketManage;
+import net.wanji.business.util.LongitudeLatitudeUtils;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.utils.DateUtils;
@@ -15,6 +16,7 @@ import net.wanji.framework.manager.AsyncManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
+import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -37,16 +39,20 @@ public class RealPlaybackDomain {
     private int length;
     private EvaluationOutputResult evaluationOutput;
     private int sequence; //当前场景
+    private List<StartPoint> sceneStartPoints;
+    private double radius;
+    private List<Integer> triggeredScenes = new ArrayList<>();
 
-    public RealPlaybackDomain(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, EvaluationOutputResult evaluationOutput){
+    public RealPlaybackDomain(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, List<StartPoint> sceneStartPoints, double radius){
         this.key = key;
         this.trajectories = trajectories;
         this.mainChannel = mainChannel;
         this.running = true;
         this.index = 0;
         this.length = trajectories.size();
-        this.evaluationOutput = evaluationOutput;
         this.sequence = 0;
+        this.sceneStartPoints = sceneStartPoints;
+        this.radius = radius;
 
         this.future = AsyncManager.me().execute(() -> {
             try {
@@ -71,21 +77,22 @@ public class RealPlaybackDomain {
                 ClientSimulationTrajectoryDto mainCar = data.stream()
                         .filter(n -> mainChannel.equals(n.getSource()))
                         .collect(Collectors.toList()).get(0);
-                String timestamp = mainCar.getTimestamp();
-                long carTimeStamp = Long.parseLong(timestamp);
+                //主车位置
+                Double latitude = mainCar.getValue().get(0).getLatitude();
+                Double longitude = mainCar.getValue().get(0).getLongitude();
+                Point2D.Double position = new Point2D.Double(longitude, latitude);
                 //当前场景
-                SceneDetail sceneDetail = null;
-                if(Objects.nonNull(evaluationOutput)){
-                    List<SceneDetail> sceneDetails = evaluationOutput.getDetails();
-                    if(sequence < sceneDetails.size() - 1){
-                        Long sceneStartTime = sceneDetails.get(sequence + 1).getStartTime();
-                        if(carTimeStamp >= sceneStartTime){
-                            sequence += 1;
-                        }
+                if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
+                    StartPoint startPoint = sceneStartPoints.get(sequence);
+                    Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
+                    boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, radius);
+                    if(arrivedSceneStartPos){
+                        triggeredScenes.add(startPoint.getSequence());
+                        sequence++;
                     }
-                    sceneDetail = sceneDetails.get(sequence);
                 }
-                RealWebsocketMessage msg = new RealWebsocketMessage(RedisMessageType.TRAJECTORY, sceneDetail, data, duration);
+
+                RealWebsocketMessage msg = new RealWebsocketMessage(RedisMessageType.TRAJECTORY, sceneStartPoints, data, duration, triggeredScenes);
                 WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
                 index ++;
             } catch (Exception e) {

@@ -13,7 +13,9 @@ public enum TaskExerciseEnum {
 
     FUSION_STRATEGY_IS_ISSUED(4),
 
-    IS_TASK_STARTED(5);
+    IS_TASK_STARTED(5),
+
+    TASK_IS_FINISHED(6);
 
     TaskExerciseEnum(Integer status){
         this.status = status;

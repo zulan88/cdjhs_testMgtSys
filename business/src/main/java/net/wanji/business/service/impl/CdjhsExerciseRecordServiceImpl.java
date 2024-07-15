@@ -3,7 +3,6 @@ package net.wanji.business.service.impl;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSONObject;
@@ -13,16 +12,14 @@ import net.wanji.business.domain.evaluation.*;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.exercise.ExerciseHandler;
-import net.wanji.business.exercise.dto.evaluation.ComfortDetail;
-import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
-import net.wanji.business.exercise.dto.evaluation.IndexDetail;
-import net.wanji.business.exercise.dto.evaluation.SceneDetail;
+import net.wanji.business.exercise.dto.evaluation.*;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
 import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.schedule.RealPlaybackSchedule;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
+import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.utils.DateUtils;
@@ -49,13 +46,14 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Autowired
     private TjDeviceDetailMapper tjDeviceDetailMapper;
 
+    @Autowired
+    private InteractionFuc interactionFuc;
+
     @Value("${download.proxy}")
     private String downloadProxy;
 
-    private static ReentrantLock lock = new ReentrantLock();
-
-    private static ReentrantLock tempLock = new ReentrantLock();
-
+    @Value("${trajectory.radius}")
+    private Double radius;
     /**
      * 查询练习记录
      * 
@@ -93,8 +91,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
      * @return 结果
      */
     @Override
-    public int insertCdjhsExerciseRecord(CdjhsExerciseRecord cdjhsExerciseRecord)
-    {
+    public int insertCdjhsExerciseRecord(CdjhsExerciseRecord cdjhsExerciseRecord) throws BusinessException {
         cdjhsExerciseRecord.setUserName(SecurityUtils.getUsername());
         cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
         //镜像地址改成代理地址
@@ -102,39 +99,38 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         String downloadPath = WanjiConfig.getDownloadPath();
         String proxyUrl = downloadProxy + mirrorPath.substring(downloadPath.length());
         cdjhsExerciseRecord.setMirrorPath(proxyUrl);
-        int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
         putIntoTaskQueue(cdjhsExerciseRecord);
-        return i;
+        return cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
     }
 
     @Override
-    public void putIntoTaskQueue(CdjhsExerciseRecord record){
+    public void putIntoTaskQueue(CdjhsExerciseRecord record) throws BusinessException {
         String name = record.getUserName();
-        if(name.equals("testuser")){
-            tempLock.lock();
+        if("testuser".equals(name)){
+            ExerciseHandler.tempLock.lock();
             try {
                 int size = ExerciseHandler.tempTaskQueue.size();
-                ExerciseHandler.tempTaskQueue.put(record);
-                record.setStatus(TaskStatusEnum.WAITING.getStatus());
+                ExerciseHandler.tempTaskQueue.add(record);
                 record.setWaitingNum(size);
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                record.setStatus(TaskStatusEnum.WAITING.getStatus());
             }catch (Exception e){
                 e.printStackTrace();
+                throw new BusinessException("向队列中添加任务失败");
             }finally {
-                tempLock.unlock();
+                ExerciseHandler.tempLock.unlock();
             }
         }else{
-            lock.lock();
+            ExerciseHandler.lock.lock();
             try {
                 int size = ExerciseHandler.taskQueue.size();
-                ExerciseHandler.taskQueue.put(record);
-                record.setStatus(TaskStatusEnum.WAITING.getStatus());
+                ExerciseHandler.taskQueue.add(record);
                 record.setWaitingNum(size);
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                record.setStatus(TaskStatusEnum.WAITING.getStatus());
             }catch (Exception e){
                 e.printStackTrace();
+                throw new BusinessException("向队列中添加任务失败");
             }finally {
-                lock.unlock();
+                ExerciseHandler.lock.unlock();
             }
         }
     }
@@ -169,10 +165,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 .collect(Collectors.toList());
         unexecutedRecords.removeAll(tempList);
         if(!tempList.isEmpty()){
-            tempLock.lock();
-            ExerciseHandler.tempQualified.set(false);
+            ExerciseHandler.tempLock.lock();
             try {
                 LinkedBlockingQueue<CdjhsExerciseRecord> tempTaskQueue = ExerciseHandler.tempTaskQueue;
+                List<CdjhsExerciseRecord> list = new ArrayList<>();
                 int waiting = 0;
                 Iterator<CdjhsExerciseRecord> iterator = tempTaskQueue.iterator();
                 while (iterator.hasNext()){
@@ -184,20 +180,24 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                         continue;
                     }
                     next.setWaitingNum(waiting);
-                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(next);
+                    list.add(next);
                     waiting++;
+                }
+                //批量更新
+                if(!list.isEmpty()){
+                    cdjhsExerciseRecordMapper.updateBatch(list);
                 }
             }catch (Exception e){
                 e.printStackTrace();
             }finally {
-                tempLock.unlock();
+                ExerciseHandler.tempLock.unlock();
             }
         }
         if(!unexecutedRecords.isEmpty()){
-            lock.lock();
-            ExerciseHandler.qualified.set(false);
+            ExerciseHandler.lock.lock();
             try {
                 LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = ExerciseHandler.taskQueue;
+                List<CdjhsExerciseRecord> list = new ArrayList<>();
                 int waiting = 0;
                 Iterator<CdjhsExerciseRecord> iterator = taskQueue.iterator();
                 while (iterator.hasNext()){
@@ -209,14 +209,17 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                         continue;
                     }
                     next.setWaitingNum(waiting);
-                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(next);
+                    list.add(next);
                     waiting++;
+                }
+                //批量更新
+                if(!list.isEmpty()){
+                    cdjhsExerciseRecordMapper.updateBatch(list);
                 }
             }catch (Exception e){
                 e.printStackTrace();
             }finally {
-                ExerciseHandler.qualified.set(true);
-                lock.unlock();
+                ExerciseHandler.lock.unlock();
             }
         }
         return cdjhsExerciseRecordMapper.deleteCdjhsExerciseRecordByIds(ids);
@@ -404,15 +407,12 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 if (CollectionUtils.isEmpty(trajectories)) {
                     throw new BusinessException("未查询到任何可用轨迹文件，请先进行试验");
                 }
+                //场景起点列表
+                List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
                 //查询练习设备的数据通道
                 TjDeviceDetail avDevice = tjDeviceDetailMapper.selectByUniques(record.getDeviceId());
-                //算法场景评分
-                String evaluationOutput = record.getEvaluationOutput();
-                EvaluationOutputResult evaluationOutputResult = null;
-                if(StringUtils.isNotEmpty(evaluationOutput)){
-                    evaluationOutputResult = JSONObject.parseObject(evaluationOutput, EvaluationOutputResult.class);
-                }
-                RealPlaybackSchedule.startSendingData(key, avDevice.getDataChannel(), trajectories, evaluationOutputResult);
+                //开始场景回放
+                RealPlaybackSchedule.startSendingData(key, avDevice.getDataChannel(), trajectories, sceneStartPoints, radius);
                 break;
             case Constants.PlaybackAction.SUSPEND:
                 RealPlaybackSchedule.suspend(key);
@@ -437,5 +437,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids) {
         return cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordByStatusAndIds(status, ids);
+    }
+
+    @Override
+    public int updateBatch(List<CdjhsExerciseRecord> list) {
+        return cdjhsExerciseRecordMapper.updateBatch(list);
     }
 }

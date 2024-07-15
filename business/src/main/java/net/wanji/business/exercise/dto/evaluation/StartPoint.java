@@ -16,6 +16,8 @@ import lombok.NoArgsConstructor;
 public class StartPoint {
     private Integer sequence;
 
+    private String name;
+
     private Double longitude;
 
     private Double latitude;

@@ -5,32 +5,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
-import com.alibaba.fastjson.JSONObject;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
-import net.wanji.business.domain.dto.device.DeviceStateDto;
-import net.wanji.business.domain.evaluation.EvaluationReport;
-import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.exercise.ExerciseHandler;
-import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.pdf.PdfService;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
-import net.wanji.business.service.RestService;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
-import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -39,8 +31,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import javax.annotation.PostConstruct;
 
 /**
  * 练习记录Controller
@@ -62,12 +52,6 @@ public class CdjhsExerciseRecordController extends BaseController
 
     @Autowired
     private InteractionFuc interactionFuc;
-
-    @Autowired
-    private RestService restService;
-
-    @Autowired
-    private RedisCache redisCache;
 
     /**
      * 查询练习记录列表
@@ -99,7 +83,11 @@ public class CdjhsExerciseRecordController extends BaseController
     @PostMapping("/add")
     public AjaxResult add(@RequestBody CdjhsExerciseRecord cdjhsExerciseRecord)
     {
-        return toAjax(cdjhsExerciseRecordService.insertCdjhsExerciseRecord(cdjhsExerciseRecord));
+        try {
+            return toAjax(cdjhsExerciseRecordService.insertCdjhsExerciseRecord(cdjhsExerciseRecord));
+        } catch (Exception e) {
+            return AjaxResult.error("当前排队任务数量已达到限制,请稍后重试");
+        }
     }
 
     /**
@@ -222,77 +210,5 @@ public class CdjhsExerciseRecordController extends BaseController
     public AjaxResult testStartPoints(Integer testId){
         List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(testId);
         return AjaxResult.success(sceneStartPoints);
-    }
-
-    private String ip = "http://129.211.28.237";
-
-    private Integer port = 8002;
-
-    @GetMapping("/startTessServer")
-    public AjaxResult startTessServer(){
-        String json = "{\"commandChannel\":\"admin_1_0_5_control\",\"dataChannel\":\"admin_1_0_5_data\",\"evaluateChannel\":\"admin_1_0_5_evaluate\",\"mapList\":[\"21\"],\"params\":{\"params\":{\"params\":[]}},\"roadNum\":21,\"routingChannel\":\"1\",\"simulateType\":5,\"statusChannel\":\"admin_1_0_5_status\"}";
-        TessParam tessParam = JSONObject.parseObject(json, TessParam.class);
-        String commandChannel = tessParam.getCommandChannel();
-        int result = restService.startServer(ip, port, tessParam);
-        if(result == 1){
-            //下发设备状态上报请求
-            DeviceStateDto deviceStateDto = new DeviceStateDto();
-            deviceStateDto.setTimestamp(System.currentTimeMillis());
-            deviceStateDto.setType(0);
-            deviceStateDto.setDeviceId(4);
-            String message = JSONObject.toJSONString(deviceStateDto);
-            JSONObject statusReq = JSONObject.parseObject(message);
-            redisCache.publishMessage(commandChannel, statusReq);
-            log.info("请求仿真上报状态已下发:{}", message);
-        }
-        return AjaxResult.success(result);
-    }
-
-    @GetMapping("/issueTessScenes")
-    public AjaxResult issueTessScenes(Long taskId){
-        String json = "{\"commandChannel\":\"admin_1_0_5_control\",\"dataChannel\":\"admin_1_0_5_data\",\"evaluateChannel\":\"admin_1_0_5_evaluate\",\"mapList\":[\"21\"],\"params\":{\"params\":{\"params\":[]}},\"roadNum\":21,\"routingChannel\":\"1\",\"simulateType\":5,\"statusChannel\":\"admin_1_0_5_status\"}";
-        TessParam tessParam = JSONObject.parseObject(json, TessParam.class);
-
-        CdjhsExerciseRecord record = cdjhsExerciseRecordService.selectCdjhsExerciseRecordById(taskId);
-        String tessCommandChannel = tessParam.getCommandChannel();
-        SimulationSceneDto simulationSceneInfo = interactionFuc.getSimulationSceneInfo(record.getTestId().intValue());
-        String message = JSONObject.toJSONString(simulationSceneInfo);
-        JSONObject issueMessage = JSONObject.parseObject(message);
-        redisCache.publishMessage(tessCommandChannel, issueMessage);
-        log.info("下发仿真片段式场景成功");
-        return AjaxResult.success();
-    }
-
-    @PostMapping("/startScene")
-    public AjaxResult startScene(){
-        String json = "{\"commandChannel\":\"admin_1_0_5_control\",\"dataChannel\":\"admin_1_0_5_data\",\"evaluateChannel\":\"admin_1_0_5_evaluate\",\"mapList\":[\"21\"],\"params\":{\"params\":{\"params\":[]}},\"roadNum\":21,\"routingChannel\":\"1\",\"simulateType\":5,\"statusChannel\":\"admin_1_0_5_status\"}";
-        TessParam tessParam = JSONObject.parseObject(json, TessParam.class);
-        String commandChannel = tessParam.getCommandChannel();
-
-        String tessStart = "{\"params\":{\"protocols\":[{\"channel\":\"CDJHS_GKQResult_YK001\",\"params\":{},\"type\":0},{\"channel\":\"admin_1_0_5_data\",\"params\":{},\"type\":1}],\"taskType\":1},\"timestamp\":1719977115554,\"type\":2}";
-        JSONObject message = JSONObject.parseObject(tessStart);
-        redisCache.publishMessage(commandChannel, message);
-        log.info("下发场景开始指令成功");
-
-        return AjaxResult.success();
-    }
-
-    @GetMapping("/testAlgorithm")
-    public AjaxResult testAlgorithm(){
-        String json = "{\"fusionFilePath\":\"/data/online_test/onlineTestFile/record/81/0/50d1f839-94e6-47a2-aa1c-c752817b320c\",\"mainChannel\":\"CDJHS_GKQResult_YK001\",\"pointsNum\":20,\"startPoints\":[{\"latitude\":34.37270304771323,\"longitude\":108.89390620857213,\"sequence\":1},{\"latitude\":34.37391551783871,\"longitude\":108.89725552170744,\"sequence\":2}],\"taskId\":81}";
-        EvaluationOutputReq req = JSONObject.parseObject(json, EvaluationOutputReq.class);
-
-        //请求算法输出场景评分
-        EvaluationOutputReq param = EvaluationOutputReq.builder()
-                .taskId(req.getTaskId())
-                .fusionFilePath(req.getFusionFilePath())
-                .startPoints(req.getStartPoints())
-                .mainChannel(req.getMainChannel())
-                .pointsNum(20)
-                .build();
-        String evaluationParas = JSONObject.toJSONString(param);
-        log.info("测试评价参数: {}", evaluationParas);
-        String evaluationOutput = restService.getEvaluationOutput(param);
-        return AjaxResult.success("成功", evaluationOutput);
     }
 }

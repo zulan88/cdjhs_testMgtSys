@@ -1,7 +1,7 @@
 package net.wanji.business.schedule;
 
 import net.wanji.business.exception.BusinessException;
-import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
+import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.utils.StringUtils;
 import org.slf4j.Logger;
@@ -32,9 +32,9 @@ public class RealPlaybackSchedule {
         log.info("创建实车回放任务{}完成", key);
     }
 
-    public static void startSendingData(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, EvaluationOutputResult evaluationOutput) throws IOException, BusinessException {
+    public static void startSendingData(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, List<StartPoint> sceneStartPoints, Double radius) throws IOException, BusinessException {
         stopSendingData(key);
-        RealPlaybackDomain realPlaybackDomain = new RealPlaybackDomain(key, mainChannel, trajectories, evaluationOutput);
+        RealPlaybackDomain realPlaybackDomain = new RealPlaybackDomain(key, mainChannel, trajectories, sceneStartPoints, radius);
         futureMap.put(key, realPlaybackDomain);
         log.info("创建练习回放任务{}完成", key);
     }

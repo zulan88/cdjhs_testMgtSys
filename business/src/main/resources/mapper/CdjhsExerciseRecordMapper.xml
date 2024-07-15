@@ -178,6 +178,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
+    <update id="updateBatch" parameterType="list">
+        update cdjhs_exercise_record
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="waiting_num = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.waitingNum != null">
+                        when id = #{item.id} then #{item.waitingNum}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="status = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.status != null">
+                        when id = #{item.id} then #{item.status}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item.id}
+        </foreach>
+    </update>
+
     <delete id="deleteCdjhsExerciseRecordById" parameterType="Long">
         delete from cdjhs_exercise_record where id = #{id}
     </delete>

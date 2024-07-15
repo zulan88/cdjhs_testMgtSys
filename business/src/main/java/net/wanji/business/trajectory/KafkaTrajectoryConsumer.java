@@ -11,6 +11,7 @@ import net.wanji.business.domain.RealWebsocketMessage;
 import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.business.entity.TjCaseRealRecord;
 import net.wanji.business.entity.TjTaskCaseRecord;
+import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.jidaevaluation.trajectory.RealTimeParticipant;
 import net.wanji.business.exercise.dto.jidaevaluation.trajectory.RealTimeTrajectory;
 import net.wanji.business.exercise.utils.ToBuildOpenXTransUtil;
@@ -20,6 +21,7 @@ import net.wanji.business.mapper.TjTaskCaseRecordMapper;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.record.DataFileService;
 import net.wanji.business.socket.WebSocketManage;
+import net.wanji.business.util.LongitudeLatitudeUtils;
 import net.wanji.business.util.RedisLock;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
@@ -36,6 +38,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
 import javax.annotation.Resource;
+import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,9 +90,30 @@ public class KafkaTrajectoryConsumer {
                     Constants.ChannelBuilder.buildTaskDataChannel(username, taskId) :
                     Constants.ChannelBuilder.buildTestingDataChannel(username, caseId);
             String duration = DateUtils.secondsToDuration((int) Math.floor((size) / 10.0));
+            //获取主车
+            String mainChannel = toLocalDto.getMainChannel();
+            ClientSimulationTrajectoryDto mainCar = data.stream()
+                    .filter(n -> mainChannel.equals(n.getSource()))
+                    .collect(Collectors.toList()).get(0);
+            //主车位置
+            Double latitude = mainCar.getValue().get(0).getLatitude();
+            Double longitude = mainCar.getValue().get(0).getLongitude();
+            Point2D.Double position = new Point2D.Double(longitude, latitude);
+            //当前场景
+            List<StartPoint> sceneStartPoints = toLocalDto.getStartPoints();
+            int sequence = toLocalDto.getSequence();
+            if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
+                StartPoint startPoint = sceneStartPoints.get(sequence);
+                Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
+                boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, toLocalDto.getRadius());
+                if(arrivedSceneStartPos){
+                    toLocalDto.getTriggeredScenes().add(startPoint.getSequence());
+                    toLocalDto.switchScene();
+                }
+            }
 
             RealWebsocketMessage msg = new RealWebsocketMessage(
-                    Constants.RedisMessageType.TRAJECTORY, Maps.newHashMap(), data, duration);
+                    Constants.RedisMessageType.TRAJECTORY, sceneStartPoints, data, duration, toLocalDto.getTriggeredScenes());
             WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
             //向济达发送实时轨迹
             if(StringUtils.isNotEmpty(toLocalDto.getKafkaTopic())){

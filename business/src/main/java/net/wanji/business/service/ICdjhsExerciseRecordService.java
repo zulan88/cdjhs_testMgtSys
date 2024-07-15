@@ -37,7 +37,7 @@ public interface ICdjhsExerciseRecordService
      * @param cdjhsExerciseRecord 练习记录
      * @return 结果
      */
-    public int insertCdjhsExerciseRecord(CdjhsExerciseRecord cdjhsExerciseRecord);
+    public int insertCdjhsExerciseRecord(CdjhsExerciseRecord cdjhsExerciseRecord) throws BusinessException;
 
     /**
      * 修改练习记录
@@ -67,9 +67,11 @@ public interface ICdjhsExerciseRecordService
 
     public void playback(Integer taskId, Integer action) throws BusinessException, IOException;
 
-    public void putIntoTaskQueue(CdjhsExerciseRecord record);
+    public void putIntoTaskQueue(CdjhsExerciseRecord record) throws BusinessException;
 
     public List<CdjhsExerciseRecord> selectUnexecutedExercises();
 
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids);
+
+    public int updateBatch(List<CdjhsExerciseRecord> list);
 }

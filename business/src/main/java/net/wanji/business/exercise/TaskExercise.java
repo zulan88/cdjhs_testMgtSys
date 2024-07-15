@@ -174,6 +174,7 @@ public class TaskExercise implements Runnable{
         try{
             log.info("开始准备与域控{}进行交互...", uniques);
             record.setDeviceId(uniques);
+            record.setWaitingNum(0);
             record.setStatus(TaskStatusEnum.RUNNING.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
             //获取镜像列表
@@ -328,8 +329,10 @@ public class TaskExercise implements Runnable{
             dataFileService.save(dataFile);
             // 监听kafka、文件记录
             String evaluationKafkaTopic = Constants.ChannelBuilder.buildTaskEvaluationKafkaTopic(record.getId());
+            List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
             toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
-                    dataFile.getId(), evaluationKafkaTopic, record.getUserName());
+                    dataFile.getId(), evaluationKafkaTopic, record.getUserName(),
+                    sceneStartPoints, radius, dataChannel);
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
@@ -445,20 +448,22 @@ public class TaskExercise implements Runnable{
                     break;
                 }
             }
+            taskStatus = TaskExerciseEnum.TASK_IS_FINISHED.getStatus();
             processAfterTaskEnd();
         } catch (InterruptedException e){
             log.info("任务被强制结束...");
-            forceEnd();
-            if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
-                processAfterTaskEnd();
-            }else{
-                record.setCheckMsg("任务被管理员强制结束");
-                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+            if(taskStatus.compareTo(TaskExerciseEnum.TASK_IS_FINISHED.getStatus()) != 0){
+                forceEnd();
             }
+            record.setCheckMsg("任务被管理员强制结束");
+            record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+            record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } catch (Exception e){
-            forceEnd();
+            log.info("正在执行任务的线程捕获到异常");
+            if(taskStatus.compareTo(TaskExerciseEnum.TASK_IS_FINISHED.getStatus()) != 0){
+                forceEnd();
+            }
             record.setCheckResult(CheckResultEnum.FAILURE.getResult());
             record.setCheckMsg("后台原因");
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
