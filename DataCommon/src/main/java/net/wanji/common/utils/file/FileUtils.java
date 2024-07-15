@@ -127,6 +127,24 @@ public class FileUtils {
         return FileUploadUtils.getPathFileName(uploadDir, pathName);
     }
 
+    public static void writeRouteAbs(List<?> data, String filePath) throws IOException {
+        String pathName = "";
+        PrintWriter writer = null;
+        try {
+            pathName = FileUploadUtils.getAbsolutePathFileName(filePath);
+            File file = new File(pathName);
+            writer = new PrintWriter(file, "utf-8");
+            CopyOnWriteArrayList<?> objects = new CopyOnWriteArrayList<>(data);
+            for (Object content : objects) {
+                writer.println(JSONObject.toJSONString(content));
+            }
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } finally {
+            IOUtils.close(writer);
+        }
+    }
+
 
     /**
      * 写数据到文件中

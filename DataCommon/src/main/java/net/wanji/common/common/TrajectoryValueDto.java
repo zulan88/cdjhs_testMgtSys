@@ -43,6 +43,9 @@ TrajectoryValueDto {
     private Integer blinkerStatus;
     private List<Map<String, Double>> futurePlanList;
 
+    // 0-开始，1-结束 2-普通 3-必经点
+    private Integer siteType;
+
     public String getTimestamp() {
         return timestamp;
     }
@@ -297,5 +300,13 @@ TrajectoryValueDto {
 
     public void setGear(Integer gear) {
         this.gear = gear;
+    }
+
+    public Integer getSiteType() {
+        return siteType;
+    }
+
+    public void setSiteType(Integer siteType) {
+        this.siteType = siteType;
     }
 }

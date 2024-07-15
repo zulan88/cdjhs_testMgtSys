@@ -115,6 +115,9 @@ public class TaskController extends BaseController {
         if (id == 0) {
             return AjaxResult.error("保存失败");
         }
+        if (dto.getProcessNode() != null && dto.getProcessNode() == 3){
+            interactionFuc.dualwithMainTrace(dto.getId());
+        }
         return AjaxResult.success(id);
     }
 

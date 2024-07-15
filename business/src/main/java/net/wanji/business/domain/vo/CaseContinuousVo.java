@@ -41,6 +41,7 @@ public class CaseContinuousVo {
     private Object endPoint;
     @ApiModelProperty("连接线")
     private List<SitePoint> connectInfo;
+    private SitePoint endPointInfo;
     private String mapFile;
     private Integer mapId;
     private String endTarget;

@@ -555,6 +555,19 @@ public interface Constants {
         public static final String AUTO = "2";
     }
 
+    //连续式主车轨迹点的类型
+    class MainTraceType {
+
+        public static final int START = 0;
+
+        public static final int END = 1;
+
+        public static final int PASSWAY = 2;
+
+        public static final int NECESSARY = 3;
+
+    }
+
     class MasterContext{
         public static String RECORD_ID = "recordId";
         public static String USERNAME = "user";

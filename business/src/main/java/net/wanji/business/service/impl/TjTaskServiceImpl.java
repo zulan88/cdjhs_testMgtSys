@@ -818,6 +818,12 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             IntStream.range(0, in.getCases().size()).forEach(i -> {
                 in.getCases().get(i).setSort(i + 1);
             });
+            List<CaseContinuousVo> caseContinuousVos = in.getCases();
+            caseContinuousVos.forEach(item -> {
+                if (item.getEndPointInfo()!=null){
+                    item.getConnectInfo().add(item.getEndPointInfo());
+                }
+            });
             Map<Integer, List<SitePoint>> connectMap = in.getCases().stream().collect(Collectors.toMap(CaseContinuousVo::getId,
                     CaseContinuousVo::getConnectInfo));
             Map<Integer, Integer> sortMap = in.getCases().stream().collect(Collectors.toMap(CaseContinuousVo::getId,

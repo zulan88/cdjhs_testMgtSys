@@ -236,7 +236,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         List<ParticipantTrajectoryBo> participantTrajectoryBos = new ArrayList<>();
         map.forEach((name, trajectoryDetailBo) -> {
             trajectoryDetailBo.get(trajectoryDetailBo.size()-1).setType("end");
-            trajectoryDetailBo.get(0).setTime("0");
+//            trajectoryDetailBo.get(0).setTime("0");
             ParticipantTrajectoryBo participantTrajectoryBo = new ParticipantTrajectoryBo();
             participantTrajectoryBo.setId(String.valueOf(i[0]));
             participantTrajectoryBo.setName(name);
@@ -296,10 +296,13 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             return list;
         }
 
-        return IntStream.rangeClosed(0, list.size() - 1)
+//        TrajectoryDetailBo first = list.get(0);
+
+        List<TrajectoryDetailBo> list1 = IntStream.rangeClosed(0, list.size() - 1)
                 .filter(i -> i == 0 || i == list.size() - 1 || i % n == 0)
                 .mapToObj(list::get)
                 .collect(Collectors.toList());
+        return list1;
     }
 
 

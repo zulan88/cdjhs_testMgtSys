@@ -2,6 +2,7 @@ package net.wanji.business.util;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import net.wanji.business.common.Constants;
 import net.wanji.business.domain.SitePoint;
 import net.wanji.business.domain.bo.ParticipantTrajectoryBo;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
@@ -11,6 +12,7 @@ import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.domain.vo.TaskCaseVo;
 import net.wanji.business.domain.vo.TaskListVo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
+import net.wanji.business.entity.TjTask;
 import net.wanji.business.exercise.dto.evaluation.ScenePos;
 import net.wanji.business.exercise.dto.evaluation.SceneSitePoint;
 import net.wanji.business.exercise.enums.OperationTypeEnum;
@@ -19,9 +21,15 @@ import net.wanji.business.exercise.dto.simulation.*;
 import net.wanji.business.schedule.SceneLabelMap;
 import net.wanji.business.service.TjFragmentedSceneDetailService;
 import net.wanji.business.service.TjTaskService;
+import net.wanji.common.common.SimulationTrajectoryDto;
+import net.wanji.common.common.TrajectoryValueDto;
+import net.wanji.common.utils.GeoUtil;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.bean.BeanUtils;
+import net.wanji.common.utils.file.FileUploadUtils;
+import net.wanji.common.utils.file.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -276,6 +284,48 @@ public class InteractionFuc {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Async
+    public void dualwithMainTrace(Integer taskId){
+        TjTask tjTask = tjTaskService.getById(taskId);
+        if (tjTask.getMainPlanFile()==null){
+            return;
+        }
+        List<SceneDetailVo> sceneDetails = findSceneDetail(taskId);
+        String routeFile = FileUploadUtils.getAbsolutePathFileName(tjTask.getMainPlanFile());
+        List<SimulationTrajectoryDto> trajectories = FileUtils.readOriTrajectory(routeFile);
+
+        trajectories.forEach(trajectory -> {
+            if (!trajectory.getValue().isEmpty()) {
+                trajectory.getValue().get(0).setSiteType(Constants.MainTraceType.PASSWAY);
+            }
+        });
+
+        for (SceneDetailVo sceneDetailVo : sceneDetails) {
+            findNearestPoint(sceneDetailVo.getStartPoint(), trajectories, Constants.MainTraceType.START);
+            findNearestPoint(sceneDetailVo.getEndPoint(), trajectories, Constants.MainTraceType.END);
+        }
+
+        try {
+            FileUtils.writeRouteAbs(trajectories, tjTask.getMainPlanFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void findNearestPoint(SitePoint target, List<SimulationTrajectoryDto> points, Integer type) {
+        int index = 0;
+        double minDistance = Double.MAX_VALUE;
+        for (int i = 0; i < points.size(); i++) {
+            TrajectoryValueDto point = points.get(i).getValue().get(0);
+            double distance = GeoUtil.calculateDistance(Double.parseDouble(target.getLatitude()), Double.parseDouble(target.getLongitude()), point.getLatitude(), point.getLongitude());
+            if (distance < minDistance) {
+                minDistance = distance;
+                index = i;
+            }
+        }
+        points.get(index).getValue().get(0).setSiteType(type);
     }
 
 }
