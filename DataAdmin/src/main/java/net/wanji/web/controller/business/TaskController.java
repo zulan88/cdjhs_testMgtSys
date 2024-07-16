@@ -13,6 +13,7 @@ import io.swagger.annotations.ApiOperationSort;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.implementation.bind.annotation.Origin;
+import net.wanji.business.common.Constants;
 import net.wanji.business.common.Constants.TaskStatusEnum;
 import net.wanji.business.domain.bo.*;
 import net.wanji.business.domain.dto.RoutingPlanDto;
@@ -115,7 +116,7 @@ public class TaskController extends BaseController {
         if (id == 0) {
             return AjaxResult.error("保存失败");
         }
-        if (dto.getProcessNode() != null && dto.getProcessNode() == 3){
+        if (dto.getProcessNode() != null && dto.getProcessNode() == Constants.TaskProcessNode.CONFIG){
             interactionFuc.dualwithMainTrace(dto.getId());
         }
         return AjaxResult.success(id);
