@@ -41,7 +41,7 @@ public class RealPlaybackDomain {
     private int sequence; //当前场景
     private List<StartPoint> sceneStartPoints;
     private double radius;
-    private List<Integer> triggeredScenes = new ArrayList<>();
+    private List<Integer> triggeredScenes;
 
     public RealPlaybackDomain(String key, String mainChannel, List<List<ClientSimulationTrajectoryDto>> trajectories, List<StartPoint> sceneStartPoints, double radius){
         this.key = key;
@@ -53,6 +53,7 @@ public class RealPlaybackDomain {
         this.sequence = 0;
         this.sceneStartPoints = sceneStartPoints;
         this.radius = radius;
+        this.triggeredScenes = new ArrayList<>();
 
         this.future = AsyncManager.me().execute(() -> {
             try {

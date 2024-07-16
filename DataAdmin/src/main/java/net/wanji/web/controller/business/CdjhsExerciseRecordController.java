@@ -86,7 +86,7 @@ public class CdjhsExerciseRecordController extends BaseController
         try {
             return toAjax(cdjhsExerciseRecordService.insertCdjhsExerciseRecord(cdjhsExerciseRecord));
         } catch (Exception e) {
-            return AjaxResult.error("当前排队任务数量已达到限制,请稍后重试");
+            return AjaxResult.error("向任务队列添加任务失败,请稍后重试");
         }
     }
 
@@ -175,7 +175,7 @@ public class CdjhsExerciseRecordController extends BaseController
     public AjaxResult test(Long taskId){
         try {
             CdjhsExerciseRecord record = cdjhsExerciseRecordService.selectCdjhsExerciseRecordById(taskId);
-            ExerciseHandler.taskQueue.put(record);
+            ExerciseHandler.taskQueue.add(record);
             return AjaxResult.success();
         }catch (Exception e){
             e.printStackTrace();

@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Component
 public class ExerciseHandler {
-    public static ConcurrentHashMap<Long, TaskExerciseDto> taskThreadMap = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<Long, Future<?>> taskThreadMap = new ConcurrentHashMap<>();
 
     public static ExpiringMap<String, Long> occupationMap = ExpiringMap.builder()
             .maxSize(5)
@@ -160,9 +160,8 @@ public class ExerciseHandler {
                                         restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                         tjTaskMapper, interactionFuc, timeoutConfig);
                                 Future<?> future = executor.submit(taskExercise);
-                                TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
-                                taskThreadMap.put(record.getId(), taskExerciseDto);
-
+                                log.info("future值为null:{}", Objects.isNull(future));
+                                taskThreadMap.put(record.getId(), future);
                                 //更新任务前方排队人数
                                 CdjhsExerciseRecord[] queueArray = taskQueue.toArray(new CdjhsExerciseRecord[0]);
                                 updateWaitingNum(queueArray);
@@ -205,9 +204,7 @@ public class ExerciseHandler {
                                         restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                         tjTaskMapper, interactionFuc, timeoutConfig);
                                 Future<?> future = executor.submit(taskExercise);
-                                TaskExerciseDto taskExerciseDto = new TaskExerciseDto(taskExercise, future);
-                                taskThreadMap.put(record.getId(), taskExerciseDto);
-
+                                taskThreadMap.put(record.getId(), future);
                                 //更新任务前方排队人数
                                 CdjhsExerciseRecord[] queueArray = taskQueue.toArray(new CdjhsExerciseRecord[0]);
                                 updateWaitingNum(queueArray);
@@ -239,7 +236,7 @@ public class ExerciseHandler {
         if(!taskThreadMap.containsKey(taskId)){
             log.info("练习任务{}不存在", taskId);
         }else{
-            Future<?> future = taskThreadMap.get(taskId).getFuture();
+            Future<?> future = taskThreadMap.get(taskId);
             if(future != null && !(future.isCancelled() || future.isDone())){
                 return future.cancel(true);
             }

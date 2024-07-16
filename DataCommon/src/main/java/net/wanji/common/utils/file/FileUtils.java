@@ -216,8 +216,10 @@ public class FileUtils {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
-                List<ClientSimulationTrajectoryDto> data = JSONObject.parseArray(line, ClientSimulationTrajectoryDto.class);
-                list.add(data);
+                if(line.length() > 0){
+                    List<ClientSimulationTrajectoryDto> data = JSONObject.parseArray(line, ClientSimulationTrajectoryDto.class);
+                    list.add(data);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
