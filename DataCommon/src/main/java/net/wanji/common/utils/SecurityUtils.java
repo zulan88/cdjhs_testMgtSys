@@ -1,11 +1,18 @@
 package net.wanji.common.utils;
 
 import net.wanji.common.constant.HttpStatus;
+import net.wanji.common.core.domain.entity.SysRole;
+import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.exception.ServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import net.wanji.common.core.domain.model.LoginUser;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 安全服务工具类
@@ -116,5 +123,13 @@ public class SecurityUtils
     public static boolean isAdmin(Long userId)
     {
         return userId != null && 1L == userId;
+    }
+
+    public static boolean isAdmin(SysUser sysUser){
+        List<SysRole> roles = sysUser.getRoles();
+        return roles.stream()
+                .map(SysRole::getRoleKey)
+                .anyMatch(roleKey -> roleKey.equals("admin") || roleKey.equals("teacher"));
+
     }
 }

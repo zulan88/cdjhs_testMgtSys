@@ -99,8 +99,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         String downloadPath = WanjiConfig.getDownloadPath();
         String proxyUrl = downloadProxy + mirrorPath.substring(downloadPath.length());
         cdjhsExerciseRecord.setMirrorPath(proxyUrl);
+        int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
         putIntoTaskQueue(cdjhsExerciseRecord);
-        return cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
+        return i;
     }
 
     @Override
@@ -110,9 +111,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
             ExerciseHandler.tempLock.lock();
             try {
                 int size = ExerciseHandler.tempTaskQueue.size();
-                ExerciseHandler.tempTaskQueue.add(record);
                 record.setWaitingNum(size);
                 record.setStatus(TaskStatusEnum.WAITING.getStatus());
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                ExerciseHandler.tempTaskQueue.add(record);
             }catch (Exception e){
                 e.printStackTrace();
                 throw new BusinessException("向队列中添加任务失败");
@@ -123,9 +125,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
             ExerciseHandler.lock.lock();
             try {
                 int size = ExerciseHandler.taskQueue.size();
-                ExerciseHandler.taskQueue.add(record);
                 record.setWaitingNum(size);
                 record.setStatus(TaskStatusEnum.WAITING.getStatus());
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                ExerciseHandler.taskQueue.add(record);
             }catch (Exception e){
                 e.printStackTrace();
                 throw new BusinessException("向队列中添加任务失败");

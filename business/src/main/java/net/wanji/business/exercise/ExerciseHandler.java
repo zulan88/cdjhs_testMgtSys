@@ -160,7 +160,6 @@ public class ExerciseHandler {
                                         restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                                         tjTaskMapper, interactionFuc, timeoutConfig);
                                 Future<?> future = executor.submit(taskExercise);
-                                log.info("future值为null:{}", Objects.isNull(future));
                                 taskThreadMap.put(record.getId(), future);
                                 //更新任务前方排队人数
                                 CdjhsExerciseRecord[] queueArray = taskQueue.toArray(new CdjhsExerciseRecord[0]);
