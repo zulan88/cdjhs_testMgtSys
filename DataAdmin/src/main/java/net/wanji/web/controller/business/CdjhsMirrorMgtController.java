@@ -14,7 +14,9 @@ import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.common.utils.StringUtils;
+import net.wanji.common.utils.file.MimeTypeUtils;
 import net.wanji.common.utils.poi.ExcelUtil;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -113,6 +115,12 @@ public class CdjhsMirrorMgtController extends BaseController
     public AjaxResult initialMultipartUpload(String fileName){
 	    if(StringUtils.isEmpty(fileName)){
 	        return AjaxResult.error("文件名称不能为空");
+        }
+	    //文件类型校验
+        String extension = fileName.substring(fileName.lastIndexOf("."));
+        boolean contains = ArrayUtils.contains(MimeTypeUtils.ALLOWED_FILE_EXTENSION, extension);
+        if(!contains){
+            return AjaxResult.error("只允许上传.tar类型文件");
         }
         Map<String, String> map = cdjhsMirrorMgtService.initialMultipartUpload(fileName);
 	    if(map.containsKey("uploadId")){

@@ -42,6 +42,8 @@ public class MimeTypeUtils
             "xodr", "xosc"
     };
 
+    public static final String[] ALLOWED_FILE_EXTENSION = {".tar"};
+
     public static String getExtension(String prefix)
     {
         switch (prefix)

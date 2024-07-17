@@ -48,11 +48,7 @@ public class ExerciseHandler {
 
     public static LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = new LinkedBlockingQueue<>(100);
 
-    public static LinkedBlockingQueue<CdjhsExerciseRecord> tempTaskQueue = new LinkedBlockingQueue<>(5);
-
     public static ReentrantLock lock = new ReentrantLock();
-
-    public static ReentrantLock tempLock = new ReentrantLock();
 
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 5,
             10, TimeUnit.SECONDS,
@@ -143,7 +139,7 @@ public class ExerciseHandler {
                 if(!devices.isEmpty() && !taskQueue.isEmpty()){
                     String uniques = "";
                     for(String device: devices){
-                        if(!occupationMap.containsKey(device) && !device.equals("YK001")){
+                        if(!occupationMap.containsKey(device)){
                             uniques = device;
                             break;
                         }
@@ -177,48 +173,6 @@ public class ExerciseHandler {
             }
         });
         thread.start();
-
-
-        Thread tempConsumeThread = new Thread(() -> {
-            while (true) {
-                List<String> devices = getOnlineAndIdleDevice();
-                if(!devices.isEmpty() && !tempTaskQueue.isEmpty()){
-                    String uniques = "";
-                    for(String device: devices){
-                        if(!occupationMap.containsKey(device) && device.equals("YK001")){
-                            uniques = device;
-                            break;
-                        }
-                    }
-                    if(StringUtils.isNotEmpty(uniques)){
-                        tempLock.lock();
-                        try {
-                            CdjhsExerciseRecord record = tempTaskQueue.poll();
-                            if(null != record){
-                                occupationMap.put(uniques, record.getId());//占用该域控
-
-                                TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
-                                        tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
-                                        redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
-                                        restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
-                                        tjTaskMapper, interactionFuc, timeoutConfig);
-                                Future<?> future = executor.submit(taskExercise);
-                                taskThreadMap.put(record.getId(), future);
-                                //更新任务前方排队人数
-                                CdjhsExerciseRecord[] queueArray = taskQueue.toArray(new CdjhsExerciseRecord[0]);
-                                updateWaitingNum(queueArray);
-                            }
-                        }catch (Exception e){
-                            log.error("临时消费线程报错");
-                            e.printStackTrace();
-                        }finally {
-                            tempLock.unlock();
-                        }
-                    }
-                }
-            }
-        });
-        tempConsumeThread.start();
     }
 
     private void updateWaitingNum(CdjhsExerciseRecord[] queueArray) {
