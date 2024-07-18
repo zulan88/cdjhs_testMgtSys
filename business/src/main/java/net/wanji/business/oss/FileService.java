@@ -383,6 +383,19 @@ public class FileService {
         }
     }
 
+    public void abortMultipartUploadRequest(String objectName, String uploadId){
+        OSS ossClient = new OSSClientBuilder().build(ossConfig.getEndPoint(), ossConfig.getAccessKeyId(), ossConfig.getAccessKeySecret());
+        try {
+            AbortMultipartUploadRequest abortMultipartUploadRequest = new AbortMultipartUploadRequest(ossConfig.getBucketName(), objectName, uploadId);
+            ossClient.abortMultipartUpload(abortMultipartUploadRequest);
+        }catch (Exception e){
+            log.error("取消分片上传事件-{}-对象名称-{}失败", uploadId, objectName);
+            e.printStackTrace();
+        }finally {
+            ossClient.shutdown();
+        }
+    }
+
     public static ByteArrayOutputStream cloneInputstream(InputStream inputStream){
         try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
             byte[] buffer = new byte[1024];
