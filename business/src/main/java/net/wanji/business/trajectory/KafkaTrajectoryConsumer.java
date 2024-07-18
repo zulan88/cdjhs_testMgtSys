@@ -85,7 +85,7 @@ public class KafkaTrajectoryConsumer {
             int size = toLocalDto.getCount().incrementAndGet();
             String username = toLocalDto.getUsername();
             String key = taskId > 0 ?
-                    Constants.ChannelBuilder.buildTaskDataChannel(username, taskId) :
+                    Constants.ChannelBuilder.buildOnlineTaskPlaybackChannel(username, taskId) :
                     Constants.ChannelBuilder.buildTestingDataChannel(username, caseId);
             String duration = DateUtils.secondsToDuration((int) Math.floor((size) / 10.0));
             //获取主车

@@ -127,6 +127,9 @@ public class MyWebSocketHandle extends TextWebSocketHandler {
         if(ChannelBuilder.WS_PLAYBACK == clientType){
             return ChannelBuilder.buildWebSocketPlaybackChannel(id);
         }
+        if(ChannelBuilder.ONLINE_TASK_PLAYBACK == clientType){
+            return ChannelBuilder.buildOnlineTaskPlaybackChannel(userName, Integer.parseInt(id));
+        }
         throw new BusinessException("无法创建ws连接：客户端类型异常");
     }
 

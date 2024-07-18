@@ -108,6 +108,7 @@ public interface Constants {
         public static final int TESTING_PREVIEW = 7;
         public static final int INFINITE_SIMULATION = 8;
         public static final int WS_PLAYBACK = 9;
+        public static final int ONLINE_TASK_PLAYBACK = 10;
         public static final String STATUS_SUFFIX = "status";
         public static final String CONTROL_SUFFIX = "control";
         public static final String DATA_SUFFIX = "data";
@@ -122,8 +123,9 @@ public interface Constants {
                     || clientType == PLAN || clientType == TASK
                     || clientType == TASK_PREVIEW
                     || clientType == TESTING_PREVIEW
-                    || clientType == INFINITE_SIMULATION)
-                    || clientType == WS_PLAYBACK;
+                    || clientType == INFINITE_SIMULATION
+                    || clientType == WS_PLAYBACK
+                    || clientType == ONLINE_TASK_PLAYBACK);
         }
 
 
@@ -306,6 +308,10 @@ public interface Constants {
          */
         public static String buildTaskEvaluationKafkaTopic(Long taskId){
             return StringUtils.format(CDJHS_EVALUATION_KAFKA_TOPIC_TEMPLATE, taskId);
+        }
+
+        public static String buildOnlineTaskPlaybackChannel(String username, Integer taskId) {
+            return StringUtils.format(TESTING_CHANNEL_TEMPLATE, username, taskId, 0, ONLINE_TASK_PLAYBACK, DATA_SUFFIX);
         }
     }
 
