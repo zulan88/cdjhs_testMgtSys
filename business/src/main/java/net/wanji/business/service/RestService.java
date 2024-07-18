@@ -11,6 +11,7 @@ import net.wanji.business.domain.param.CaseRuleControl;
 import net.wanji.business.domain.param.CaseTrajectoryParam;
 import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.param.TessTrackParam;
+import net.wanji.business.domain.tess.TessStartParam;
 import net.wanji.business.domain.vo.IndexCustomWeightVo;
 import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
@@ -43,6 +44,8 @@ public interface RestService {
      * @return
      */
     int startServer(String ip, Integer port, TessParam tessParam);
+
+    int startTessng(String ip, Integer port, TessStartParam tessStartParam);
 
     /**
      * 创建路网记录

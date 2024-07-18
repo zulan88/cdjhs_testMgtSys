@@ -17,6 +17,7 @@ import net.wanji.business.domain.param.CaseRuleControl;
 import net.wanji.business.domain.param.CaseTrajectoryParam;
 import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.param.TessTrackParam;
+import net.wanji.business.domain.tess.TessStartParam;
 import net.wanji.business.domain.vo.IndexCustomWeightVo;
 import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
@@ -131,6 +132,12 @@ public class RestServiceImpl implements RestService {
     @Value("${tess.evaluationCreate}")
     private String evaluationCreateUrl;
 
+    @Value("${tess.startTess}")
+    private String startTessngUrl;
+
+    @Value("${tess.stopTess}")
+    private String stopTessngUrl;
+
     private static Gson gson = new GsonBuilder().create();
 
     @Resource
@@ -169,6 +176,43 @@ public class RestServiceImpl implements RestService {
         } catch (Exception e) {
             sendTessNgRequestService.saveTessNgRequest("失败", resultUrl, tessParam);
             log.error("远程服务调用失败:{}", e);
+        }
+        return 0;
+    }
+
+    @Override
+    public int startTessng(String ip, Integer port, TessStartParam tessStartParam) {
+        String resultUrl = ip + ":" + port + startTessngUrl;
+        log.info("============================== tessServerUrl：{}", resultUrl);
+        try {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<TessStartParam> resultHttpEntity = new HttpEntity<>(tessStartParam, httpHeaders);
+            log.info("============================== tessServerUrl：{}", JSONObject.toJSONString(tessStartParam));
+            ResponseEntity<String> response =
+                    restTemplate.exchange(resultUrl, HttpMethod.POST, resultHttpEntity, String.class);
+            if (response.getStatusCodeValue() == 200) {
+                JSONObject result = JSONObject.parseObject(response.getBody(), JSONObject.class);
+                assert result != null;
+                log.info("============================== tess server start result:{}", result.toJSONString());
+                if (result.getIntValue("status") != 200) {
+                    String msg = result.get("message").toString();
+                    log.error("远程服务调用失败:{}", msg);
+                    if (msg.contains("service is overloaded")) {
+                        return 2;
+                    }
+                    return 0;
+                }
+                boolean isCreate = result.getJSONObject("data").getBoolean("isCreate");
+                if(isCreate){
+                    return 1;
+                }
+                String message = result.getJSONObject("data").getString("message");
+                log.error("创建仿真任务失败: {}",message);
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("远程服务调用失败:{}", e.getMessage());
         }
         return 0;
     }
