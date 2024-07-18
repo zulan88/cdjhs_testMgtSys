@@ -285,7 +285,8 @@ public class TaskExercise implements Runnable{
             String simulationSceneMessage = JSONObject.toJSONString(simulationSceneInfo);
             JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
             redisCache.publishMessage(tessCommandChannel, simulationScene);
-            log.info("给仿真指令通道-{}-下发片段式场景信息: {}", tessCommandChannel, simulationSceneMessage);
+            //log.info("给仿真指令通道-{}-下发片段式场景信息: {}", tessCommandChannel, simulationSceneMessage);
+            log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
             //仿真是否准备就绪
             boolean isSimulationReady = false;
             long startTime = System.currentTimeMillis();

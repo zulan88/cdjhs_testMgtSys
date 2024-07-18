@@ -41,7 +41,7 @@ public class ExerciseHandler {
     public static ConcurrentHashMap<Long, Future<?>> taskThreadMap = new ConcurrentHashMap<>();
 
     public static ExpiringMap<String, Long> occupationMap = ExpiringMap.builder()
-            .maxSize(5)
+            .maxSize(30)
             .expirationPolicy(ExpirationPolicy.CREATED)
             .expiration(3, TimeUnit.HOURS)
             .build();
@@ -50,7 +50,7 @@ public class ExerciseHandler {
 
     public static ReentrantLock lock = new ReentrantLock();
 
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 5,
+    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 10,
             10, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(50), new RejectedExecutionHandler() {
         @Override
