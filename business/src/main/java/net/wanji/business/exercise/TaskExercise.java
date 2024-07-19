@@ -5,12 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsDeviceImageRecord;
 import net.wanji.business.domain.CdjhsExerciseRecord;
-import net.wanji.business.domain.dto.TjDeviceDetailDto;
 import net.wanji.business.domain.dto.ToLocalDto;
-import net.wanji.business.domain.dto.device.DeviceStateDto;
-import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.tess.*;
-import net.wanji.business.domain.vo.DeviceDetailVo;
 import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.entity.DataFile;
 import net.wanji.business.entity.TjDeviceDetail;
@@ -24,6 +20,7 @@ import net.wanji.business.exercise.dto.jidaevaluation.network.*;
 import net.wanji.business.exercise.dto.report.ReportCurrentPointInfo;
 import net.wanji.business.exercise.dto.report.ReportData;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
+import net.wanji.business.exercise.dto.simulation.SimulationSceneParticipant;
 import net.wanji.business.exercise.dto.strategy.CaseStrategy;
 import net.wanji.business.exercise.dto.strategy.DeviceConnInfo;
 import net.wanji.business.exercise.dto.strategy.Strategy;
@@ -129,9 +126,6 @@ public class TaskExercise implements Runnable{
     private Integer taskStatus;
 
     private TjDeviceDetail detail;
-
-    //private TessParam tessParam;
-    private TessStartReq tessStartReq;
 
     private ToLocalDto toLocalDto;
 
@@ -263,7 +257,7 @@ public class TaskExercise implements Runnable{
             String dataChannel = detail.getDataChannel();
             String commandChannel = detail.getCommandChannel();
             //唤醒仿真 构建唤醒仿真开始结构体
-            tessStartReq = buildTessStartReq(record.getUserName(), record.getId(), dataChannel, paramConfig.networkId,
+            TessStartReq tessStartReq = buildTessStartReq(record.getUserName(), record.getId(), dataChannel, paramConfig.networkId,
                     paramConfig.host, paramConfig.port, paramConfig.db, paramConfig.pwd);
             String tessCommandChannel = tessStartReq.getData().getInteractiveConfig().getCommandChannel();
             String tessDataChannel = tessStartReq.getData().getInteractiveConfig().getTessngChannel();
@@ -288,29 +282,6 @@ public class TaskExercise implements Runnable{
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
-            String simulationSceneMessage = JSONObject.toJSONString(simulationSceneInfo);
-            JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
-            redisCache.publishMessage(tessCommandChannel, simulationScene);
-            log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
-            //仿真是否准备就绪
-            //boolean isSimulationReady = false;
-            //long startTime = System.currentTimeMillis();
-            //String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulationId, tessStatusChannel);
-            //while ((System.currentTimeMillis() - startTime) < timeoutConfig.simulationReadyStatus){
-            //    Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
-            //    if(Objects.nonNull(state) && state == 1){
-            //        isSimulationReady = true;
-            //        break;
-            //    }
-            //    Thread.sleep(2000);
-            //}
-            //if(!isSimulationReady){
-            //    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-            //    record.setCheckMsg("仿真设备不具备测试条件");
-            //    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-            //    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-            //    return;
-            //}
             //获取每个场景的起点列表
             List<SceneSitePoint> sceneSitePoints = interactionFuc.getSceneSitePoints(record.getTestId().intValue());
             //任务开始
@@ -339,7 +310,7 @@ public class TaskExercise implements Runnable{
             ykStartReq = buildYKTestStart(dataChannel, tessDataChannel);
             String ykMessage = JSONObject.toJSONString(ykStartReq);
             JSONObject ykStartMessage = JSONObject.parseObject(ykMessage);
-            redisCache.publishMessage(detail.getCommandChannel(), ykStartMessage);
+            redisCache.publishMessage(commandChannel, ykStartMessage);
             taskStatus = TaskExerciseEnum.IS_TASK_STARTED.getStatus();
             log.info("向域控{}下发开始任务指令: {}", uniques, ykMessage);
             //更新练习开始时间
@@ -357,8 +328,7 @@ public class TaskExercise implements Runnable{
                 String reportDataString = queue.poll(timeoutConfig.mainCarTrajectory, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
                     log.info("{}s内没有接收到主车轨迹数据", timeoutConfig.mainCarTrajectory);
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
+                    stop(ykStartReq, toLocalDto, detail);
                     break;
                 }
                 ReportData reportData = JSONObject.parseObject(reportDataString, ReportData.class);
@@ -377,8 +347,7 @@ public class TaskExercise implements Runnable{
                         boolean motionless = LongitudeLatitudeUtils.isInCriticalDistance(firstFramePostion, position, 0.5);
                         if(motionless){
                             log.info("1分钟内重复发送第一帧数据,强制结束任务");
-                            stopFusion(toLocalDto, detail);
-                            stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
+                            stop(ykStartReq, toLocalDto, detail);
                             break;
                         }
                     }
@@ -387,8 +356,18 @@ public class TaskExercise implements Runnable{
                 boolean inPolygon = LongitudeLatitudeUtils.isInPolygon(position, MapArea.areaPoints);
                 if(!inPolygon){
                     log.info("主车轨迹超出地图区域");
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
+                    stop(ykStartReq, toLocalDto, detail);
+                    break;
+                }
+                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
+                if(taskEnd){
+                    log.info("主车已到达终点,任务结束");
+                    stop(ykStartReq, toLocalDto, detail);
+                    break;
+                }
+                if(System.currentTimeMillis() - taskStartTime > timeoutConfig.taskDuration * 60 * 1000){
+                    log.info("任务运行时间已超过{}分钟,强制结束任务", timeoutConfig.taskDuration);
+                    stop(ykStartReq, toLocalDto, detail);
                     break;
                 }
                 //判断主车位置是否到达场景起点和场景终点
@@ -403,13 +382,21 @@ public class TaskExercise implements Runnable{
                             radius);
                     if(arrivedSceneStartPoint && !sceneStartTriggerMap.containsKey(sequence)){
                         log.info("是否到达场景{}的开始触发点:{}", sequence, true);
-                        //仿真场景开始数据组装
-                        TestStartReqDto tessStartReq = buildTessTestStart(dataChannel, tessDataChannel);
-                        String tessMessage = JSONObject.toJSONString(tessStartReq);
-                        JSONObject tessStartMessage = JSONObject.parseObject(tessMessage);
+                        String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(record.getId().intValue(), tessStatusChannel);
+                        Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
+                        if(Objects.isNull(state) || state != 1){
+                            log.info("主车已行驶到场景{}开始触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
+                            stop(ykStartReq, toLocalDto, detail);
+                            break;
+                        }
+                        //当前场景开始指令数据组装
+                        SimulationSceneParticipant simulationSceneParticipant = simulationSceneInfo.getParams().getParam1().get(sceneIndex);
+                        String tessStart = JSONObject.toJSONString(simulationSceneParticipant);
+                        JSONObject tessStartMessage = JSONObject.parseObject(tessStart);
+
                         redisCache.publishMessage(tessCommandChannel, tessStartMessage);
                         sceneStartTriggerMap.put(sequence, true);
-                        log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, sequence, tessMessage);
+                        log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, sequence, tessStart);
                     }
                     Point2D.Double sceneEndPoint = new Point2D.Double(siteEndPoint.getLongitude(), siteEndPoint.getLatitude());
                     boolean arrivedSceneEndPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneEndPoint,
@@ -417,9 +404,16 @@ public class TaskExercise implements Runnable{
                             radius);
                     if(arrivedSceneEndPoint && !sceneEndTriggerMap.containsKey(sequence)){
                         log.info("是否到达场景{}的结束触发点:{}", sequence, true);
-                        //仿真场景结束数据组装
-                        TestStartReqDto tessEndReq = buildTessTestEnd(dataChannel, tessDataChannel);
-                        String tessSceneEnd = JSONObject.toJSONString(tessEndReq);
+                        String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(record.getId().intValue(), tessStatusChannel);
+                        Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
+                        if(Objects.isNull(state) || state != 1){
+                            log.info("主车已行驶到场景{}结束触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
+                            stop(ykStartReq, toLocalDto, detail);
+                            break;
+                        }
+                        //当前场景结束数据组装
+                        SimulationSceneParticipant sceneEndReq = interactionFuc.createSceneEndReq("场景" + sequence);
+                        String tessSceneEnd = JSONObject.toJSONString(sceneEndReq);
                         JSONObject tessEndMessage = JSONObject.parseObject(tessSceneEnd);
                         redisCache.publishMessage(tessCommandChannel, tessEndMessage);
                         sceneEndTriggerMap.put(sequence, true);
@@ -428,19 +422,6 @@ public class TaskExercise implements Runnable{
                         sceneIndex++;
                     }
 
-                }
-                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
-                if(taskEnd){
-                    log.info("主车已到达终点,任务结束");
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
-                    break;
-                }
-                if(System.currentTimeMillis() - taskStartTime > timeoutConfig.taskDuration * 60 * 1000){
-                    log.info("任务运行时间已超过{}分钟,强制结束任务", timeoutConfig.taskDuration);
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
-                    break;
                 }
             }
             taskStatus = TaskExerciseEnum.TASK_IS_FINISHED.getStatus();
@@ -471,33 +452,18 @@ public class TaskExercise implements Runnable{
         }
     }
 
-    private TestStartReqDto buildTessTestEnd(String dataChannel, String tessDataChannel) {
-        List<TestProtocol> protocols = new ArrayList<>();
-        //数据发送-主车轨迹数据
-        TestProtocol receiveProtocol = TestProtocol.builder()
-                .type(0)
-                .channel(dataChannel)
-                .params(JSONObject.parseObject("{}"))
-                .build();
-        protocols.add(receiveProtocol);
-        //数据发送-背景车
-        TestProtocol backgroundProtocol = TestProtocol.builder()
-                .type(1)
-                .channel(tessDataChannel)
-                .params(JSONObject.parseObject("{}"))
-                .build();
-        protocols.add(backgroundProtocol);
+    private void stop(TestStartReqDto yk, ToLocalDto toLocalDto, TjDeviceDetail detail) {
+        //域控
+        issueEnd2YK(yk, detail.getCommandChannel());
 
-        TestStartParams params = TestStartParams.builder()
-                .taskType(0)
-                .protocols(protocols)
-                .build();
+        //停止数据融合
+        stopFusion(toLocalDto, detail);
 
-        return TestStartReqDto.builder()
-                .type(OperationTypeEnum.TEST_CONTROL_REQ.getType())
-                .timestamp(System.currentTimeMillis())
-                .params(params)
-                .build();
+        //停止监听主车轨迹
+        stopListenMainTrajectory(detail.getDataChannel());
+
+        //仿真关闭
+        closeSimulationServer();
     }
 
     private void processAfterTaskEnd() {
@@ -517,17 +483,16 @@ public class TaskExercise implements Runnable{
 
     private void forceEnd(){
         if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
-            stopFusion(toLocalDto, detail);
-            stop(ykStartReq, detail.getCommandChannel(), detail.getDataChannel(), tessStartReq.getData().getInteractiveConfig().getTessngChannel());
+            stop(ykStartReq, toLocalDto, detail);
         }else if(taskStatus.compareTo(TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus()) == 0){
             stopFusion(toLocalDto, detail);
             stopListenMainTrajectory(detail.getDataChannel());
-            //closeSimulationServer(tessParam.getDataChannel());
+            closeSimulationServer();
         }else if(taskStatus.compareTo(TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus()) == 0){
             stopListenMainTrajectory(detail.getDataChannel());
-            //closeSimulationServer(tessParam.getDataChannel());
+            closeSimulationServer();
         }else if(taskStatus.compareTo(TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus()) == 0){
-            //closeSimulationServer(tessParam.getDataChannel());
+            closeSimulationServer();
         }
     }
 
@@ -616,14 +581,6 @@ public class TaskExercise implements Runnable{
         return null;
     }
 
-    private void simulationStatusReq(String tessCommandChannel, Integer simulationId) {
-        DeviceStateDto deviceStateDto = buildTessReportStatusReq(simulationId);
-        String simuDeviceStatus = JSONObject.toJSONString(deviceStateDto);
-        JSONObject tessStatusReq = JSONObject.parseObject(simuDeviceStatus);
-        redisCache.publishMessage(tessCommandChannel, tessStatusReq);
-        log.info("给仿真指令通道-{}下发状态上报请求: {}", tessCommandChannel, simuDeviceStatus);
-    }
-
     private TestIssueResultDto issueTaskExercise2YK(String uniques, String mirrorId, List<SimulationTrajectoryDto> trajectories) throws InterruptedException {
         TestParams params = TestParams.builder()
                 .imageId(mirrorId)
@@ -700,14 +657,6 @@ public class TaskExercise implements Runnable{
         return imageList;
     }
 
-    private DeviceStateDto buildTessReportStatusReq(Integer deviceId) {
-        DeviceStateDto deviceStateDto = new DeviceStateDto();
-        deviceStateDto.setDeviceId(deviceId);
-        deviceStateDto.setType(0);
-        deviceStateDto.setTimestamp(System.currentTimeMillis());
-        return deviceStateDto;
-    }
-
     private void stopFusion(ToLocalDto toLocalDto, TjDeviceDetail detail) {
         //停止数据融合
         CaseStrategy endCaseStrategy = buildCaseStrategy(record.getId().intValue(), 0, detail);
@@ -761,15 +710,6 @@ public class TaskExercise implements Runnable{
                 .build();
     }
 
-    private TessParam buildTessServerParam(Integer roadNum, String username,
-                                           Long taskId, List<String> mapList) {
-        return new TessParam().buildTaskParam(roadNum,
-                Constants.ChannelBuilder.buildTaskDataChannel(username, taskId.intValue()),
-                Constants.ChannelBuilder.buildTaskControlChannel(username, taskId.intValue()),
-                Constants.ChannelBuilder.buildTaskEvaluateChannel(username, taskId.intValue()),
-                Constants.ChannelBuilder.buildTaskStatusChannel(username, taskId.intValue()), mapList);
-    }
-
     private TestStartReqDto buildYKTestStart(String dataChannel, String tessDataChannel){
         List<TestProtocol> protocols = new ArrayList<>();
         //数据接收-背景车
@@ -803,35 +743,6 @@ public class TaskExercise implements Runnable{
                 .build();
     }
 
-    private TestStartReqDto buildTessTestStart(String dataChannel, String tessDataChannel){
-        List<TestProtocol> protocols = new ArrayList<>();
-        //数据发送-主车轨迹数据
-        TestProtocol receiveProtocol = TestProtocol.builder()
-                .type(0)
-                .channel(dataChannel)
-                .params(JSONObject.parseObject("{}"))
-                .build();
-        protocols.add(receiveProtocol);
-        //数据发送-背景车
-        TestProtocol backgroundProtocol = TestProtocol.builder()
-                .type(1)
-                .channel(tessDataChannel)
-                .params(JSONObject.parseObject("{}"))
-                .build();
-        protocols.add(backgroundProtocol);
-
-        TestStartParams params = TestStartParams.builder()
-                .taskType(1)
-                .protocols(protocols)
-                .build();
-
-        return TestStartReqDto.builder()
-                .type(OperationTypeEnum.TEST_CONTROL_REQ.getType())
-                .timestamp(System.currentTimeMillis())
-                .params(params)
-                .build();
-    }
-
     private LinkedBlockingQueue<String> getAVRedisQueue(String dataChannel) {
         trajectoryListener = new MainCarTrajectoryListener();
         trajectoryListener.add(dataChannel, new LinkedBlockingQueue<>(100));
@@ -854,16 +765,6 @@ public class TaskExercise implements Runnable{
         return mainVehicleCurrentInfo.orElse(null);
     }
 
-    private void stop(TestStartReqDto yk, String commandChannel, String dataChannel, String tessDataChannel) {
-        //停止监听主车轨迹
-        stopListenMainTrajectory(dataChannel);
-        //域控
-        issueEnd2YK(yk, commandChannel);
-
-        //仿真关闭
-        closeSimulationServer(tessDataChannel);
-    }
-
     private void stopListenMainTrajectory(String dataChannel) {
         //停止监听主车数据通道
         redisMessageListenerContainer.removeMessageListener(trajectoryListener, new ChannelTopic(dataChannel));
@@ -883,9 +784,10 @@ public class TaskExercise implements Runnable{
         log.info("给域控指令通道-{}下发任务结束:{}", commandChannel, ykMessage);
     }
 
-    private void closeSimulationServer(String tessDataChannel){
-        restService.stopTessNg(tessIp, String.valueOf(tessPort), tessDataChannel, 1);
-        log.info("关闭仿真...");
+    private void closeSimulationServer(){
+        TessStopReq tessStopReq = buildTessStopReq(Collections.singletonList(String.valueOf(record.getId())), null);
+        boolean isClosed = restService.stopTessng(tessIp, tessPort, tessStopReq);
+        log.info("关闭仿真{}", isClosed ? "成功" : "失败");
     }
 
     private CaseStrategy buildCaseStrategy(int taskId, int state, TjDeviceDetail deviceDetail){

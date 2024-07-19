@@ -11,7 +11,6 @@ import net.wanji.business.domain.param.CaseRuleControl;
 import net.wanji.business.domain.param.CaseTrajectoryParam;
 import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.param.TessTrackParam;
-import net.wanji.business.domain.tess.TessStartParam;
 import net.wanji.business.domain.tess.TessStartReq;
 import net.wanji.business.domain.tess.TessStopReq;
 import net.wanji.business.domain.vo.IndexCustomWeightVo;
@@ -24,7 +23,6 @@ import net.wanji.business.exercise.dto.jidaevaluation.network.NetworkCreateDto;
 import org.springframework.http.HttpMethod;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -50,6 +48,8 @@ public interface RestService {
     int startTessng(String ip, Integer port, TessStartReq tessStartReq);
 
     boolean stopTessng(String ip, Integer port, TessStopReq tessStopReq);
+
+    String queryTessStatus(String ip, Integer port, String taskId, String status, Integer count);
 
     /**
      * 创建路网记录

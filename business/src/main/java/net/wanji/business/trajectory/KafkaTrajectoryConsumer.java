@@ -269,9 +269,9 @@ public class KafkaTrajectoryConsumer {
                         JSONObject totrans = ToBuildOpenXTransUtil.totrans(item.getLongitude(), item.getLatitude(), proj);
                         realTimeParticipant.setX(totrans.getDoubleValue("x"));
                         realTimeParticipant.setY(totrans.getDoubleValue("y"));
-                        realTimeParticipant.setLength(item.getLength().doubleValue());
-                        realTimeParticipant.setWidth(item.getWidth().doubleValue());
-                        realTimeParticipant.setHeight(item.getHeight().doubleValue());
+                        realTimeParticipant.setLength(Double.parseDouble(String.format("%.2f", item.getLength() / 100.0)));
+                        realTimeParticipant.setWidth(Double.parseDouble(String.format("%.2f", item.getWidth() / 100.0)));
+                        realTimeParticipant.setHeight(Double.parseDouble(String.format("%.2f", item.getHeight() / 100.0)));
                         realTimeParticipant.setSpeed(item.getSpeed().doubleValue());
                         realTimeParticipant.setAngle(item.getCourseAngle());
                         realTimeParticipant.setAcce(item.getLonAcc());

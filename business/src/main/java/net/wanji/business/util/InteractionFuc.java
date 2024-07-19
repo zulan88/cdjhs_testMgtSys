@@ -35,10 +35,7 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -285,6 +282,16 @@ public class InteractionFuc {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public SimulationSceneParticipant createSceneEndReq(String type){
+        SimulationSceneParticipant simulationSceneParticipant = new SimulationSceneParticipant();
+        simulationSceneParticipant.setCaseId(UUID.randomUUID().toString());
+        simulationSceneParticipant.setAvPassTime(1);
+        simulationSceneParticipant.setType(type);
+        simulationSceneParticipant.setParticipantTrajectories(new ArrayList<>());
+
+        return simulationSceneParticipant;
     }
 
     @Async

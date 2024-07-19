@@ -17,7 +17,6 @@ import net.wanji.business.domain.param.CaseRuleControl;
 import net.wanji.business.domain.param.CaseTrajectoryParam;
 import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.param.TessTrackParam;
-import net.wanji.business.domain.tess.TessStartParam;
 import net.wanji.business.domain.tess.TessStartReq;
 import net.wanji.business.domain.tess.TessStopReq;
 import net.wanji.business.domain.vo.IndexCustomWeightVo;
@@ -25,12 +24,12 @@ import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
 import net.wanji.business.domain.vo.SceneWeightDetailsVo;
 import net.wanji.business.exercise.dto.evaluation.EvaluationOutputReq;
-import net.wanji.business.exercise.dto.evaluation.EvaluationOutputResult;
 import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreateDto;
 import net.wanji.business.exercise.dto.jidaevaluation.network.NetworkCreateDto;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.SendTessNgRequestService;
 import net.wanji.common.utils.SecurityUtils;
+import net.wanji.common.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,6 +139,12 @@ public class RestServiceImpl implements RestService {
     @Value("${tess.stopTess}")
     private String stopTessngUrl;
 
+    @Value("${tess.queryTessStatus}")
+    private String tessStatusQueryUrl;
+
+    @Value("${tess.queryNetwork}")
+    private String tessNetworkQueryUrl;
+
     private static Gson gson = new GsonBuilder().create();
 
     @Resource
@@ -244,6 +249,39 @@ public class RestServiceImpl implements RestService {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Override
+    public String queryTessStatus(String ip, Integer port, String taskId, String status, Integer count) {
+        try {
+            String originUrl = ip + ":" + port + tessStatusQueryUrl;
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(originUrl);
+            if(StringUtils.isNotEmpty(taskId)){
+                builder.queryParam("taskId", taskId);
+            }
+            if(StringUtils.isNotEmpty(status)){
+                builder.queryParam("status", status);
+            }
+            if(Objects.nonNull(count)){
+                builder.queryParam("count", count);
+            }
+            // 构建最终的 URL
+            String url = builder.toUriString();
+            log.info("查询仿真任务状态请求url: {}", url);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(url, HttpMethod.GET, null, String.class);
+            if(response.getStatusCodeValue() == 200){
+                JSONObject result = JSONObject.parseObject(response.getBody());
+                assert result != null;
+                log.info("查询仿真任务状态返回参数: {}", result.toJSONString());
+                if(result.getIntValue("status") == 200){
+                    return result.getJSONArray("data").toJSONString();
+                }
+            }
+        }catch (Exception e){
+            log.error("查询仿真任务状态请求失败", e);
+        }
+        return null;
     }
 
     @Override
