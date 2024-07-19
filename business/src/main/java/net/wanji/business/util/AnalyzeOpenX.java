@@ -105,7 +105,7 @@ public class AnalyzeOpenX {
         if (entity.contains("pedestrian")){
             return 4;
         }else if (entity.contains("bicycle")){
-            return 13;
+            return 5;
         }else {
             return 1;
         }
