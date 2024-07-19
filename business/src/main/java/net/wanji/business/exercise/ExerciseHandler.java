@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.tess.ParamConfig;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.listener.ImageDelResultListener;
 import net.wanji.business.listener.ImageIssueResultListener;
@@ -111,6 +112,9 @@ public class ExerciseHandler {
     @Autowired
     private TimeoutConfig timeoutConfig;
 
+    @Autowired
+    private ParamConfig paramConfig;
+
     @Value("${image.length.thresold}")
     private Integer imageLengthThresold;
 
@@ -154,7 +158,7 @@ public class ExerciseHandler {
                                         tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
                                         redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
                                         restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
-                                        tjTaskMapper, interactionFuc, timeoutConfig);
+                                        tjTaskMapper, interactionFuc, timeoutConfig, paramConfig);
                                 Future<?> future = executor.submit(taskExercise);
                                 taskThreadMap.put(record.getId(), future);
                                 //更新任务前方排队人数

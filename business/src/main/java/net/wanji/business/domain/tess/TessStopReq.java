@@ -7,17 +7,14 @@ import lombok.NoArgsConstructor;
 
 /**
  * @author: jenny
- * @create: 2024-07-18 5:42 下午
+ * @create: 2024-07-18 21:14
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TessStartParam {
-    private String taskId;
+public class TessStopReq {
+    private String timestamp;
 
-    private TessInteractiveConfig interactiveConfig;
-
-    private String networkId;
-
+    private TessStopParam data;
 }

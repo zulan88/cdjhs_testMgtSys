@@ -57,9 +57,9 @@ public class SimulationStatusListener implements MessageListener {
             log.info("接受到仿真准备状态: {}", body);
             String channelTopic = new String(message.getChannel());
             DeviceStateDto deviceStateDto = JSONObject.parseObject(body, DeviceStateDto.class);
-            Integer deviceId = deviceStateDto.getDeviceId();
+            Integer taskId = deviceStateDto.getTaskId();
             Integer state = deviceStateDto.getState();
-            String key = RedisKeyUtils.getSimulationPrepareStatusKey(deviceId, channelTopic);
+            String key = RedisKeyUtils.getSimulationPrepareStatusKey(taskId, channelTopic);
             redisCache.setCacheObject(key, state, 5, TimeUnit.SECONDS);
         }catch (Exception e){
             e.printStackTrace();

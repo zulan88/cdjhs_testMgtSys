@@ -30,6 +30,8 @@ public class DeviceStateDto {
    */
   private Integer deviceId;
 
+  private Integer taskId;
+
   /**
    * 设备唯一标识
    */

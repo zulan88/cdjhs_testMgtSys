@@ -239,7 +239,7 @@ public class InteractionFuc {
             List<SimulationSceneParticipant> simulationScenes = sceneDetails.stream()
                     .map(scene -> {
                         SimulationSceneParticipant simulationSceneParticipant = new SimulationSceneParticipant();
-                        simulationSceneParticipant.setCaseId(scene.getId());
+                        simulationSceneParticipant.setCaseId(String.valueOf(scene.getId()));
                         simulationSceneParticipant.setType(scene.getSceneSort());
                         simulationSceneParticipant.setAvPassTime(1);
 

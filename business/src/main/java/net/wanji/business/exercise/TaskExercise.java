@@ -9,6 +9,7 @@ import net.wanji.business.domain.dto.TjDeviceDetailDto;
 import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.business.domain.dto.device.DeviceStateDto;
 import net.wanji.business.domain.param.TessParam;
+import net.wanji.business.domain.tess.*;
 import net.wanji.business.domain.vo.DeviceDetailVo;
 import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.entity.DataFile;
@@ -113,6 +114,8 @@ public class TaskExercise implements Runnable{
 
     private TimeoutConfig timeoutConfig;
 
+    private ParamConfig paramConfig;
+
     private MainCarTrajectoryListener trajectoryListener;
 
     private int sceneIndex = 0;
@@ -127,7 +130,8 @@ public class TaskExercise implements Runnable{
 
     private TjDeviceDetail detail;
 
-    private TessParam tessParam;
+    //private TessParam tessParam;
+    private TessStartReq tessStartReq;
 
     private ToLocalDto toLocalDto;
 
@@ -141,7 +145,8 @@ public class TaskExercise implements Runnable{
                         CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper, RedisCache redisCache,
                         ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
                         TestIssueResultListener testIssueResultListener, RestService restService, TjDeviceDetailMapper tjDeviceDetailMapper, RedisMessageListenerContainer redisMessageListenerContainer,
-                        KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc, TimeoutConfig timeoutConfig){
+                        KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc,
+                        TimeoutConfig timeoutConfig, ParamConfig paramConfig){
         this.imageLengthThresold = imageLengthThresold;
         this.record = record;
         this.uniques = uniques;
@@ -166,6 +171,7 @@ public class TaskExercise implements Runnable{
         this.tjTaskMapper = tjTaskMapper;
         this.interactionFuc = interactionFuc;
         this.timeoutConfig = timeoutConfig;
+        this.paramConfig = paramConfig;
         this.taskStatus = TaskExerciseEnum.BEFORE_TESS_AWAKENED.getStatus();
     }
 
@@ -244,71 +250,7 @@ public class TaskExercise implements Runnable{
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
-            //唤醒仿真 构建唤醒仿真开始结构体
-            tessParam = buildTessServerParam(21, record.getUserName(), record.getId(), Arrays.asList("21"));
-            String tessCommandChannel = tessParam.getCommandChannel();
-            String tessDataChannel = tessParam.getDataChannel();
-            String tessStatusChannel = tessParam.getStatusChannel();
-            int tessStatus = restService.startServer(tessIp, tessPort, tessParam);
-            if(tessStatus != 1){
-                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                record.setCheckMsg("唤醒仿真失败,任务结束");
-                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                return;
-            }
-            taskStatus = TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus();
-            log.info("唤醒仿真成功");
-
-            TjDeviceDetailDto query = new TjDeviceDetailDto();
-            query.setDeviceType(net.wanji.common.common.Constants.SIMULATION);
-            List<DeviceDetailVo> simulations = tjDeviceDetailMapper.selectByCondition(query);
-            if(simulations.isEmpty()){
-                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                record.setCheckMsg("数据库没有录入仿真软件信息");
-                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                return;
-            }
-            //请求仿真上报状态
-            Integer simulationId = simulations.get(0).getDeviceId();
-            simulationStatusReq(tessCommandChannel, simulationId);
-            //给仿真下发片段式场景参与者点位集
-            SimulationSceneDto simulationSceneInfo = interactionFuc.getSimulationSceneInfo(record.getTestId().intValue());
-            if(Objects.isNull(simulationSceneInfo)){
-                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                record.setCheckMsg("获取片段式场景参与者点位集信息失败");
-                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                return;
-            }
-            String simulationSceneMessage = JSONObject.toJSONString(simulationSceneInfo);
-            JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
-            redisCache.publishMessage(tessCommandChannel, simulationScene);
-            //log.info("给仿真指令通道-{}-下发片段式场景信息: {}", tessCommandChannel, simulationSceneMessage);
-            log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
-            //仿真是否准备就绪
-            boolean isSimulationReady = false;
-            long startTime = System.currentTimeMillis();
-            String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulationId, tessStatusChannel);
-            while ((System.currentTimeMillis() - startTime) < timeoutConfig.simulationReadyStatus){
-                Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
-                if(Objects.nonNull(state) && state == 1){
-                    isSimulationReady = true;
-                    break;
-                }
-                Thread.sleep(2000);
-            }
-            if(!isSimulationReady){
-                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                record.setCheckMsg("仿真设备不具备测试条件");
-                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                return;
-            }
-            //获取每个场景的起点列表
-            List<SceneSitePoint> sceneSitePoints = interactionFuc.getSceneSitePoints(record.getTestId().intValue());
-            //任务开始
+            //域控信息
             detail = tjDeviceDetailMapper.selectByUniques(uniques);
             if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
@@ -320,6 +262,58 @@ public class TaskExercise implements Runnable{
             }
             String dataChannel = detail.getDataChannel();
             String commandChannel = detail.getCommandChannel();
+            //唤醒仿真 构建唤醒仿真开始结构体
+            tessStartReq = buildTessStartReq(record.getUserName(), record.getId(), dataChannel, paramConfig.networkId,
+                    paramConfig.host, paramConfig.port, paramConfig.db, paramConfig.pwd);
+            String tessCommandChannel = tessStartReq.getData().getInteractiveConfig().getCommandChannel();
+            String tessDataChannel = tessStartReq.getData().getInteractiveConfig().getTessngChannel();
+            String tessStatusChannel = tessStartReq.getData().getInteractiveConfig().getHeartChannel();
+            int tessStatus = restService.startTessng(tessIp, tessPort, tessStartReq);
+            if(tessStatus != 1){
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                record.setCheckMsg("唤醒仿真失败,任务结束");
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                return;
+            }
+            taskStatus = TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus();
+            log.info("唤醒仿真成功");
+
+            //查询仿真下发片段式场景参与者点位集
+            SimulationSceneDto simulationSceneInfo = interactionFuc.getSimulationSceneInfo(record.getTestId().intValue());
+            if(Objects.isNull(simulationSceneInfo)){
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                record.setCheckMsg("获取片段式场景参与者点位集信息失败");
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                return;
+            }
+            String simulationSceneMessage = JSONObject.toJSONString(simulationSceneInfo);
+            JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
+            redisCache.publishMessage(tessCommandChannel, simulationScene);
+            log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
+            //仿真是否准备就绪
+            //boolean isSimulationReady = false;
+            //long startTime = System.currentTimeMillis();
+            //String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(simulationId, tessStatusChannel);
+            //while ((System.currentTimeMillis() - startTime) < timeoutConfig.simulationReadyStatus){
+            //    Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
+            //    if(Objects.nonNull(state) && state == 1){
+            //        isSimulationReady = true;
+            //        break;
+            //    }
+            //    Thread.sleep(2000);
+            //}
+            //if(!isSimulationReady){
+            //    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+            //    record.setCheckMsg("仿真设备不具备测试条件");
+            //    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+            //    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+            //    return;
+            //}
+            //获取每个场景的起点列表
+            List<SceneSitePoint> sceneSitePoints = interactionFuc.getSceneSitePoints(record.getTestId().intValue());
+            //任务开始
             //添加主车轨迹数据通道监听
             LinkedBlockingQueue<String> queue = getAVRedisQueue(dataChannel);
             taskStatus = TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus();
@@ -524,16 +518,16 @@ public class TaskExercise implements Runnable{
     private void forceEnd(){
         if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
             stopFusion(toLocalDto, detail);
-            stop(ykStartReq, detail.getCommandChannel(), detail.getDataChannel(), tessParam.getDataChannel());
+            stop(ykStartReq, detail.getCommandChannel(), detail.getDataChannel(), tessStartReq.getData().getInteractiveConfig().getTessngChannel());
         }else if(taskStatus.compareTo(TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus()) == 0){
             stopFusion(toLocalDto, detail);
             stopListenMainTrajectory(detail.getDataChannel());
-            closeSimulationServer(tessParam.getDataChannel());
+            //closeSimulationServer(tessParam.getDataChannel());
         }else if(taskStatus.compareTo(TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus()) == 0){
             stopListenMainTrajectory(detail.getDataChannel());
-            closeSimulationServer(tessParam.getDataChannel());
+            //closeSimulationServer(tessParam.getDataChannel());
         }else if(taskStatus.compareTo(TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus()) == 0){
-            closeSimulationServer(tessParam.getDataChannel());
+            //closeSimulationServer(tessParam.getDataChannel());
         }
     }
 
@@ -722,6 +716,49 @@ public class TaskExercise implements Runnable{
         log.info("停止数据融合: {}", endMessage);
         //停止监听kafka和文件记录
         kafkaTrajectoryConsumer.unSubscribe(toLocalDto);
+    }
+
+    private TessStartReq buildTessStartReq(String username, Long taskId, String dataChannel, String networkId,
+                                           String host, Integer port, Integer db, String pwd){
+        //redis配置信息
+        RedisConfigure configure = RedisConfigure.builder()
+                .host(host)
+                .port(port)
+                .db(db)
+                .pwd(pwd)
+                .build();
+        //交互信息
+        TessInteractiveConfig interactiveConfig = TessInteractiveConfig.builder()
+                .configure(configure)
+                .commandChannel(Constants.ChannelBuilder.buildTaskControlChannel(username, taskId.intValue()))
+                .tessngChannel(Constants.ChannelBuilder.buildTaskDataChannel(username, taskId.intValue()))
+                .heartChannel(Constants.ChannelBuilder.buildTaskStatusChannel(username, taskId.intValue()))
+                .mainCarChannel(dataChannel)
+                .build();
+
+        TessStartParam data = TessStartParam.builder()
+                .taskId(String.valueOf(taskId))
+                .interactiveConfig(interactiveConfig)
+                .networkId(networkId)
+                .build();
+
+        //创建仿真请求体数据结构
+        return TessStartReq.builder()
+                .timestamp(String.valueOf(System.currentTimeMillis()))
+                .data(data)
+                .build();
+    }
+
+    private TessStopReq buildTessStopReq(List<String> taskIds, String status){
+        TessStopParam data = TessStopParam.builder()
+                .taskIds(taskIds)
+                .status(status)
+                .build();
+
+        return TessStopReq.builder()
+                .timestamp(String.valueOf(System.currentTimeMillis()))
+                .data(data)
+                .build();
     }
 
     private TessParam buildTessServerParam(Integer roadNum, String username,

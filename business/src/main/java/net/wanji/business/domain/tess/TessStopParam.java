@@ -5,19 +5,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author: jenny
- * @create: 2024-07-18 5:42 下午
+ * @create: 2024-07-18 6:43 下午
  */
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class TessStartParam {
-    private String taskId;
+public class TessStopParam {
+    //任务ID列表
+    private List<String> taskIds;
 
-    private TessInteractiveConfig interactiveConfig;
-
-    private String networkId;
-
+    //仿真状态
+    //根据此状态过滤
+    private String status;
 }

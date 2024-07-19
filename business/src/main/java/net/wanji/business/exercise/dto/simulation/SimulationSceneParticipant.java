@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 public class SimulationSceneParticipant {
     //用例id 对应长安大学项目中的场景id
-    private Integer caseId;
+    private String caseId;
 
     //场景分类
     private String type;

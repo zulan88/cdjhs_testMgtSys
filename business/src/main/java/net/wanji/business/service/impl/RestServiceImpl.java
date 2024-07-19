@@ -18,6 +18,8 @@ import net.wanji.business.domain.param.CaseTrajectoryParam;
 import net.wanji.business.domain.param.TessParam;
 import net.wanji.business.domain.param.TessTrackParam;
 import net.wanji.business.domain.tess.TessStartParam;
+import net.wanji.business.domain.tess.TessStartReq;
+import net.wanji.business.domain.tess.TessStopReq;
 import net.wanji.business.domain.vo.IndexCustomWeightVo;
 import net.wanji.business.domain.vo.IndexWeightDetailsVo;
 import net.wanji.business.domain.vo.SceneIndexSchemeVo;
@@ -181,14 +183,14 @@ public class RestServiceImpl implements RestService {
     }
 
     @Override
-    public int startTessng(String ip, Integer port, TessStartParam tessStartParam) {
+    public int startTessng(String ip, Integer port, TessStartReq tessStartReq) {
         String resultUrl = ip + ":" + port + startTessngUrl;
         log.info("============================== tessServerUrl：{}", resultUrl);
         try {
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<TessStartParam> resultHttpEntity = new HttpEntity<>(tessStartParam, httpHeaders);
-            log.info("============================== tessServerUrl：{}", JSONObject.toJSONString(tessStartParam));
+            HttpEntity<TessStartReq> resultHttpEntity = new HttpEntity<>(tessStartReq, httpHeaders);
+            log.info("============================== tessServerUrl：{}", JSONObject.toJSONString(tessStartReq));
             ResponseEntity<String> response =
                     restTemplate.exchange(resultUrl, HttpMethod.POST, resultHttpEntity, String.class);
             if (response.getStatusCodeValue() == 200) {
@@ -215,6 +217,33 @@ public class RestServiceImpl implements RestService {
             log.error("远程服务调用失败:{}", e.getMessage());
         }
         return 0;
+    }
+
+    @Override
+    public boolean stopTessng(String ip, Integer port, TessStopReq tessStopReq) {
+        try {
+            String resultUrl = ip + ":" + port + stopTessngUrl;
+            log.info("============================== tessServerUrl：{}", resultUrl);
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<TessStopReq> resultHttpEntity = new HttpEntity<>(tessStopReq, httpHeaders);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(resultUrl, HttpMethod.POST, resultHttpEntity, String.class);
+            if (response.getStatusCodeValue() == 200) {
+                JSONObject result = JSONObject.parseObject(response.getBody(), JSONObject.class);
+                assert result != null;
+                log.info("============================== tess server end result:{}", result.toJSONString());
+                if (result.getIntValue("status") != 200) {
+                    log.error("远程服务调用失败:{}", result.get("message"));
+                    return false;
+                }
+                return true;
+            }
+            return false;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
