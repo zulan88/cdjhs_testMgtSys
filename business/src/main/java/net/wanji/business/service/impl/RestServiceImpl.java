@@ -131,6 +131,9 @@ public class RestServiceImpl implements RestService {
     @Value("${tess.evaluationCreate}")
     private String evaluationCreateUrl;
 
+    @Value("${tess.evaluationStatus}")
+    private String evaluationTaskStatusUrl;
+
     private static Gson gson = new GsonBuilder().create();
 
     @Resource
@@ -221,6 +224,33 @@ public class RestServiceImpl implements RestService {
             }
         }catch (Exception e){
             log.error("新建评价记录接口调用失败", e);
+        }
+        return null;
+    }
+
+    @Override
+    public String queryEvalutionTaskStatus(Integer taskId) {
+        try {
+            String resultUrl = evaluationTaskStatusUrl;
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(resultUrl);
+            if(Objects.nonNull(taskId)){
+                builder.queryParam("taskId", taskId);
+            }
+            String url = builder.toUriString();
+            log.info("请求查询任务评价状态url: {}", url);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(url, HttpMethod.GET, null, String.class);
+            if(response.getStatusCodeValue() == 200){
+                JSONObject result = JSONObject.parseObject(response.getBody());
+                assert result != null;
+                log.info("请求查询任务评价状态返回参数: {}", result.toJSONString());
+                if(result.getIntValue("status") == 200){
+                    return result.getJSONArray("data").toJSONString();
+                }
+            }
+        }catch (Exception e){
+            log.error("请求查询任务评价状态接口失败,任务报告id-{}", taskId);
+            e.printStackTrace();
         }
         return null;
     }

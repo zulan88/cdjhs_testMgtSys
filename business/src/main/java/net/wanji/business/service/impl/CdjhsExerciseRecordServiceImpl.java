@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
@@ -19,6 +20,7 @@ import net.wanji.business.mapper.TjDeviceDetailMapper;
 import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.schedule.RealPlaybackSchedule;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
+import net.wanji.business.service.RestService;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.config.WanjiConfig;
@@ -29,6 +31,7 @@ import net.wanji.common.utils.file.FileUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +52,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Autowired
     private InteractionFuc interactionFuc;
+
+    @Autowired
+    private RestService restService;
 
     @Value("${download.proxy}")
     private String downloadProxy;
@@ -409,5 +415,23 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public int updateBatch(List<CdjhsExerciseRecord> list) {
         return cdjhsExerciseRecordMapper.updateBatch(list);
+    }
+
+    @Async
+    @Override
+    public void queryEvaluationStatus(Long id, String evaluationUrl) {
+        int index = evaluationUrl.lastIndexOf("=");
+        String taskId = evaluationUrl.substring(index + 1);
+        String json = restService.queryEvalutionTaskStatus(Integer.parseInt(taskId));
+        if(StringUtils.isNotEmpty(json)){
+            JSONArray jsonArray = JSONArray.parseArray(json);
+            JSONObject result = jsonArray.getJSONObject(0);
+            String status = result.getString("status");
+
+            CdjhsExerciseRecord record = new CdjhsExerciseRecord();
+            record.setId(id);
+            record.setEvaluationTaskStatus(status);
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+        }
     }
 }

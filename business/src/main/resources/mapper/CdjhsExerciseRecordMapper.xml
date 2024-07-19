@@ -30,12 +30,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="evaluationOutput" column="evaluation_output"/>
         <result property="networkId" column="network_id"/>
         <result property="evaluationUrl" column="evaluation_url"/>
+        <result property="evaluationTaskStatus" column="evaluation_task_status"/>
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, create_time, update_time from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -63,6 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="fusionFilePath != null and fusionFilePath != ''">and fusion_file_path = #{fusionFilePath}</if>
             <if test="networkId != null and networkId != ''">and network_id = #{networkId}</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">and evaluation_url = #{evaluationUrl}</if>
+            <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">and evaluation_task_status = #{evaluationTaskStatus}</if>
         </where>
         order by create_time desc
     </select>
@@ -83,6 +85,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+    </select>
+
+    <select id="selectTasksByEvaluationStatus" parameterType="string" resultMap="CdjhsExerciseRecordResult">
+        <include refid="selectCdjhsExerciseRecordVo"/>
+        where evaluation_url is not null and (evaluation_task_status is null or evaluation_task_status != #{evalutionStatus})
     </select>
         
     <insert id="insertCdjhsExerciseRecord" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" useGeneratedKeys="true" keyProperty="id">
@@ -112,6 +119,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output,</if>
             <if test="networkId != null and networkId != ''">network_id,</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">evaluation_url,</if>
+            <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">evaluation_task_status,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
          </trim>
@@ -140,6 +148,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationOutput != null and evaluationOutput != ''">#{evaluationOutput},</if>
             <if test="networkId != null and networkId != ''">#{networkId},</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">#{evaluationUrl},</if>
+            <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">#{evaluationTaskStatus},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
          </trim>
@@ -172,6 +181,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output = #{evaluationOutput},</if>
             <if test="networkId != null and networkId != ''">network_id = #{networkId},</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">evaluation_url = #{evaluationUrl},</if>
+            <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">evaluation_task_status = #{evaluationTaskStatus},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

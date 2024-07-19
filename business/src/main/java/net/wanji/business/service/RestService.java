@@ -55,6 +55,11 @@ public interface RestService {
     String createEvaluation(EvaluationCreateDto evaluationCreateDto);
 
     /**
+     * 查询评价任务状态
+     */
+    String queryEvalutionTaskStatus(Integer taskId);
+
+    /**
      * 启动SV云控车服务
      */
     int takeSvServer(String ip, Integer port, TessTrackParam tessTrackParam, int type);
