@@ -273,6 +273,25 @@ public class TaskExercise implements Runnable{
             taskStatus = TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus();
             log.info("唤醒仿真成功");
 
+            boolean isSimulationReady = false;
+            long startTime = System.currentTimeMillis();
+            String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(record.getId().intValue(), tessStatusChannel);
+            while ((System.currentTimeMillis() - startTime) < timeoutConfig.simulationReadyStatus){
+                Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
+                if(Objects.nonNull(state) && state == 1){
+                    isSimulationReady = true;
+                    break;
+                }
+                Thread.sleep(2000);
+            }
+            if(!isSimulationReady){
+                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                record.setCheckMsg("仿真设备不具备测试条件");
+                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                return;
+            }
+
             //查询仿真下发片段式场景参与者点位集
             SimulationSceneDto simulationSceneInfo = interactionFuc.getSimulationSceneInfo(record.getTestId().intValue());
             if(Objects.isNull(simulationSceneInfo)){
@@ -382,7 +401,6 @@ public class TaskExercise implements Runnable{
                             radius);
                     if(arrivedSceneStartPoint && !sceneStartTriggerMap.containsKey(sequence)){
                         log.info("是否到达场景{}的开始触发点:{}", sequence, true);
-                        String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(record.getId().intValue(), tessStatusChannel);
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
                         if(Objects.isNull(state) || state != 1){
                             log.info("主车已行驶到场景{}开始触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
@@ -404,7 +422,6 @@ public class TaskExercise implements Runnable{
                             radius);
                     if(arrivedSceneEndPoint && !sceneEndTriggerMap.containsKey(sequence)){
                         log.info("是否到达场景{}的结束触发点:{}", sequence, true);
-                        String simulationPrepareStatusKey = RedisKeyUtils.getSimulationPrepareStatusKey(record.getId().intValue(), tessStatusChannel);
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
                         if(Objects.isNull(state) || state != 1){
                             log.info("主车已行驶到场景{}结束触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
