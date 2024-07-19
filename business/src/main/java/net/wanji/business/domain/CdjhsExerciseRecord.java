@@ -105,6 +105,8 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     private String evaluationUrl;
 
+    private String evaluationTaskStatus;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -323,6 +325,14 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setEvaluationUrl(String evaluationUrl) {
         this.evaluationUrl = evaluationUrl;
+    }
+
+    public String getEvaluationTaskStatus() {
+        return evaluationTaskStatus;
+    }
+
+    public void setEvaluationTaskStatus(String evaluationTaskStatus) {
+        this.evaluationTaskStatus = evaluationTaskStatus;
     }
 
     @Override

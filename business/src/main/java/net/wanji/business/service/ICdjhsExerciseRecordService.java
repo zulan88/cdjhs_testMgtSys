@@ -74,4 +74,6 @@ public interface ICdjhsExerciseRecordService
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids);
 
     public int updateBatch(List<CdjhsExerciseRecord> list);
+
+    public void queryEvaluationStatus(Long id, String evaluationUrl);
 }

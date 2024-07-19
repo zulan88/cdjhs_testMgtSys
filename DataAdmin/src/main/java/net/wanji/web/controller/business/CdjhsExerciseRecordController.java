@@ -10,6 +10,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
 import lombok.extern.slf4j.Slf4j;
+import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.bo.SceneTrajectoryBo;
 import net.wanji.business.domain.vo.SceneDetailVo;
@@ -169,6 +170,22 @@ public class CdjhsExerciseRecordController extends BaseController
             return AjaxResult.error("任务已完成或已被取消");
         }
         return AjaxResult.success("强制结束任务成功");
+    }
+    
+    @GetMapping("/queryEvalutionStatus")
+    public AjaxResult queryEvalutionStatus(Long taskId){
+        if(taskId == null){
+            return AjaxResult.error("请求参数不能为空");
+        }
+        CdjhsExerciseRecord record = cdjhsExerciseRecordService.selectCdjhsExerciseRecordById(taskId);
+        if(StringUtils.isEmpty(record.getEvaluationUrl())){
+            return AjaxResult.error("报告不存在");
+        }
+        if(record.getEvaluationTaskStatus() == null || !record.getEvaluationTaskStatus().equals(Constants.RedisMessageType.END)){
+            cdjhsExerciseRecordService.queryEvaluationStatus(record.getId(), record.getEvaluationUrl());
+            return AjaxResult.error("报告还在生成过程中,请稍后查看");
+        }
+        return AjaxResult.success("成功",record.getEvaluationUrl());
     }
 
     @GetMapping("/test")
