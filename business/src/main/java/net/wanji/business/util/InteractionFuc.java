@@ -243,6 +243,7 @@ public class InteractionFuc {
                         List<ParticipantTrajectoryBo> participantTrajectories = scene.getSceneTrajectoryBo().getParticipantTrajectories();
                         if (StringUtils.isNotEmpty(participantTrajectories)) {
                             List<ParticipantTrajectory> participants = participantTrajectories.stream()
+                                    .filter(participant -> !participant.getRole().equals(Constants.PartRole.AV))
                                     .map(participant -> {
                                         ParticipantTrajectory participantTrajectory = new ParticipantTrajectory();
                                         BeanUtils.copyProperties(participant, participantTrajectory);
