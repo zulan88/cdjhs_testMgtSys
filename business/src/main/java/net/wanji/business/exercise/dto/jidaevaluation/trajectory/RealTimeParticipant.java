@@ -27,4 +27,6 @@ public class RealTimeParticipant {
     private Double acce;
 
     private Boolean isMain;
+
+    private Integer regionalId;
 }
