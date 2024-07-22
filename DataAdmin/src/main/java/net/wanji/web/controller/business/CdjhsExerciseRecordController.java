@@ -125,9 +125,9 @@ public class CdjhsExerciseRecordController extends BaseController
         if(StringUtils.isEmpty(record.getEvaluationUrl())){
             return AjaxResult.error("报告不存在");
         }
-        if(record.getEvaluationTaskStatus() == null || !record.getEvaluationTaskStatus().equals(Constants.RedisMessageType.END)){
-            cdjhsExerciseRecordService.queryEvaluationStatus(record.getId(), record.getEvaluationUrl());
-            return AjaxResult.error("报告还在生成过程中,请稍后查看");
+        String status = cdjhsExerciseRecordService.queryEvaluationStatus(record.getId(), record.getEvaluationUrl());
+        if(!Constants.RedisMessageType.END.equals(status)){
+            return AjaxResult.success("报告生成中,请稍后查看");
         }
         return AjaxResult.success(record.getEvaluationUrl());
     }

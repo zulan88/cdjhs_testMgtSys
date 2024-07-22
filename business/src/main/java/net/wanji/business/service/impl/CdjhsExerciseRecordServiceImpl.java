@@ -417,9 +417,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         return cdjhsExerciseRecordMapper.updateBatch(list);
     }
 
-    @Async
+
     @Override
-    public void queryEvaluationStatus(Long id, String evaluationUrl) {
+    public String queryEvaluationStatus(Long id, String evaluationUrl) {
         int index = evaluationUrl.lastIndexOf("=");
         String taskId = evaluationUrl.substring(index + 1);
         String json = restService.queryEvalutionTaskStatus(Integer.parseInt(taskId));
@@ -432,6 +432,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
             record.setId(id);
             record.setEvaluationTaskStatus(status);
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+            return status;
         }
+        return null;
     }
 }
