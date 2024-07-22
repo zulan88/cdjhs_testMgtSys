@@ -115,7 +115,9 @@ public class KafkaTrajectoryConsumer {
             WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
             //向济达发送实时轨迹
             if(StringUtils.isNotEmpty(toLocalDto.getKafkaTopic())){
-                sendRealTimeTrajecotory(toLocalDto, data);
+                int index = toLocalDto.getSequence() > 0 ? toLocalDto.getSequence() - 1 : 0;
+                Integer sceneId = sceneStartPoints.get(index).getSceneId();
+                sendRealTimeTrajecotory(toLocalDto, sceneId, data);
             }
         }
     }
@@ -240,7 +242,7 @@ public class KafkaTrajectoryConsumer {
         }
     }
 
-    private void sendRealTimeTrajecotory(ToLocalDto toLocalDto, List<ClientSimulationTrajectoryDto> participants) {
+    private void sendRealTimeTrajecotory(ToLocalDto toLocalDto, Integer sceneId, List<ClientSimulationTrajectoryDto> participants) {
         String kafkaTopic = toLocalDto.getKafkaTopic();
         //筛选出主车
         if(StringUtils.isEmpty(toLocalDto.getMainVehicleId())){
@@ -276,6 +278,11 @@ public class KafkaTrajectoryConsumer {
                         realTimeParticipant.setAngle(item.getCourseAngle());
                         realTimeParticipant.setAcce(item.getLonAcc());
                         realTimeParticipant.setIsMain(isMain);
+
+                        //主车轨迹中增加场景id
+                        if(isMain){
+                            realTimeParticipant.setRegionalId(sceneId);
+                        }
 
                         return realTimeParticipant;
                     }).collect(Collectors.toList());

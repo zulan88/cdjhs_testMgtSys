@@ -27,4 +27,7 @@ public class RealTimeParticipant {
     private Double acce;
 
     private Boolean isMain;
+
+    //场景id
+    private Integer regionalId;
 }

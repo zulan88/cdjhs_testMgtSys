@@ -556,7 +556,7 @@ public class TaskExercise implements Runnable{
             for(int i = 0; i < sceneDetails.size(); i++){
                 SceneDetailVo sceneDetailVo = sceneDetails.get(i);
                 EvaluationAreaInfo evaluationAreaInfo = new EvaluationAreaInfo();
-                evaluationAreaInfo.setId(i);
+                evaluationAreaInfo.setId(sceneDetailVo.getId());
                 evaluationAreaInfo.setName(sceneDetailVo.getTestSceneDesc());
                 evaluationAreaInfo.setWeights(String.valueOf(sceneDetailVo.getEvoNum()));
                 //组装场景的角度信息
