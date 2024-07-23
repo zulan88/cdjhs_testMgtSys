@@ -90,8 +90,8 @@
             <if test="id != null and id > 0 ">
                 and c.id = #{id}
             </if>
-            <if test="treeId != null and treeId > 0 ">
-                and c.tree_id = #{treeId}
+            <if test="treeId != null and treeId !='' ">
+                and find_in_set(c.tree_id, #{treeId})
             </if>
             <if test="mapId != null" >
                 and c.map_id = #{mapId}

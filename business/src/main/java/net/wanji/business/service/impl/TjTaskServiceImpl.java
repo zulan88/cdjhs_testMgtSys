@@ -144,6 +144,9 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
 
     private static final SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
 
+    @Value("${routeplan.speed:60}")
+    private Integer carSpeed;
+
     @Override
     public Map<String, List<SimpleSelect>> initPage() {
         Map<String, List<SimpleSelect>> result = new HashMap<>();
@@ -415,7 +418,6 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         CaseQueryDto caseQueryDto = taskSaveDto.getCaseQueryDto();
         caseQueryDto.setUserName(SecurityUtils.getUsername());
         PageHelper.startPage(caseQueryDto.getPageNum(), caseQueryDto.getPageSize());
-        caseQueryDto.setTreeId("53");
         List<CasePageVo> casePageVos = null;
         AtomicLong total = new AtomicLong(0);
         if (ObjectUtils.isEmpty(caseQueryDto.getShowType()) || 0 == caseQueryDto.getShowType()) {
@@ -921,7 +923,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
             // 主车轨迹
             try {
 //                List<TrajectoryValueDto> res = routeService.readMainTrajectoryFromOriRoute(tc.getRouteFile());
-                Integer speed = 60;
+                Integer speed = carSpeed;
 //                if(res.size()>0){
 //                    speed = res.get(0).getSpeed();
 //                }

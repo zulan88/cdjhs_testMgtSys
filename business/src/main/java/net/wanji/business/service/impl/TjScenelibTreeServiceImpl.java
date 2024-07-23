@@ -171,6 +171,20 @@ public class TjScenelibTreeServiceImpl extends ServiceImpl<TjScenelibTreeMapper,
     }
 
     @Override
+    public List<SysDictData> selectTreeType(String name) {
+        List<SysDictData> sceneTreeType = dictTypeService.selectDictDataByType(SysType.SCENE_LIB_TREE);
+        for (SysDictData item : CollectionUtils.emptyIfNull(sceneTreeType)) {
+            List<TjScenelibTree> result = scenelibTreeMapper.selectByCondition(item.getDictValue());
+            List<TjScenelibTree> sceneTrees = buildSceneTree(CollectionUtils.emptyIfNull(result).stream().sorted(Comparator.comparing(TjScenelibTree::getId))
+                    .collect(Collectors.toList()));
+            item.setDicts(sceneTrees.stream().map(BusinessTreeSelect::new).map(tree -> BusinessTreeUtils.fuzzySearch(tree, name))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+        }
+        return sceneTreeType;
+    }
+
+    @Override
     public List<TjScenelibTree> buildSceneTree(List<TjScenelibTree> scenes) {
         List<TjScenelibTree> returnList = new ArrayList<>();
         if (CollectionUtils.isEmpty(scenes)) {

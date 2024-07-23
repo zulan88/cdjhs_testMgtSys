@@ -140,7 +140,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
 
     @Override
-    public boolean insertTjScenelibBatch(List<TjScenelib> tjScenelibs) throws BusinessException{
+    public boolean insertTjScenelibBatch(List<TjScenelib> tjScenelibs) throws BusinessException {
         //场景库入库
         for (TjScenelib tjScenelib : tjScenelibs) {
             tjScenelib.setNumber(StringUtils.format(Constants.ContentTemplate.SCENE_NUMBER_TEMPLATE, DateUtils.getNowDayString(),
@@ -198,7 +198,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         }
 
         String finalProj = proj;
-        analyze.forEach(item ->{
+        analyze.forEach(item -> {
             List<TrajectoryDetailBo> trajectoryDetailBos = new ArrayList<>();
             long index = 1;
             for (WoPostion wo : item.getWoPostionList()) {
@@ -235,14 +235,14 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         CaseTrajectoryDetailBo caseTrajectoryDetailBo = new CaseTrajectoryDetailBo();
         List<ParticipantTrajectoryBo> participantTrajectoryBos = new ArrayList<>();
         map.forEach((name, trajectoryDetailBo) -> {
-            trajectoryDetailBo.get(trajectoryDetailBo.size()-1).setType("end");
+            trajectoryDetailBo.get(trajectoryDetailBo.size() - 1).setType("end");
 //            trajectoryDetailBo.get(0).setTime("0");
             ParticipantTrajectoryBo participantTrajectoryBo = new ParticipantTrajectoryBo();
             participantTrajectoryBo.setId(String.valueOf(i[0]));
             participantTrajectoryBo.setName(name);
             participantTrajectoryBo.setRole("mvSimulation");
             participantTrajectoryBo.setType("slave");
-            if(name.equals("A0")){
+            if (name.equals("A0")) {
                 //participantTrajectoryBo.setName("主车");
                 participantTrajectoryBo.setType("main");
                 participantTrajectoryBo.setRole("av");
@@ -262,7 +262,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             folder.mkdirs();
         }
 
-        String filePath = forder + File.separator +"Allpoint"+System.currentTimeMillis()+".txt";
+        String filePath = forder + File.separator + "Allpoint" + System.currentTimeMillis() + ".txt";
 
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(Paths.get(filePath)), StandardCharsets.UTF_8))) {
             writer.write(caseTrajectoryDetailBo.toJsonString());
@@ -271,7 +271,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         }
 
         for (ParticipantTrajectoryBo participantTrajectoryBo : caseTrajectoryDetailBo.getParticipantTrajectories()) {
-            List<TrajectoryDetailBo> trajectoryDetailBos = filterEveryNth(participantTrajectoryBo.getTrajectory(),10);
+            List<TrajectoryDetailBo> trajectoryDetailBos = filterEveryNth(participantTrajectoryBo.getTrajectory(), 10);
             participantTrajectoryBo.setTrajectory(trajectoryDetailBos);
         }
 
@@ -281,9 +281,9 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
         sceneDetailDto.setRouteFile(filePath);
         sceneDetailDto.setNumber(tjScenelib.getNumber());
-        if(tjScenelib.getGeojsonPath()!=null) {
+        if (tjScenelib.getGeojsonPath() != null) {
             sceneDetailDto.setMapId(Integer.valueOf(tjScenelib.getGeojsonPath()));
-        }else {
+        } else {
             sceneDetailDto.setMapId(21);
         }
         sceneDetailDto.setRoadCondition(tjScenelib.getXoscPath());
@@ -327,7 +327,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         List<SimulationTrajectoryDto> simulationTrajectoryDtos = new ArrayList<>();
         final int[] frameId = {1};
         final int[] count = {0};
-        analyze.forEach(item ->{
+        analyze.forEach(item -> {
             SimulationTrajectoryDto simulationTrajectoryDto = new SimulationTrajectoryDto();
             simulationTrajectoryDto.setTimestamp(StringUtils.getTimeStamp());
             simulationTrajectoryDto.setTimestampType("CREATE_TIME");
@@ -413,13 +413,13 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         CaseTrajectoryDetailBo caseTrajectoryDetailBo = new CaseTrajectoryDetailBo();
         List<ParticipantTrajectoryBo> participantTrajectoryBos = new ArrayList<>();
         map.forEach((name, trajectoryDetailBo) -> {
-            trajectoryDetailBo.get(trajectoryDetailBo.size()-1).setType("end");
+            trajectoryDetailBo.get(trajectoryDetailBo.size() - 1).setType("end");
             ParticipantTrajectoryBo participantTrajectoryBo = new ParticipantTrajectoryBo();
             participantTrajectoryBo.setId(String.valueOf(i[0]));
             participantTrajectoryBo.setName(name);
             participantTrajectoryBo.setRole("mvSimulation");
             participantTrajectoryBo.setType("slave");
-            if(name.equals("A0")){
+            if (name.equals("A0")) {
                 //participantTrajectoryBo.setName("主车");
                 participantTrajectoryBo.setType("main");
                 participantTrajectoryBo.setRole("av");
@@ -435,7 +435,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         sceneDetailDto.setImgUrl(tjScenelib.getImgPath());
 
         //routingfile入库
-        String filePath = WanjiConfig.getUploadPath()+"Routing"+System.currentTimeMillis()+".txt";
+        String filePath = WanjiConfig.getUploadPath() + "Routing" + System.currentTimeMillis() + ".txt";
         // 使用try-with-resources语句自动管理BufferedWriter资源
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
             for (SimulationTrajectoryDto dto : simulationTrajectoryDtos) {
@@ -449,9 +449,9 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
         sceneDetailDto.setRouteFile(filePath);
         sceneDetailDto.setNumber(tjScenelib.getNumber());
-        if(tjScenelib.getGeojsonPath()!=null) {
+        if (tjScenelib.getGeojsonPath() != null) {
             sceneDetailDto.setMapId(Integer.valueOf(tjScenelib.getGeojsonPath()));
-        }else {
+        } else {
             sceneDetailDto.setMapId(21);
         }
         sceneDetailDto.setRoadCondition(tjScenelib.getXoscPath());
@@ -478,12 +478,12 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 : null);
         tjScenelib.setUpdateBy("admin");
         tjScenelib.setUpdateDatetime(LocalDateTime.now());
-        if(tjScenelib.getImgPath()!=null){
+        if (tjScenelib.getImgPath() != null) {
             Integer secenceId = this.getById(tjScenelib.getId()).getSceneDetailId();
             TjFragmentedSceneDetail tjFragmentedSceneDetail = new TjFragmentedSceneDetail();
             tjFragmentedSceneDetail.setImgUrl(tjScenelib.getImgPath());
             tjFragmentedSceneDetail.setId(secenceId);
-            if(tjScenelib.getLabels()!=null){
+            if (tjScenelib.getLabels() != null) {
                 tjFragmentedSceneDetail.setLabel(tjScenelib.getLabels());
                 tjFragmentedSceneDetail.setAllStageLabel(tjScenelib.getAllStageLabels());
             }
@@ -502,7 +502,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
     public int deleteTjScenelibByIds(Long[] ids) {
         for (Long id : ids) {
             TjScenelib tjScenelib = this.getById(id);
-            if(tjScenelib.getSceneStatus()!=null && tjScenelib.getSceneStatus()==1){
+            if (tjScenelib.getSceneStatus() != null && tjScenelib.getSceneStatus() == 1) {
                 return 0;
             }
         }
@@ -536,11 +536,11 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
         //case配置表中数据同步
         scenelibs.forEach(item -> {   //没有数据先插入数据
             List<CaseDetailVo> caseVos = caseMapper.selectCasesByScean(item.getId());
-            if (caseVos.isEmpty()){
+            if (caseVos.isEmpty()) {
                 TjScenelib scenelib = this.getById(item.getId());
                 TjCaseDto tjCaseDto = new TjCaseDto();
                 tjCaseDto.setRemark("1");
-                tjCaseDto.setTreeId(53);
+                tjCaseDto.setTreeId(Math.toIntExact(scenelib.getTreeId()));
                 tjCaseDto.setSceneDetailId(scenelib.getSceneDetailId());
                 tjCaseDto.setSceneLibId(item.getId());
                 //PartConfigSelect partConfigSelect = new PartConfigSelect();
@@ -554,9 +554,9 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 //List<PartConfigSelect> partConfigSelects = new ArrayList<>();
                 //partConfigSelects.add(partConfigSelect);
                 tjCaseDto.setLabels(scenelib.getLabels());
-                if(scenelib.getGeojsonPath()!=null) {
+                if (scenelib.getGeojsonPath() != null) {
                     tjCaseDto.setMapId(Integer.valueOf(scenelib.getGeojsonPath()));
-                }else {
+                } else {
                     tjCaseDto.setMapId(21);
                 }
                 tjCaseDto.setEvoNum(scenelib.getEvoNum());
@@ -565,7 +565,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 if (scenelib.getGeojsonPath().equals("10")) {
                     proj = projtj;
                 }
-                if (end!=null) {
+                if (end != null) {
                     double x1 = Double.parseDouble(end.getXTarget().split(",")[0]);
                     double x2 = Double.parseDouble(end.getXTarget().split(",")[1]);
                     double y1 = Double.parseDouble(end.getYTarget().split(",")[0]);
@@ -591,7 +591,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 status = "effective";
             }
             //根据场景id更新case的状态
-            caseMapper.updateCaseStatusBySceanId(item.getId(),status);
+            caseMapper.updateCaseStatusBySceanId(item.getId(), status);
         });
         return this.updateBatchById(scenelibs);
 
@@ -678,7 +678,8 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
     }
 
     @Override
-    public void playback(Integer id, String participantId, int action) throws BusinessException, IOException {
+    public List<WoPostion> playback(Integer id, String participantId, int action) throws BusinessException, IOException {
+        List<WoPostion> mainPostion = null;
         TjScenelib scenelib = this.getById(id);
         String key = Constants.ChannelBuilder.buildScenePreviewChannel(SecurityUtils.getUsername(), id);
         switch (action) {
@@ -690,6 +691,14 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
                 if (CollectionUtils.isEmpty(routeList)) {
                     throw new BusinessException("轨迹文件读取异常");
+                }
+                mainPostion = analyzeOpenX.parseCommentsFromXML(scenelib.getXoscPath());
+                for (WoPostion woPostion : mainPostion) {
+                    if (woPostion.getX() != null) {
+                        woPostion.setId("start");
+                    } else {
+                        woPostion.setId("end");
+                    }
                 }
                 PlaybackSchedule.startSendingOnsiteData(key, routeList);
                 break;
@@ -704,8 +713,8 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 break;
             default:
                 break;
-
         }
+        return mainPostion;
     }
 
     private synchronized String buildOnsiteNumber() {
