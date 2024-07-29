@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import net.wanji.business.domain.WoPostion;
 import net.wanji.business.domain.vo.ScenelibVo;
 import net.wanji.business.entity.TjFragmentedSceneDetail;
 import net.wanji.business.entity.TjScenelib;
@@ -79,5 +80,5 @@ public interface ITjScenelibService extends IService<TjScenelib>
 
     void takeOnsiteCase(Long id);
 
-    void playback(Integer id, String participantId, int action) throws BusinessException, IOException;
+    List<WoPostion> playback(Integer id, String participantId, int action) throws BusinessException, IOException;
 }

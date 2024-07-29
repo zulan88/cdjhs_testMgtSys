@@ -7,6 +7,7 @@ import net.wanji.business.domain.dto.TjFragmentedScenesDto;
 import net.wanji.business.domain.dto.TreeTypeDto;
 import net.wanji.business.entity.TjScenelibTree;
 import net.wanji.business.exception.BusinessException;
+import net.wanji.common.core.domain.entity.SysDictData;
 
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,8 @@ public interface TjScenelibTreeService extends IService<TjScenelibTree> {
      * @return
      */
     List<TjScenelibTree> selectUsingScenes(String type);
+
+    List<SysDictData> selectTreeType(String name);
 
     /**
      * 构建树结构

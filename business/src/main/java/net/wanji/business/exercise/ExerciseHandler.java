@@ -51,7 +51,7 @@ public class ExerciseHandler {
 
     public static ReentrantLock lock = new ReentrantLock();
 
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 10,
+    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 20,
             10, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(50), new RejectedExecutionHandler() {
         @Override

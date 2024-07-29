@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiOperationSort;
 import io.swagger.models.auth.In;
 import net.wanji.business.domain.BusinessTreeSelect;
 import net.wanji.business.domain.Label;
+import net.wanji.business.domain.WoPostion;
 import net.wanji.business.domain.dto.TjFragmentedSceneDetailDto;
 import net.wanji.business.domain.dto.TjFragmentedScenesDto;
 import net.wanji.business.domain.dto.TreeTypeDto;
@@ -24,6 +25,7 @@ import net.wanji.business.service.*;
 import net.wanji.business.util.AnalyzeOpenX;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
+import net.wanji.common.core.domain.entity.SysDictData;
 import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.business.util.ToBuildOpenX;
 import net.wanji.common.utils.StringUtils;
@@ -187,6 +189,12 @@ public class ScenelibController extends BaseController {
         return AjaxResult.success(tree);
     }
 
+    @GetMapping("/getALLSceneTree")
+    public AjaxResult getALLSceneTree(@RequestParam(value = "name", required = false) String name) {
+        List<SysDictData> tree = scenelibTreeService.selectTreeType(name);
+        return AjaxResult.success(tree);
+    }
+
     //@PreAuthorize("@ss.hasPermi('sceneBase:saveSceneTree')")
     @PostMapping("/saveSceneTree")
     public AjaxResult saveSceneTree(@Validated @RequestBody TjFragmentedScenesDto fragmentedScenesDto) {
@@ -304,8 +312,8 @@ public class ScenelibController extends BaseController {
                               @RequestParam(value = "action") int action,
                               @RequestParam(value = "vehicleId", required = false) String vehicleId)
             throws BusinessException, IOException {
-        scenelibService.playback(id, vehicleId, action);
-        return AjaxResult.success();
+        List<WoPostion> res = scenelibService.playback(id, vehicleId, action);
+        return AjaxResult.success(res);
     }
 
     @GetMapping("/test")

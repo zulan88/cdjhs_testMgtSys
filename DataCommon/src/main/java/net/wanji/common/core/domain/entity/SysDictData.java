@@ -9,6 +9,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import net.wanji.common.core.domain.BaseEntity;
 
+import java.util.List;
+
 /**
  * 字典数据表 sys_dict_data
  * 
@@ -51,6 +53,16 @@ public class SysDictData extends BaseEntity
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
     private String status;
+
+    private List<Object> dicts;
+
+    public List<Object> getDicts() {
+		return dicts;
+	}
+
+    public void setDicts(List<Object> dicts) {
+		this.dicts = dicts;
+	}
 
     public Long getDictCode()
     {

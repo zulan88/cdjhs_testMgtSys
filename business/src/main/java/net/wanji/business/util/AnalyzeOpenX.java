@@ -66,32 +66,32 @@ public class AnalyzeOpenX {
             }
             List<Tjshape> tjshapes = new ArrayList<>();
 
-            int index = 0;
+//            int index = 0;
             for (String key : woPostionMap.keySet()){
                 List<WoPostion> woPostions = woPostionMap.get(key);
-                //主车
-                if(index == 0){
-                    List<WoPostion> mainPostions = new ArrayList<>();
-                    List<WoPostion> mainPostion = parseCommentsFromXML(xocsPath);
-                    for (WoPostion woPostion : mainPostion){
-                        if (woPostion.getX()!=null){
-                            woPostion.setId("A0");
-                            mainPostions.add(woPostion);
-                        }else {
-                            SceneLibMap.putEnd(xocsPath,woPostion);
-                        }
-                    }
-                    Tjshape mainshape = new Tjshape();
-                    mainshape.setDuration(0);
-                    mainshape.setWoPostionList(mainPostions);
-                    tjshapes.add(mainshape);
-                }
+//                //主车
+//                if(index == 0){
+//                    List<WoPostion> mainPostions = new ArrayList<>();
+//                    List<WoPostion> mainPostion = parseCommentsFromXML(xocsPath);
+//                    for (WoPostion woPostion : mainPostion){
+//                        if (woPostion.getX()!=null){
+//                            woPostion.setId("A0");
+//                            mainPostions.add(woPostion);
+//                        }else {
+//                            SceneLibMap.putEnd(xocsPath,woPostion);
+//                        }
+//                    }
+//                    Tjshape mainshape = new Tjshape();
+//                    mainshape.setDuration(0);
+//                    mainshape.setWoPostionList(mainPostions);
+//                    tjshapes.add(mainshape);
+//                }
                 Tjshape tjshape = new Tjshape();
                 int time = (int) ((Double.parseDouble(key)-mintime)*1000);
                 tjshape.setDuration(time);
                 tjshape.setWoPostionList(woPostions);
                 tjshapes.add(tjshape);
-                index++;
+//                index++;
             }
 
             return tjshapes;
