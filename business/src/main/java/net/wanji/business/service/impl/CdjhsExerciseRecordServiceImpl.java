@@ -422,7 +422,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     public String queryEvaluationStatus(Long id, String evaluationUrl) {
         int index = evaluationUrl.lastIndexOf("=");
         String taskId = evaluationUrl.substring(index + 1);
-        String json = restService.queryEvalutionTaskStatus(Integer.parseInt(taskId));
+        String json = restService.queryEvalutionTaskStatus(taskId);
         if(StringUtils.isNotEmpty(json)){
             JSONArray jsonArray = JSONArray.parseArray(json);
             JSONObject result = jsonArray.getJSONObject(0);

@@ -57,7 +57,7 @@ public interface RestService {
     /**
      * 查询评价任务状态
      */
-    String queryEvalutionTaskStatus(Integer taskId);
+    String queryEvalutionTaskStatus(String taskId);
 
     /**
      * 启动SV云控车服务

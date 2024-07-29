@@ -229,7 +229,7 @@ public class RestServiceImpl implements RestService {
     }
 
     @Override
-    public String queryEvalutionTaskStatus(Integer taskId) {
+    public String queryEvalutionTaskStatus(String taskId) {
         try {
             String resultUrl = evaluationTaskStatusUrl;
             UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(resultUrl);
