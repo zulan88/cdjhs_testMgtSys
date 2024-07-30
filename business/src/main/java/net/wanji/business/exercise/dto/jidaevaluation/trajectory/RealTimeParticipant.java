@@ -29,4 +29,7 @@ public class RealTimeParticipant {
     private Boolean isMain;
 
     private Integer regionalId;
+
+    //0表示没有安全员介入，1表示存在安全员介入
+    private Integer isSecurityInvolved;
 }

@@ -282,6 +282,7 @@ public class KafkaTrajectoryConsumer {
                         //主车轨迹中增加场景id
                         if(isMain){
                             realTimeParticipant.setRegionalId(sceneId);
+                            realTimeParticipant.setIsSecurityInvolved(item.getAutoStatus() == 0 ? 1 : 0);
                         }
                         return realTimeParticipant;
                     }).collect(Collectors.toList());

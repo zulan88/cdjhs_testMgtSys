@@ -30,6 +30,8 @@ public class RedisKeyUtils {
 
     public static final String SIMULATION_PREPARE_STATUS = "CDJHS_SIMULATION_PREPARE_STATUS";
 
+    public static final String CDJHS_MAIN_CAR_TRAJECTORY = "CDJHS_MAIN_CAR_TRAJECTORY";
+
     //设备状态连接符
     public static final String DEVICE_STATUS_PRE_LINK = ":";
 
@@ -91,5 +93,9 @@ public class RedisKeyUtils {
 
     public static String getSimulationPrepareStatusKey(Integer deviceId, String statusChannel){
         return SIMULATION_PREPARE_STATUS + DEVICE_STATUS_PRE_LINK + deviceId + DEVICE_STATUS_PRE_LINK + statusChannel;
+    }
+
+    public static String getCdjhsMainCarTrajectoryKey(Long taskId){
+        return CDJHS_MAIN_CAR_TRAJECTORY + DEVICE_STATUS_PRE_LINK + taskId;
     }
 }

@@ -32,4 +32,10 @@ public class TimeoutConfig {
 
     @Value("${timeout.config.mainCar.trajectory}")
     public Integer mainCarTrajectory;
+
+    @Value("${timeout.config.drive.detectionTime}")
+    public Integer driveDectionTime;
+
+    @Value("${timeout.config.drive.distance}")
+    public Double driveDistance;
 }

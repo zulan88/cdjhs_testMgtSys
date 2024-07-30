@@ -4,11 +4,10 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson.JSONObject;
 import net.wanji.common.core.domain.model.LoginUser;
 import net.wanji.common.utils.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.BoundSetOperations;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.connection.RedisZSetCommands;
+import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -298,5 +297,24 @@ public class RedisCache {
     public Set<String> getKeys(final String prefix) {
         Set<String> keys = redisTemplate.keys(prefix.concat("*"));
         return keys;
+    }
+
+    public <T> void zAdd(final String key, T memeber, double score){
+        redisTemplate.opsForZSet().add(key, memeber, score);
+    }
+
+    public <T> Set<T> range(final String key, long start, long end){
+        ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
+        return zSetOperations.range(key, start, end);
+    }
+
+    public <T> Set<ZSetOperations.TypedTuple<T>> rangeWithScores(final String key, long start, long end){
+        ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
+        return zSetOperations.rangeWithScores(key, start, end);
+    }
+
+    public <T> Long removeRange(final String key, double min, double max){
+        ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
+        return zSetOperations.removeRangeByScore(key, min, max);
     }
 }

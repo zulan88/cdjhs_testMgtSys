@@ -50,6 +50,7 @@ import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.file.FileUploadUtils;
 import net.wanji.common.utils.file.FileUtils;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
@@ -58,6 +59,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author: jenny
@@ -285,7 +287,6 @@ public class TaskExercise implements Runnable{
             String simulationSceneMessage = JSONObject.toJSONString(simulationSceneInfo);
             JSONObject simulationScene = JSONObject.parseObject(simulationSceneMessage);
             redisCache.publishMessage(tessCommandChannel, simulationScene);
-            //log.info("给仿真指令通道-{}-下发片段式场景信息: {}", tessCommandChannel, simulationSceneMessage);
             log.info("给仿真指令通道-{}-下发片段式场景信息", tessCommandChannel);
             //仿真是否准备就绪
             boolean isSimulationReady = false;
@@ -363,8 +364,7 @@ public class TaskExercise implements Runnable{
                 String reportDataString = queue.poll(timeoutConfig.mainCarTrajectory, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
                     log.info("{}s内没有接收到主车轨迹数据", timeoutConfig.mainCarTrajectory);
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
+                    stop(ykStartReq, toLocalDto, detail, tessDataChannel);
                     break;
                 }
                 ReportData reportData = JSONObject.parseObject(reportDataString, ReportData.class);
@@ -383,18 +383,53 @@ public class TaskExercise implements Runnable{
                         boolean motionless = LongitudeLatitudeUtils.isInCriticalDistance(firstFramePostion, position, 0.5);
                         if(motionless){
                             log.info("1分钟内重复发送第一帧数据,强制结束任务");
-                            stopFusion(toLocalDto, detail);
-                            stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
+                            stop(ykStartReq, toLocalDto, detail, tessDataChannel);
                             break;
                         }
                     }
 
                 }
+                //动态检测指定检测时间内的移动距离
+                String globalTimeStamp = vehicleCurrentInfo.getGlobalTimeStamp();
+                long currentTimeStamp = Long.parseLong(globalTimeStamp);
+                String mainCarTrajectoryKey = RedisKeyUtils.getCdjhsMainCarTrajectoryKey(record.getId());
+                redisCache.zAdd(mainCarTrajectoryKey, position, currentTimeStamp);
+                Set<ZSetOperations.TypedTuple<Point2D.Double>> typedTuples = redisCache.rangeWithScores(mainCarTrajectoryKey, 0, 0);
+                ZSetOperations.TypedTuple<Point2D.Double> typedTuple = new ArrayList<>(typedTuples).get(0);
+                Double score = typedTuple.getScore();
+                Point2D.Double tupleValue = typedTuple.getValue();
+                assert score != null;
+                if(currentTimeStamp - score.longValue() >= timeoutConfig.driveDectionTime * 60 * 1000){
+                    assert tupleValue != null;
+                    double distance = LongitudeLatitudeUtils.ellipsoidalDistance(tupleValue, position);
+                    if(distance < timeoutConfig.driveDistance){
+                        log.info("【{}】--【{}】时间段内，车辆从 【{}】 行驶到 【{}】,移动距离【{}】m,小于【{}】m,任务结束",
+                                score.longValue(), globalTimeStamp,
+                                tupleValue.x + "," + tupleValue.y,
+                                position.x + "," + position.y,
+                                distance, timeoutConfig.driveDistance);
+                        stop(ykStartReq, toLocalDto, detail, tessDataChannel);
+                        break;
+                    }
+                    long max = currentTimeStamp - timeoutConfig.driveDectionTime * 60 * 1000;
+                    redisCache.removeRange(mainCarTrajectoryKey, 0, max);
+                }
+
                 boolean inPolygon = LongitudeLatitudeUtils.isInPolygon(position, MapArea.areaPoints);
                 if(!inPolygon){
                     log.info("主车轨迹超出地图区域");
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
+                    stop(ykStartReq, toLocalDto, detail, tessDataChannel);
+                    break;
+                }
+                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
+                if(taskEnd){
+                    log.info("主车已到达终点,任务结束");
+                    stop(ykStartReq, toLocalDto, detail, tessDataChannel);
+                    break;
+                }
+                if(System.currentTimeMillis() - taskStartTime > timeoutConfig.taskDuration * 60 * 1000){
+                    log.info("任务运行时间已超过{}分钟,强制结束任务", timeoutConfig.taskDuration);
+                    stop(ykStartReq, toLocalDto, detail, tessDataChannel);
                     break;
                 }
                 //判断主车位置是否到达场景起点和场景终点
@@ -435,19 +470,6 @@ public class TaskExercise implements Runnable{
                     }
 
                 }
-                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
-                if(taskEnd){
-                    log.info("主车已到达终点,任务结束");
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
-                    break;
-                }
-                if(System.currentTimeMillis() - taskStartTime > timeoutConfig.taskDuration * 60 * 1000){
-                    log.info("任务运行时间已超过{}分钟,强制结束任务", timeoutConfig.taskDuration);
-                    stopFusion(toLocalDto, detail);
-                    stop(ykStartReq, commandChannel, dataChannel, tessDataChannel);
-                    break;
-                }
             }
             taskStatus = TaskExerciseEnum.TASK_IS_FINISHED.getStatus();
             processAfterTaskEnd();
@@ -474,6 +496,9 @@ public class TaskExercise implements Runnable{
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
             ExerciseHandler.taskThreadMap.remove(record.getId());
+            //删除缓存主车轨迹数据
+            String mainCarTrajectoryKey = RedisKeyUtils.getCdjhsMainCarTrajectoryKey(record.getId());
+            redisCache.deleteObject(mainCarTrajectoryKey);
         }
     }
 
@@ -523,8 +548,7 @@ public class TaskExercise implements Runnable{
 
     private void forceEnd(){
         if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
-            stopFusion(toLocalDto, detail);
-            stop(ykStartReq, detail.getCommandChannel(), detail.getDataChannel(), tessParam.getDataChannel());
+            stop(ykStartReq, toLocalDto, detail, tessParam.getDataChannel());
         }else if(taskStatus.compareTo(TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus()) == 0){
             stopFusion(toLocalDto, detail);
             stopListenMainTrajectory(detail.getDataChannel());
@@ -714,16 +738,6 @@ public class TaskExercise implements Runnable{
         return deviceStateDto;
     }
 
-    private void stopFusion(ToLocalDto toLocalDto, TjDeviceDetail detail) {
-        //停止数据融合
-        CaseStrategy endCaseStrategy = buildCaseStrategy(record.getId().intValue(), 0, detail);
-        String endMessage = JSONObject.toJSONString(endCaseStrategy);
-        kafkaProducer.sendMessage(kafkaTopic, endMessage);
-        log.info("停止数据融合: {}", endMessage);
-        //停止监听kafka和文件记录
-        kafkaTrajectoryConsumer.unSubscribe(toLocalDto);
-    }
-
     private TessParam buildTessServerParam(Integer roadNum, String username,
                                            Long taskId, List<String> mapList) {
         return new TessParam().buildTaskParam(roadNum,
@@ -817,14 +831,38 @@ public class TaskExercise implements Runnable{
         return mainVehicleCurrentInfo.orElse(null);
     }
 
-    private void stop(TestStartReqDto yk, String commandChannel, String dataChannel, String tessDataChannel) {
-        //停止监听主车轨迹
-        stopListenMainTrajectory(dataChannel);
-        //域控
-        issueEnd2YK(yk, commandChannel);
+    //private void stop(TestStartReqDto yk, String commandChannel, String dataChannel, String tessDataChannel) {
+    //    //停止监听主车轨迹
+    //    stopListenMainTrajectory(dataChannel);
+    //    //域控
+    //    issueEnd2YK(yk, commandChannel);
+    //
+    //    //仿真关闭
+    //    closeSimulationServer(tessDataChannel);
+    //}
 
-        //仿真关闭
+    private void stop(TestStartReqDto yk, ToLocalDto toLocalDto, TjDeviceDetail detail, String tessDataChannel){
+        //域控下发任务结束
+        issueEnd2YK(yk, detail.getCommandChannel());
+
+        //停止数据融合
+        stopFusion(toLocalDto, detail);
+
+        //停止监听主车轨迹
+        stopListenMainTrajectory(detail.getDataChannel());
+
+        //关闭仿真
         closeSimulationServer(tessDataChannel);
+    }
+
+    private void stopFusion(ToLocalDto toLocalDto, TjDeviceDetail detail) {
+        //停止数据融合
+        CaseStrategy endCaseStrategy = buildCaseStrategy(record.getId().intValue(), 0, detail);
+        String endMessage = JSONObject.toJSONString(endCaseStrategy);
+        kafkaProducer.sendMessage(kafkaTopic, endMessage);
+        log.info("停止数据融合: {}", endMessage);
+        //停止监听kafka和文件记录
+        kafkaTrajectoryConsumer.unSubscribe(toLocalDto);
     }
 
     private void stopListenMainTrajectory(String dataChannel) {
