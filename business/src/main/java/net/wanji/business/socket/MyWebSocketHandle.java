@@ -11,6 +11,7 @@ import net.wanji.business.entity.TjTask;
 import net.wanji.business.entity.infity.TjInfinityTask;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
+import net.wanji.business.schedule.PlaybackSchedule;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.TjCaseService;
 import net.wanji.business.service.TjInfinityTaskService;
@@ -24,6 +25,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -187,6 +189,13 @@ public class MyWebSocketHandle extends TextWebSocketHandler {
             restService.stopTessNg(detailVo.getIp(), detailVo.getServiceAddress(), key,0);
         }else if (clientType == ChannelBuilder.PLAN){
             restService.stopTessNg(detailVo.getIp(), detailVo.getServiceAddress(), key,1);
+        }
+        if (clientType == ChannelBuilder.SCENE_PREVIEW){
+            try {
+                PlaybackSchedule.stopAll(key);
+            } catch (BusinessException | IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

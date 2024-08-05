@@ -1,13 +1,9 @@
 package net.wanji.business.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import net.wanji.business.domain.bo.SceneTrajectoryBo;
 import net.wanji.business.domain.param.TessTrackParam;
-import net.wanji.business.domain.vo.CaseRealTestVo;
-import net.wanji.business.domain.vo.CaseTreeVo;
-import net.wanji.business.domain.vo.CommunicationDelayVo;
-import net.wanji.business.domain.vo.RealTestResultVo;
-import net.wanji.business.domain.vo.TaskCaseVerificationPageVo;
-import net.wanji.business.domain.vo.TaskReportVo;
+import net.wanji.business.domain.vo.*;
 import net.wanji.business.entity.TjScenelib;
 import net.wanji.business.entity.TjTaskCase;
 import net.wanji.business.exception.BusinessException;
@@ -145,5 +141,7 @@ public interface TjTaskCaseService extends IService<TjTaskCase> {
     void twStop(Integer taskId, Integer caseId, String status);
 
     TjScenelib tasktolib(Integer taskId, Integer caseId);
+
+    void playback(Integer taskId, List<SceneTrajectoryBo> sceneTrajectoryBos, int action) throws BusinessException, IOException;
 
 }

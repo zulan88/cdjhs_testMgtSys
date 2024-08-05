@@ -200,7 +200,7 @@ public class CdjhsExerciseRecordController extends BaseController
     @GetMapping("/getSceneTrajectory")
     public AjaxResult getSceneTrajectory(Integer sceneId){
         try {
-            SceneTrajectoryBo sceneTrajectory = interactionFuc.getSceneTrajectory(sceneId);
+            SceneTrajectoryBo sceneTrajectory = interactionFuc.getSceneTrajectory(sceneId, false);
             return AjaxResult.success(sceneTrajectory);
         } catch (IOException e) {
             e.printStackTrace();
