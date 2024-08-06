@@ -5,17 +5,21 @@ package net.wanji.business.exercise.enums;
  * @create: 2024-07-12 2:51 下午
  */
 public enum TaskExerciseEnum {
-    BEFORE_TESS_AWAKENED(1),
+    START_INTERACTION(0),
 
-    IS_TESS_AWAKENDED(2),
+    IMAGE_ISSUED(1),
 
-    STARTING_LISTEN_MAIN_TRAJECTORY(3),
+    TASK_ISSUED(2),
 
-    FUSION_STRATEGY_IS_ISSUED(4),
+    IS_TESS_AWAKENDED(3),
 
-    IS_TASK_STARTED(5),
+    STARTING_LISTEN_MAIN_TRAJECTORY(4),
 
-    TASK_IS_FINISHED(6);
+    FUSION_STRATEGY_IS_ISSUED(5),
+
+    IS_TASK_STARTED(6),
+
+    TASK_IS_FINISHED(7);
 
     TaskExerciseEnum(Integer status){
         this.status = status;

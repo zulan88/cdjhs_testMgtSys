@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DataFileServiceImpl extends ServiceImpl<DataFileMapper, DataFile>
     implements DataFileService {
-  private static final ThreadPoolExecutor executor = new ThreadPoolExecutor(10,
+  private static final ThreadPoolExecutor executor = new ThreadPoolExecutor(15,
       20, 5, TimeUnit.MINUTES, new ArrayBlockingQueue<>(20),
       r -> new Thread(r, "tj-test-m" + r.hashCode()));
   private static final Map<String, List<FileReadThread>> taskThreadMap = new ConcurrentHashMap<>();

@@ -30,6 +30,7 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * @author: jenny
@@ -50,7 +51,7 @@ public class ExerciseHandler {
 
     public static ReentrantLock lock = new ReentrantLock();
 
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 20,
+    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(15, 30,
             10, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(50), new RejectedExecutionHandler() {
         @Override
@@ -129,50 +130,100 @@ public class ExerciseHandler {
     @Value("${spring.kafka.bootstrap-servers}")
     private String kafkaHost;
 
+    @Autowired
+    private BindingConfig bindingConfig;
+
+    public static ConcurrentHashMap<String, LinkedBlockingQueue<CdjhsExerciseRecord>> bindedTaskQueue = new ConcurrentHashMap<>();
+
+    public static ConcurrentHashMap<String, ReentrantLock> binedLockMap = new ConcurrentHashMap<>();
+
 
     @PostConstruct
-    public void init(){
+    public void init() {
+        boolean enabled = bindingConfig.getEnabled();
+        Map<String, String> relationship = bindingConfig.getRelationship();
+        //非绑定消费线程
         Thread thread = new Thread(() -> {
-            while (true){
+            while (true) {
                 //选择在线且没有被占用的域控下发练习
-                List<String> devices = getOnlineAndIdleDevice();
+                List<String> devices = getOnlineAndIdleDevice(enabled, relationship);
                 if(!devices.isEmpty() && !taskQueue.isEmpty()){
-                    String uniques = "";
-                    for(String device: devices){
-                        if(!occupationMap.containsKey(device)){
-                            uniques = device;
-                            break;
+                    String uniques = devices.get(0);
+                    lock.lock();
+                    try {
+                        CdjhsExerciseRecord record = taskQueue.poll();
+                        if(null != record){
+                            run(record, uniques);
+                            //更新任务前方排队人数
+                            CdjhsExerciseRecord[] queueArray = taskQueue.toArray(new CdjhsExerciseRecord[0]);
+                            updateWaitingNum(queueArray);
                         }
-                    }
-                    if(StringUtils.isNotEmpty(uniques)){
-                        lock.lock();
-                        try {
-                            CdjhsExerciseRecord record = taskQueue.poll();
-                            if(null != record){
-                                occupationMap.put(uniques, record.getId());//占用该域控
-                                TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
-                                        tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
-                                        redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
-                                        restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
-                                        tjTaskMapper, interactionFuc, timeoutConfig);
-                                Future<?> future = executor.submit(taskExercise);
-                                taskThreadMap.put(record.getId(), future);
-                                //更新任务前方排队人数
-                                CdjhsExerciseRecord[] queueArray = taskQueue.toArray(new CdjhsExerciseRecord[0]);
-                                updateWaitingNum(queueArray);
-                            }
 
-                        }catch (Exception e){
-                            log.error("消费线程报错");
-                            e.printStackTrace();
-                        }finally {
-                            lock.unlock();
-                        }
+                    }catch (Exception e){
+                        log.error("消费线程报错");
+                        e.printStackTrace();
+                    }finally {
+                        lock.unlock();
                     }
                 }
             }
         });
         thread.start();
+
+        //绑定消费线程
+        if(enabled && !relationship.isEmpty()){
+            Set<String> set = new HashSet<>(relationship.values());
+            for(String device: set){
+                bindedTaskQueue.putIfAbsent(device, new LinkedBlockingQueue<>(30));
+                binedLockMap.putIfAbsent(device, new ReentrantLock());
+            }
+
+            Thread bindedThread = new Thread(() -> {
+                while (true){
+                    for(Map.Entry<String, LinkedBlockingQueue<CdjhsExerciseRecord>> entry: bindedTaskQueue.entrySet()){
+                        String device = entry.getKey();
+                        LinkedBlockingQueue<CdjhsExerciseRecord> queue = entry.getValue();
+                        boolean isIdled = isIdle(device);
+                        if(isIdled && !queue.isEmpty()){
+                            ReentrantLock lock = binedLockMap.get(device);
+                            lock.lock();
+                            try {
+                                CdjhsExerciseRecord record = queue.poll();
+                                if(null != record){
+                                    run(record, device);
+                                    //更新队列中任务前方排队人数
+                                    CdjhsExerciseRecord[] queueArray = queue.toArray(new CdjhsExerciseRecord[0]);
+                                    updateWaitingNum(queueArray);
+                                }
+                            }catch (Exception e){
+                                log.error("绑定域控{}消费线程报错", device);
+                                e.printStackTrace();
+                            }finally {
+                                lock.unlock();
+                            }
+                        }
+                    }
+                }
+            });
+            bindedThread.start();
+        }
+    }
+
+    private boolean isIdle(String device) {
+        String key = RedisKeyUtils.getDeviceStatusKey(device);
+        Integer state = redisCache.getCacheObject(key);
+        return Objects.nonNull(state) && state == 2 && !occupationMap.containsKey(device);
+    }
+
+    public void run(CdjhsExerciseRecord record, String uniques) {
+        occupationMap.put(uniques, record.getId());//占用该域控
+        TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
+                tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
+                restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
+                tjTaskMapper, interactionFuc, timeoutConfig);
+        Future<?> future = executor.submit(taskExercise);
+        taskThreadMap.put(record.getId(), future);
     }
 
     private void updateWaitingNum(CdjhsExerciseRecord[] queueArray) {
@@ -212,6 +263,20 @@ public class ExerciseHandler {
                     }
                 }
             }
+            list = list.stream()
+                    .filter(device -> !occupationMap.containsKey(device))
+                    .collect(Collectors.toList());
+        }
+        return list;
+    }
+
+    private List<String> getOnlineAndIdleDevice(boolean enabled, Map<String, String> relationship){
+        List<String> list = getOnlineAndIdleDevice();
+        if(enabled && !relationship.isEmpty()){
+            Set<String> set = new HashSet<>(relationship.values());
+            list = list.stream()
+                    .filter(device -> !set.contains(device))
+                    .collect(Collectors.toList());
         }
         return list;
     }

@@ -3,6 +3,7 @@ package net.wanji.business.service.impl;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSONArray;
@@ -12,6 +13,7 @@ import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.*;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.exception.BusinessException;
+import net.wanji.business.exercise.BindingConfig;
 import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.evaluation.*;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
@@ -31,7 +33,6 @@ import net.wanji.common.utils.file.FileUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +62,12 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Value("${trajectory.radius}")
     private Double radius;
+
+    @Autowired
+    private BindingConfig bindingConfig;
+
+    @Autowired
+    private ExerciseHandler exerciseHandler;
     /**
      * 查询练习记录
      * 
@@ -82,6 +89,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordList(CdjhsExerciseRecord cdjhsExerciseRecord)
     {
+        cdjhsExerciseRecord.setIsCompetition(0);//测试练习记录
         Long userId = SecurityUtils.getLoginUser().getUser().getUserId();
         boolean admin = SecurityUtils.isAdmin(userId);
         if(!admin){
@@ -102,43 +110,50 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     public int insertCdjhsExerciseRecord(CdjhsExerciseRecord cdjhsExerciseRecord) throws BusinessException {
         cdjhsExerciseRecord.setUserName(SecurityUtils.getUsername());
         cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
+        cdjhsExerciseRecord.setIsCompetition(0);//测试任务
         //镜像地址改成代理地址
         String mirrorPath = cdjhsExerciseRecord.getMirrorPath();
         String downloadPath = WanjiConfig.getDownloadPath();
         String proxyUrl = downloadProxy + mirrorPath.substring(downloadPath.length());
         cdjhsExerciseRecord.setMirrorPath(proxyUrl);
 
-        //任务入队
-        ExerciseHandler.lock.lock();
-        try {
-            int size = ExerciseHandler.taskQueue.size();
-            cdjhsExerciseRecord.setWaitingNum(size);
-            cdjhsExerciseRecord.setStatus(TaskStatusEnum.WAITING.getStatus());
-            int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
-            ExerciseHandler.taskQueue.add(cdjhsExerciseRecord);
-            return i;
-        }catch (Exception e){
-            e.printStackTrace();
-            throw new BusinessException("向队列中添加任务失败");
-        }finally {
-            ExerciseHandler.lock.unlock();
-        }
-    }
-
-    @Override
-    public void putIntoTaskQueue(CdjhsExerciseRecord record) throws BusinessException {
-        ExerciseHandler.lock.lock();
-        try {
-            int size = ExerciseHandler.taskQueue.size();
-            record.setWaitingNum(size);
-            record.setStatus(TaskStatusEnum.WAITING.getStatus());
-            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-            ExerciseHandler.taskQueue.add(record);
-        }catch (Exception e){
-            e.printStackTrace();
-            throw new BusinessException("向队列中添加任务失败");
-        }finally {
-            ExerciseHandler.lock.unlock();
+        //镜像名称
+        String mirrorName = cdjhsExerciseRecord.getMirrorName();
+        boolean enabled = bindingConfig.getEnabled();
+        Map<String, String> relationship = bindingConfig.getRelationship();
+        if(enabled && relationship.containsKey(mirrorName)){
+            String uniques = relationship.get(mirrorName);
+            ReentrantLock lock = ExerciseHandler.binedLockMap.get(uniques);
+            lock.lock();
+            try {
+                int size = ExerciseHandler.bindedTaskQueue.get(uniques).size();
+                cdjhsExerciseRecord.setWaitingNum(size);
+                cdjhsExerciseRecord.setStatus(TaskStatusEnum.WAITING.getStatus());
+                int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
+                ExerciseHandler.bindedTaskQueue.get(uniques).add(cdjhsExerciseRecord);
+                return i;
+            }catch (Exception e){
+                e.printStackTrace();
+                throw new BusinessException("向绑定域控的任务队列中添加任务失败");
+            }finally {
+                lock.unlock();
+            }
+        }else{
+            //任务入队
+            ExerciseHandler.lock.lock();
+            try {
+                int size = ExerciseHandler.taskQueue.size();
+                cdjhsExerciseRecord.setWaitingNum(size);
+                cdjhsExerciseRecord.setStatus(TaskStatusEnum.WAITING.getStatus());
+                int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
+                ExerciseHandler.taskQueue.add(cdjhsExerciseRecord);
+                return i;
+            }catch (Exception e){
+                e.printStackTrace();
+                throw new BusinessException("向队列中添加任务失败");
+            }finally {
+                ExerciseHandler.lock.unlock();
+            }
         }
     }
 
@@ -167,6 +182,47 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         //查找待开始状态任务
         List<CdjhsExerciseRecord> unexecutedRecords = selectCdjhsExerciseRecordByStatusAndIds(TaskStatusEnum.WAITING.getStatus(), ids);
         if(!unexecutedRecords.isEmpty()){
+            boolean enabled = bindingConfig.getEnabled();
+            Map<String, String> relationship = bindingConfig.getRelationship();
+            if(enabled && !relationship.isEmpty()){
+                Map<String, List<CdjhsExerciseRecord>> map = unexecutedRecords.stream()
+                        .filter(record -> relationship.containsKey(record.getMirrorName()))
+                        .collect(Collectors.groupingBy(record -> relationship.get(record.getMirrorName())));
+                for(Map.Entry<String, List<CdjhsExerciseRecord>> entry: map.entrySet()){
+                    String uniques = entry.getKey();
+                    List<CdjhsExerciseRecord> records = entry.getValue();
+                    ReentrantLock lock = ExerciseHandler.binedLockMap.get(uniques);
+                    lock.lock();
+                    try {
+                        LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = ExerciseHandler.bindedTaskQueue.get(uniques);
+                        List<CdjhsExerciseRecord> list = new ArrayList<>();
+                        int waiting = 0;
+                        Iterator<CdjhsExerciseRecord> iterator = taskQueue.iterator();
+                        while (iterator.hasNext()){
+                            CdjhsExerciseRecord next = iterator.next();
+                            boolean existed = records.stream()
+                                    .anyMatch(item -> item.getId().compareTo(next.getId()) == 0);
+                            if(existed){
+                                iterator.remove();
+                                continue;
+                            }
+                            next.setWaitingNum(waiting);
+                            list.add(next);
+                            waiting++;
+                        }
+                        //批量更新
+                        if(!list.isEmpty()){
+                            cdjhsExerciseRecordMapper.updateBatch(list);
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }finally {
+                        lock.unlock();
+                    }
+                    unexecutedRecords.removeAll(records);
+                }
+
+            }
             ExerciseHandler.lock.lock();
             try {
                 LinkedBlockingQueue<CdjhsExerciseRecord> taskQueue = ExerciseHandler.taskQueue;
@@ -403,11 +459,6 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     }
 
     @Override
-    public List<CdjhsExerciseRecord> selectUnexecutedExercises() {
-        return cdjhsExerciseRecordMapper.selectUnexecutedExercises();
-    }
-
-    @Override
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids) {
         return cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordByStatusAndIds(status, ids);
     }
@@ -435,5 +486,26 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
             return status;
         }
         return null;
+    }
+
+    @Override
+    public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordList(CdjhsExerciseRecord cdjhsExerciseRecord) {
+        return cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordList(cdjhsExerciseRecord);
+    }
+
+    @Override
+    public int createCompetitionRecord(CdjhsExerciseRecord cdjhsExerciseRecord) {
+        cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
+        cdjhsExerciseRecord.setIsCompetition(1);//比赛任务
+        cdjhsExerciseRecord.setStatus(TaskStatusEnum.WAITING.getStatus());
+        int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
+        //任务下发域控
+        exerciseHandler.run(cdjhsExerciseRecord, cdjhsExerciseRecord.getDeviceId());
+        return i;
+    }
+
+    @Override
+    public int deleteCompetitionRecordByIds(Long[] ids) {
+        return cdjhsExerciseRecordMapper.deleteCdjhsExerciseRecordByIds(ids);
     }
 }

@@ -10,6 +10,7 @@ import net.wanji.business.domain.RealWebsocketMessage;
 import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.business.entity.TjCaseRealRecord;
 import net.wanji.business.entity.TjTaskCaseRecord;
+import net.wanji.business.exercise.LuanshengDataSender;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.jidaevaluation.trajectory.RealTimeParticipant;
 import net.wanji.business.exercise.dto.jidaevaluation.trajectory.RealTimeTrajectory;
@@ -31,6 +32,7 @@ import net.wanji.common.utils.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
@@ -65,6 +67,10 @@ public class KafkaTrajectoryConsumer {
     private final RedisCache redisCache;
     private final DataFileService dataFileService;
     private final KafkaProducer kafkaProducer;
+    private final LuanshengDataSender luanshengDataSender;
+
+    @Value("${luansheng.send}")
+    private String tempLuanshengYK;
 
     @KafkaListener(id = "singleTrajectory",
             topics = { "${trajectory.fusion}" },
@@ -77,11 +83,15 @@ public class KafkaTrajectoryConsumer {
         ToLocalDto toLocalDto = queryTolocalDto(taskId, caseId);
         if(Objects.nonNull(toLocalDto)){
             JSONArray participantTrajectories = jsonObject.getJSONArray("participantTrajectories");
+            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
+            boolean qualified = toLocalDto.getDeviceId().equals(tempLuanshengYK) || toLocalDto.isCompetition();
+            if(qualified){
+                luanshengDataSender.send(data, taskId);
+            }
             //数据融合写入文件
             toLocalDto.getToLocalThread()
                     .write(participantTrajectories.toJSONString());
             //实时轨迹发送websocket
-            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
             int size = toLocalDto.getCount().incrementAndGet();
             String username = toLocalDto.getUsername();
             String key = taskId > 0 ?

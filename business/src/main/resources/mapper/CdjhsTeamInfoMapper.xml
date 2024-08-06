@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.CdjhsTeamInfoMapper">
+    
+    <resultMap type="net.wanji.business.domain.CdjhsTeamInfo" id="CdjhsTeamInfoResult">
+        <result property="id"    column="id"    />
+        <result property="teamName"    column="team_name"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectCdjhsTeamInfoVo">
+        select id, team_name, create_by, create_time, update_by, update_time from cdjhs_team_info
+    </sql>
+
+    <select id="selectCdjhsTeamInfoList" parameterType="net.wanji.business.domain.CdjhsTeamInfo" resultMap="CdjhsTeamInfoResult">
+        <include refid="selectCdjhsTeamInfoVo"/>
+        <where>  
+            <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
+        </where>
+    </select>
+    
+    <select id="selectCdjhsTeamInfoById" parameterType="Long" resultMap="CdjhsTeamInfoResult">
+        <include refid="selectCdjhsTeamInfoVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertCdjhsTeamInfo" parameterType="net.wanji.business.domain.CdjhsTeamInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into cdjhs_team_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="teamName != null and teamName != ''">team_name,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="teamName != null and teamName != ''">#{teamName},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCdjhsTeamInfo" parameterType="net.wanji.business.domain.CdjhsTeamInfo">
+        update cdjhs_team_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="teamName != null and teamName != ''">team_name = #{teamName},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCdjhsTeamInfoById" parameterType="Long">
+        delete from cdjhs_team_info where id = #{id}
+    </delete>
+
+    <delete id="deleteCdjhsTeamInfoByIds" parameterType="String">
+        delete from cdjhs_team_info where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -14,6 +14,8 @@ TrajectoryValueDto {
     private String globalTimeStamp;
     private Integer frameId;
     private String id;
+    //0-实车 1-仿真背景交通流2-模拟器 3-实车障碍物
+    private Integer dataType;
     private String name;
     private String picLicense;
     private Integer originalColor;
@@ -46,6 +48,9 @@ TrajectoryValueDto {
     // 0-开始，1-结束 2-普通 3-必经点
     private Integer siteType;
 
+    //0-模拟器 1-背景交通流
+    private Integer isSimulator;
+
     public String getTimestamp() {
         return timestamp;
     }
@@ -76,6 +81,14 @@ TrajectoryValueDto {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Integer getDataType() {
+        return dataType;
+    }
+
+    public void setDataType(Integer dataType) {
+        this.dataType = dataType;
     }
 
     public String getName() {
@@ -308,5 +321,13 @@ TrajectoryValueDto {
 
     public void setSiteType(Integer siteType) {
         this.siteType = siteType;
+    }
+
+    public Integer getIsSimulator() {
+        return isSimulator;
+    }
+
+    public void setIsSimulator(Integer isSimulator) {
+        this.isSimulator = isSimulator;
     }
 }

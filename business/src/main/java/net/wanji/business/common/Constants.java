@@ -97,6 +97,7 @@ public interface Constants {
         public static final String TESTING_CHANNEL_TEMPLATE = "{}_{}_{}_{}_{}";
         public static final String SIMULATION_CHANNEL_TEMPLATE = "{}_{}_{}";
         public static final String CDJHS_EVALUATION_KAFKA_TOPIC_TEMPLATE = "CDJHS_EVALUATION_TASK_{}";
+        public static final String CDJHS_LUANSHENG_TASK_KEY_TEMPLATE = "CDJHS_LUANSHENG_TASK_{}";
 
         public static final String CDJHS_TESS_DATA_TOPIC_TEMPLATE = "cdjhs_tess_{}";
         public static final int SCENE_PREVIEW = 1;

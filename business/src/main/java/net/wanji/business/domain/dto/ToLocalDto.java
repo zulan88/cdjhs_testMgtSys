@@ -34,6 +34,8 @@ public class ToLocalDto {
     private double radius;
     private int sequence;//当前场景
     private String mainChannel;
+    private boolean isCompetition;
+    private String deviceId;
 
     public ToLocalDto(Integer taskId, Integer caseId) {
         this.taskId = taskId;
@@ -56,7 +58,8 @@ public class ToLocalDto {
 
     public ToLocalDto(Integer taskId, Integer caseId, String fileName,
                       Integer fileId, String kafkaTopic, String username,
-                      List<StartPoint> startPoints, double radius, String mainChannel) {
+                      List<StartPoint> startPoints, double radius,
+                      String mainChannel, boolean isCompetition, String deviceId) {
         this.taskId = taskId;
         this.caseId = caseId;
         this.fileName = fileName;
@@ -67,6 +70,8 @@ public class ToLocalDto {
         this.sequence = 0;
         this.radius = radius;
         this.mainChannel = mainChannel;
+        this.isCompetition = isCompetition;
+        this.deviceId = deviceId;
     }
 
     @Override

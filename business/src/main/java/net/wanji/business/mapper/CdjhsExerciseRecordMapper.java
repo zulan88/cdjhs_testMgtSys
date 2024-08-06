@@ -61,11 +61,7 @@ public interface CdjhsExerciseRecordMapper
      */
     public int deleteCdjhsExerciseRecordByIds(Long[] ids);
 
-    public List<CdjhsExerciseRecord> selectUnexecutedExercises();
-
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(@Param("status") Integer status, @Param("ids") Long[] ids);
 
     public int updateBatch(List<CdjhsExerciseRecord> list);
-
-    public List<CdjhsExerciseRecord> selectTasksByEvaluationStatus(String evalutionStatus);
 }

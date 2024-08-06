@@ -67,13 +67,15 @@ public interface ICdjhsExerciseRecordService
 
     public void playback(Integer taskId, Integer action) throws BusinessException, IOException;
 
-    public void putIntoTaskQueue(CdjhsExerciseRecord record) throws BusinessException;
-
-    public List<CdjhsExerciseRecord> selectUnexecutedExercises();
-
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids);
 
     public int updateBatch(List<CdjhsExerciseRecord> list);
 
     public String queryEvaluationStatus(Long id, String evaluationUrl);
+
+    public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordList(CdjhsExerciseRecord cdjhsExerciseRecord);
+
+    public int createCompetitionRecord(CdjhsExerciseRecord cdjhsExerciseRecord);
+
+    public int deleteCompetitionRecordByIds(Long[] ids);
 }

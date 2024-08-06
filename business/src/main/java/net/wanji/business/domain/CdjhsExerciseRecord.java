@@ -35,9 +35,15 @@ public class CdjhsExerciseRecord extends BaseEntity
     @Excel(name = "所属试卷类型 1: A卷 2: B卷 3: C卷")
     private Integer testPaperType;
 
+    //测试场地
+    private String testPlace;
+
     /** 用户名 */
     @Excel(name = "用户名")
     private String userName;
+
+    //团队名称
+    private String teamName;
 
     /** 镜像名称 */
     @Excel(name = "镜像名称")
@@ -56,6 +62,9 @@ public class CdjhsExerciseRecord extends BaseEntity
     private String mirrorPath;
 
     private String md5;
+
+    //实车编号
+    private String carCode;
 
     /** 练习设备唯一标识 */
     @Excel(name = "练习设备唯一标识")
@@ -94,6 +103,9 @@ public class CdjhsExerciseRecord extends BaseEntity
     /** 评分 */
     @Excel(name = "评分")
     private Double score;
+
+    //是否是比赛任务 0:否 1:是 默认值0
+    private Integer isCompetition;
 
     private String taskCaseVos;
 
@@ -333,6 +345,38 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setEvaluationTaskStatus(String evaluationTaskStatus) {
         this.evaluationTaskStatus = evaluationTaskStatus;
+    }
+
+    public String getTestPlace() {
+        return testPlace;
+    }
+
+    public void setTestPlace(String testPlace) {
+        this.testPlace = testPlace;
+    }
+
+    public String getTeamName() {
+        return teamName;
+    }
+
+    public void setTeamName(String teamName) {
+        this.teamName = teamName;
+    }
+
+    public String getCarCode() {
+        return carCode;
+    }
+
+    public void setCarCode(String carCode) {
+        this.carCode = carCode;
+    }
+
+    public Integer getIsCompetition() {
+        return isCompetition;
+    }
+
+    public void setIsCompetition(Integer isCompetition) {
+        this.isCompetition = isCompetition;
     }
 
     @Override

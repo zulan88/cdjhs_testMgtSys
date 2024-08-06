@@ -185,7 +185,7 @@ public class InteractionFuc {
                         StartPoint startPoint = new StartPoint();
                         startPoint.setSequence(i + 1);
                         startPoint.setSceneId(sceneDetailVo.getId());
-                        startPoint.setName(sceneDetailVo.getSceneSort());
+                        startPoint.setName(sceneDetailVo.getTestSceneDesc());
                         startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
                         startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
 
