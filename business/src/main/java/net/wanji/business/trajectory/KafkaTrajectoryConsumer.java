@@ -85,6 +85,14 @@ public class KafkaTrajectoryConsumer {
             JSONArray participantTrajectories = jsonObject.getJSONArray("participantTrajectories");
             //数据融合写入文件
             List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
+            //过滤掉没有主车的数据
+            boolean avNotExisted = data.stream()
+                    .noneMatch(item -> item.getRole().equals(Constants.PartRole.AV));
+            if(avNotExisted){
+                log.info("任务-{}的融合数据没有主车:{}", taskId, jsonObject.toString());
+                return;
+            }
+
             toLocalDto.getToLocalThread()
                     .write(participantTrajectories.toJSONString());
             //实时轨迹发送websocket

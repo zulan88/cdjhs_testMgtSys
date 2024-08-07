@@ -30,7 +30,6 @@ import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.core.domain.entity.SysRole;
-import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
@@ -96,8 +95,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     {
         cdjhsExerciseRecord.setIsCompetition(0);//测试练习记录
         SysUser user = SecurityUtils.getLoginUser().getUser();
-        boolean admin = SecurityUtils.isAdmin(user);
-        if(!admin){
+        boolean isStudent = SecurityUtils.isStudent(user);
+        if(isStudent){
             String username = SecurityUtils.getUsername();
             cdjhsExerciseRecord.setUserName(username);
         }
