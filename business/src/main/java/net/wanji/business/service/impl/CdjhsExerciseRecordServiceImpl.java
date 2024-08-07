@@ -28,6 +28,7 @@ import net.wanji.business.service.RestService;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.config.WanjiConfig;
+import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.core.domain.entity.SysRole;
 import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.utils.DateUtils;
@@ -94,8 +95,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordList(CdjhsExerciseRecord cdjhsExerciseRecord)
     {
         cdjhsExerciseRecord.setIsCompetition(0);//测试练习记录
-        Long userId = SecurityUtils.getLoginUser().getUser().getUserId();
-        boolean admin = SecurityUtils.isAdmin(userId);
+        SysUser user = SecurityUtils.getLoginUser().getUser();
+        boolean admin = SecurityUtils.isAdmin(user);
         if(!admin){
             String username = SecurityUtils.getUsername();
             cdjhsExerciseRecord.setUserName(username);

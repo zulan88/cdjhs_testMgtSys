@@ -476,6 +476,7 @@ public class TaskExercise implements Runnable{
             }
             taskStatus = TaskExerciseEnum.TASK_IS_FINISHED.getStatus();
             processAfterTaskEnd();
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } catch (InterruptedException e){
             log.info("任务被强制结束...");
             if(taskStatus.compareTo(TaskExerciseEnum.TASK_IS_FINISHED.getStatus()) != 0){
@@ -546,12 +547,12 @@ public class TaskExercise implements Runnable{
         //请求算法输出场景评分
         String evaluationUrl = getOfflineEvaluationUrl(record.getTestId(), toLocalDto.getKafkaTopic(), toLocalDto.getMainVehicleId());
         record.setEvaluationUrl(evaluationUrl);
-        cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
     }
 
     private void forceEnd(){
         if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
             stop(toLocalDto, detail, tessParam.getDataChannel());
+            processAfterTaskEnd();//练习任务开始后，强制结束或后端异常仍然需要评价
         }else if(taskStatus.compareTo(TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus()) == 0){
             stop(toLocalDto, detail, tessParam.getDataChannel());
         }else if(taskStatus.compareTo(TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus()) == 0){

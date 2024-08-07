@@ -1,6 +1,7 @@
 package net.wanji.business.mapper;
 
 import net.wanji.business.domain.CdjhsCarDetail;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -59,4 +60,6 @@ public interface CdjhsCarDetailMapper
      * @return 结果
      */
     public int deleteCdjhsCarDetailByIds(Long[] ids);
+
+    public List<CdjhsCarDetail> check(@Param("carCode") String carCode, @Param("deviceCode") String deviceCode);
 }

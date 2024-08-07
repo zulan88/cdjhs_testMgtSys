@@ -132,4 +132,11 @@ public class SecurityUtils
                 .anyMatch(roleKey -> roleKey.equals("admin") || roleKey.equals("teacher"));
 
     }
+
+    public static boolean isStudent(SysUser sysUser){
+        List<SysRole> roles = sysUser.getRoles();
+        return roles.stream()
+                .map(SysRole::getRoleKey)
+                .anyMatch(roleKey -> roleKey.equals("student"));
+    }
 }

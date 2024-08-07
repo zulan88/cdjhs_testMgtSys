@@ -24,6 +24,8 @@ public class ParticipantTrajectoryDto {
      */
     private Long timestamp;
 
+    private String sceneName;
+
     public String getTimestampType() {
         return timestampType;
     }
@@ -46,5 +48,13 @@ public class ParticipantTrajectoryDto {
 
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getSceneName() {
+        return sceneName;
+    }
+
+    public void setSceneName(String sceneName) {
+        this.sceneName = sceneName;
     }
 }

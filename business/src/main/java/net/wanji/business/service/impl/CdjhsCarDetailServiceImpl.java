@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import net.wanji.business.domain.CdjhsCarDetail;
+import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.YkscResultDto;
 import net.wanji.business.exercise.enums.CarStatusEnum;
 import net.wanji.business.mapper.CdjhsCarDetailMapper;
@@ -73,7 +74,7 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
                 carDetail.setMd5(ykReportInfo.getMd5());
                 carDetail.setReportTime(DateUtils.getDateString(new Date(ykReportInfo.getTimestamp())));
 
-                int status = ykReportInfo.getStatus() == 2 ? CarStatusEnum.PREPARE.getStatus() : CarStatusEnum.RUNNING.getStatus();
+                int status = ykReportInfo.getStatus() == 2 && !ExerciseHandler.occupationMap.containsKey(deviceId) ? CarStatusEnum.PREPARE.getStatus() : CarStatusEnum.RUNNING.getStatus();
                 carDetail.setStatus(status);
             }
         }
@@ -128,5 +129,15 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
     public int deleteCdjhsCarDetailById(Long id)
     {
         return cdjhsCarDetailMapper.deleteCdjhsCarDetailById(id);
+    }
+
+    @Override
+    public boolean isUnique(CdjhsCarDetail cdjhsCarDetail) {
+        List<CdjhsCarDetail> list = cdjhsCarDetailMapper.check(cdjhsCarDetail.getCarCode(), cdjhsCarDetail.getDeviceCode());
+        if(Objects.isNull(cdjhsCarDetail.getId())){
+            //新增时判断实车编号和域控编号是否唯一
+            return list.isEmpty();
+        }
+        return list.isEmpty() || (list.size() == 1 && list.get(0).getId().compareTo(cdjhsCarDetail.getId()) == 0);
     }
 }

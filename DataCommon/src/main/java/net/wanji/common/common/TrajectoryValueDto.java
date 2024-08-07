@@ -49,7 +49,7 @@ TrajectoryValueDto {
     private Integer siteType;
 
     //0-模拟器 1-背景交通流
-    private Integer isSimulator;
+    private Integer carSource;
 
     public String getTimestamp() {
         return timestamp;
@@ -323,11 +323,11 @@ TrajectoryValueDto {
         this.siteType = siteType;
     }
 
-    public Integer getIsSimulator() {
-        return isSimulator;
+    public Integer getCarSource() {
+        return carSource;
     }
 
-    public void setIsSimulator(Integer isSimulator) {
-        this.isSimulator = isSimulator;
+    public void setCarSource(Integer carSource) {
+        this.carSource = carSource;
     }
 }

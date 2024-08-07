@@ -83,12 +83,8 @@ public class KafkaTrajectoryConsumer {
         ToLocalDto toLocalDto = queryTolocalDto(taskId, caseId);
         if(Objects.nonNull(toLocalDto)){
             JSONArray participantTrajectories = jsonObject.getJSONArray("participantTrajectories");
-            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
-            boolean qualified = toLocalDto.getDeviceId().equals(tempLuanshengYK) || toLocalDto.isCompetition();
-            if(qualified){
-                luanshengDataSender.send(data, taskId);
-            }
             //数据融合写入文件
+            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
             toLocalDto.getToLocalThread()
                     .write(participantTrajectories.toJSONString());
             //实时轨迹发送websocket
@@ -107,7 +103,7 @@ public class KafkaTrajectoryConsumer {
             Double latitude = mainCar.getValue().get(0).getLatitude();
             Double longitude = mainCar.getValue().get(0).getLongitude();
             Point2D.Double position = new Point2D.Double(longitude, latitude);
-            //当前场景
+            //待触发场景
             List<StartPoint> sceneStartPoints = toLocalDto.getStartPoints();
             int sequence = toLocalDto.getSequence();
             if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
@@ -119,13 +115,18 @@ public class KafkaTrajectoryConsumer {
                     toLocalDto.switchScene();
                 }
             }
-
+            //比赛任务推送孪生
+            int index = toLocalDto.getSequence() > 0 ? toLocalDto.getSequence() - 1 : 0;
+            boolean qualified = toLocalDto.getDeviceId().equals(tempLuanshengYK) || toLocalDto.isCompetition();
+            if(qualified){
+                String sceneName = sceneStartPoints.get(index).getName();
+                luanshengDataSender.send(data, taskId, sceneName);
+            }
             RealWebsocketMessage msg = new RealWebsocketMessage(
                     Constants.RedisMessageType.TRAJECTORY, sceneStartPoints, data, duration, toLocalDto.getTriggeredScenes());
             WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
             //向济达发送实时轨迹
             if(StringUtils.isNotEmpty(toLocalDto.getKafkaTopic())){
-                int index = toLocalDto.getSequence() > 0 ? toLocalDto.getSequence() - 1 : 0;
                 Integer sceneId = sceneStartPoints.get(index).getSceneId();
                 sendRealTimeTrajecotory(toLocalDto, sceneId, data);
             }

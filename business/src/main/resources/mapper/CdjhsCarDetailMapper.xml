@@ -25,6 +25,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deviceCode != null  and deviceCode != ''"> and device_code = #{deviceCode}</if>
         </where>
     </select>
+
+    <select id="check" resultMap="CdjhsCarDetailResult">
+        <include refid="selectCdjhsCarDetailVo"/>
+        where car_code = #{carCode} or device_code = #{deviceCode}
+    </select>
     
     <select id="selectCdjhsCarDetailById" parameterType="Long" resultMap="CdjhsCarDetailResult">
         <include refid="selectCdjhsCarDetailVo"/>

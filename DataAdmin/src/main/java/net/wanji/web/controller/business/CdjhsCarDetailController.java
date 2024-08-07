@@ -69,6 +69,11 @@ public class CdjhsCarDetailController extends BaseController
     @PostMapping("/add")
     public AjaxResult add(@RequestBody CdjhsCarDetail cdjhsCarDetail)
     {
+        //实车编号和域控编号校验
+        boolean isUnique = cdjhsCarDetailService.isUnique(cdjhsCarDetail);
+        if(!isUnique){
+            return AjaxResult.error("新增实车编号或绑定域控编号已存在");
+        }
         return toAjax(cdjhsCarDetailService.insertCdjhsCarDetail(cdjhsCarDetail));
     }
 
@@ -78,6 +83,10 @@ public class CdjhsCarDetailController extends BaseController
     @PutMapping("/update")
     public AjaxResult edit(@RequestBody CdjhsCarDetail cdjhsCarDetail)
     {
+        boolean isUnique = cdjhsCarDetailService.isUnique(cdjhsCarDetail);
+        if(!isUnique){
+            return AjaxResult.error("待更新实车编号或域控编号已存在");
+        }
         return toAjax(cdjhsCarDetailService.updateCdjhsCarDetail(cdjhsCarDetail));
     }
 

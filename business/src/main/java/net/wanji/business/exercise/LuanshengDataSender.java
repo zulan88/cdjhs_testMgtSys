@@ -29,7 +29,7 @@ public class LuanshengDataSender {
     private KafkaProducer kafkaProducer;
 
     @Async("luanShengHandlePool")
-    public void send(List<ClientSimulationTrajectoryDto> participants, Integer taskId){
+    public void send(List<ClientSimulationTrajectoryDto> participants, Integer taskId, String sceneName){
         List<TrajectoryValueDto> value = new ArrayList<>();
         for(ClientSimulationTrajectoryDto participant: participants){
             boolean isMainCar = participant.getRole().equals(Constants.PartRole.AV);
@@ -39,7 +39,7 @@ public class LuanshengDataSender {
                         if (isMainCar) {
                             item.setDataType(0);
                         } else {
-                            int dataType = Objects.isNull(item.getIsSimulator()) || item.getIsSimulator() == 1 ? 1 : 2;
+                            int dataType = Objects.isNull(item.getCarSource()) || item.getCarSource() == 1 ? 1 : 2;
                             item.setDataType(dataType);
                         }
                     }).collect(Collectors.toList());
@@ -51,6 +51,7 @@ public class LuanshengDataSender {
         trajectoryDto.setValue(value);
         trajectoryDto.setTimestamp(System.currentTimeMillis());
         trajectoryDto.setTimestampType("CREATE_TIME");
+        trajectoryDto.setSceneName(sceneName);
 
         String message = JSONObject.toJSONString(trajectoryDto);
         String key = StringUtils.format(Constants.ChannelBuilder.CDJHS_LUANSHENG_TASK_KEY_TEMPLATE, taskId);

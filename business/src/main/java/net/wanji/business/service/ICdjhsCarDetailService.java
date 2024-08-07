@@ -59,4 +59,6 @@ public interface ICdjhsCarDetailService
      * @return 结果
      */
     public int deleteCdjhsCarDetailById(Long id);
+
+    public boolean isUnique(CdjhsCarDetail cdjhsCarDetail);
 }
