@@ -116,6 +116,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="startTime != null">start_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="duration != null">duration,</if>
+            <if test="isCompetition != null">is_competition,</if>
             <if test="score != null">score,</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">fusion_file_path,</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos,</if>

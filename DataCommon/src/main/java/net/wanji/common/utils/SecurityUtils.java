@@ -11,7 +11,11 @@ import net.wanji.common.core.domain.model.LoginUser;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -134,9 +138,27 @@ public class SecurityUtils
     }
 
     public static boolean isStudent(SysUser sysUser){
-        List<SysRole> roles = sysUser.getRoles();
-        return roles.stream()
-                .map(SysRole::getRoleKey)
-                .anyMatch(roleKey -> roleKey.equals("student"));
+        List<SysRole> roles = Collections.singletonList(sysUser.getRoles()).get(0);
+        Map<String, Object> role = convertEntityToMap(roles.get(0));
+        if(role.get("roleId") != null && role.get("roleId").equals(103L)){
+            return true;
+        }
+        return false;
+    }
+
+    private static Map<String, Object> convertEntityToMap(Object entity) {
+        Map<String, Object> map = new HashMap<>();
+        Field[] fields = entity.getClass().getDeclaredFields();
+
+        for (Field field : fields) {
+            try {
+                field.setAccessible(true);
+                map.put(field.getName(), field.get(entity));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return map;
     }
 }
