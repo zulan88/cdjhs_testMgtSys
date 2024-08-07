@@ -2,6 +2,7 @@ package net.wanji.business.service;
 
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.EvaluationReport;
+import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.exception.BusinessException;
 
 import java.io.IOException;
@@ -78,4 +79,6 @@ public interface ICdjhsExerciseRecordService
     public int createCompetitionRecord(CdjhsExerciseRecord cdjhsExerciseRecord);
 
     public int deleteCompetitionRecordByIds(Long[] ids);
+
+    public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord);
 }

@@ -2,6 +2,7 @@ package net.wanji.web.controller.business;
 
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.core.controller.BaseController;
@@ -43,5 +44,11 @@ public class CdjhsCompetitionController extends BaseController {
             return AjaxResult.error("待删除记录中存在进行中的任务");
         }
         return toAjax(cdjhsExerciseRecordService.deleteCompetitionRecordByIds(ids));
+    }
+
+    @GetMapping("/getsort")
+    public AjaxResult getsort(CdjhsExerciseRecord cdjhsExerciseRecord){
+        List<CdjhsErSort> list = cdjhsExerciseRecordService.selectSortByScore(cdjhsExerciseRecord);
+        return AjaxResult.success(list);
     }
 }

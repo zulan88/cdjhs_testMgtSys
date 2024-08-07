@@ -119,7 +119,27 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     private String evaluationTaskStatus;
 
-    public void setId(Long id) 
+    private Long teamId;
+
+    private Long userId;
+
+    public Long getTeamId() {
+        return teamId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setTeamId(Long teamId) {
+        this.teamId = teamId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }

@@ -1,6 +1,7 @@
 package net.wanji.business.service.impl;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -11,6 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.*;
+import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.exercise.BindingConfig;
@@ -26,6 +28,8 @@ import net.wanji.business.service.RestService;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.config.WanjiConfig;
+import net.wanji.common.core.domain.entity.SysRole;
+import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
@@ -490,7 +494,30 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Override
     public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordList(CdjhsExerciseRecord cdjhsExerciseRecord) {
+        cdjhsExerciseRecord.setIsCompetition(1);//比赛记录
+        SysUser user = SecurityUtils.getLoginUser().getUser();
+        List<SysRole> roles = Collections.singletonList(user.getRoles()).get(0);
+        Map<String, Object> role = convertEntityToMap(roles.get(0));
+        if(role.get("roleId") != null && role.get("roleId").equals(103L)){
+            cdjhsExerciseRecord.setUserName(SecurityUtils.getUsername());
+        }
         return cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordList(cdjhsExerciseRecord);
+    }
+
+    public static Map<String, Object> convertEntityToMap(Object entity) {
+        Map<String, Object> map = new HashMap<>();
+        Field[] fields = entity.getClass().getDeclaredFields();
+
+        for (Field field : fields) {
+            try {
+                field.setAccessible(true);
+                map.put(field.getName(), field.get(entity));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return map;
     }
 
     @Override
@@ -507,5 +534,10 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public int deleteCompetitionRecordByIds(Long[] ids) {
         return cdjhsExerciseRecordMapper.deleteCdjhsExerciseRecordByIds(ids);
+    }
+
+    @Override
+    public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord) {
+        return cdjhsExerciseRecordMapper.selectSortByScore(cdjhsExerciseRecord);
     }
 }

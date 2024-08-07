@@ -37,10 +37,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="evaluationTaskStatus" column="evaluation_task_status"/>
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="userId"   column="user_id"/>
+        <result property="teamId"   column="team_id"/>
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time, user_id, team_id from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -64,11 +66,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="waitingNum != null "> and waiting_num = #{waitingNum}</if>
             <if test="checkResult != null "> and check_result = #{checkResult}</if>
             <if test="checkMsg != null  and checkMsg != ''"> and check_msg = #{checkMsg}</if>
-            <if test="startTime != null "> and start_time = #{startTime}</if>
-            <if test="endTime != null "> and end_time = #{endTime}</if>
+            <if test="startTime != null "> and end_time >= #{startTime}</if>
+            <if test="endTime != null "> and end_time <![CDATA[ <= #{endTime}]]></if>
             <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
             <if test="isCompetition != null">and is_competition = #{isCompetition}</if>
-            <if test="score != null "> and score = #{score}</if>
+            <if test="score != null "> and score IS NOT NULL</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">and fusion_file_path = #{fusionFilePath}</if>
             <if test="networkId != null and networkId != ''">and network_id = #{networkId}</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">and evaluation_url = #{evaluationUrl}</if>
@@ -114,7 +116,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="startTime != null">start_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="duration != null">duration,</if>
-            <if test="isCompetition != null">is_competition,</if>
             <if test="score != null">score,</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">fusion_file_path,</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos,</if>
@@ -124,6 +125,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">evaluation_task_status,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="teamId != null">team_id,</if>
+            <if test="userId != null">user_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="testId != null">#{testId},</if>
@@ -157,6 +160,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">#{evaluationTaskStatus},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="teamId != null">#{teamId},</if>
+            <if test="userId != null">#{userId},</if>
          </trim>
     </insert>
 
@@ -194,6 +199,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">evaluation_task_status = #{evaluationTaskStatus},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="teamId != null">team_id = #{teamId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -232,4 +239,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectSortByScore" resultType="net.wanji.business.domain.vo.CdjhsErSort">
+        SELECT team_name, MAX(score) AS score FROM cdjhs_exercise_record
+        <where>
+            `is_competition` = 1 AND `status` = 3
+            <if test="testId != null">and test_id = #{testId}</if>
+            <if test="testPaperType != null "> and test_paper_type = #{testPaperType}</if>
+        </where>
+        GROUP BY team_name ORDER BY score DESC;
+    </select>
 </mapper>
