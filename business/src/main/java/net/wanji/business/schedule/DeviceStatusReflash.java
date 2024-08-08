@@ -7,6 +7,7 @@ import net.wanji.business.domain.vo.DeviceDetailVo;
 import net.wanji.business.entity.TjDeviceDetail;
 import net.wanji.business.entity.TjTask;
 import net.wanji.business.entity.infity.TjInfinityTask;
+import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.TjDeviceDetailService;
@@ -15,7 +16,6 @@ import net.wanji.business.service.TjTaskService;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.redis.RedisUtil;
 import net.wanji.common.utils.RedisKeyUtils;
-import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Component
@@ -125,7 +124,7 @@ public class DeviceStatusReflash {
                     String[] split = key.split(RedisKeyUtils.DEVICE_STATUS_PRE_LINK);
                     String uniques = split[1];
                     onlineDevices.add(uniques);
-                    if(state == 2){
+                    if(state == 2 && !ExerciseHandler.occupationMap.containsKey(uniques)){
                         idleDevices.add(uniques);
                     }
                 }
