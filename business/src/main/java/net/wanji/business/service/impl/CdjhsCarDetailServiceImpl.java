@@ -91,7 +91,7 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
         if(student){
             String username = SecurityUtils.getUsername();
             cdjhsCarDetails = cdjhsCarDetails.stream()
-                    .filter(car -> car.getUserName().equals(username))
+                    .filter(car -> username.equals(car.getUserName()))
                     .collect(Collectors.toList());
         }
         return cdjhsCarDetails;
