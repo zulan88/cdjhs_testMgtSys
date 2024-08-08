@@ -3,6 +3,7 @@ package net.wanji.business.service.impl;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import net.wanji.business.domain.CdjhsCarDetail;
 import net.wanji.business.exercise.ExerciseHandler;
@@ -11,9 +12,11 @@ import net.wanji.business.exercise.enums.CarStatusEnum;
 import net.wanji.business.mapper.CdjhsCarDetailMapper;
 import net.wanji.business.mapper.CdjhsUserTeamMapper;
 import net.wanji.business.service.ICdjhsCarDetailService;
+import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.RedisKeyUtils;
+import net.wanji.common.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -77,6 +80,19 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
                 int status = ykReportInfo.getStatus() == 2 && !ExerciseHandler.occupationMap.containsKey(deviceId) ? CarStatusEnum.PREPARE.getStatus() : CarStatusEnum.RUNNING.getStatus();
                 carDetail.setStatus(status);
             }
+        }
+        if(Objects.nonNull(cdjhsCarDetail.getStatus())){
+            cdjhsCarDetails = cdjhsCarDetails.stream()
+                    .filter(car -> car.getStatus().compareTo(cdjhsCarDetail.getStatus()) == 0)
+                    .collect(Collectors.toList());
+        }
+        SysUser user = SecurityUtils.getLoginUser().getUser();
+        boolean student = SecurityUtils.isStudent(user);
+        if(student){
+            String username = SecurityUtils.getUsername();
+            cdjhsCarDetails = cdjhsCarDetails.stream()
+                    .filter(car -> car.getUserName().equals(username))
+                    .collect(Collectors.toList());
         }
         return cdjhsCarDetails;
     }

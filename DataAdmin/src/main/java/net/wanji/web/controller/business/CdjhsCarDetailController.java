@@ -1,12 +1,16 @@
 package net.wanji.web.controller.business;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.wanji.business.domain.CdjhsCarDetail;
 import net.wanji.business.service.ICdjhsCarDetailService;
+import net.wanji.common.constant.HttpStatus;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
+import net.wanji.common.core.page.PageDomain;
 import net.wanji.common.core.page.TableDataInfo;
+import net.wanji.common.core.page.TableSupport;
 import net.wanji.common.utils.poi.ExcelUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,9 +42,20 @@ public class CdjhsCarDetailController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(CdjhsCarDetail cdjhsCarDetail)
     {
-        startPage();
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        Integer pageNum = pageDomain.getPageNum();
+        Integer pageSize = pageDomain.getPageSize();
         List<CdjhsCarDetail> list = cdjhsCarDetailService.selectCdjhsCarDetailList(cdjhsCarDetail);
-        return getDataTable(list);
+        // 获取处理好的集合
+        int num = list.size();
+        list = list.stream().skip((long) (pageNum - 1) * pageSize).limit(pageSize).collect(Collectors.toList());
+
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setData(list);
+        rspData.setTotal(num);
+        rspData.setMsg("查询成功");
+        return rspData;
     }
 
     /**

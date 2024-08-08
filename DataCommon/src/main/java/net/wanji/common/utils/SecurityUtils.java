@@ -140,10 +140,7 @@ public class SecurityUtils
     public static boolean isStudent(SysUser sysUser){
         List<SysRole> roles = Collections.singletonList(sysUser.getRoles()).get(0);
         Map<String, Object> role = convertEntityToMap(roles.get(0));
-        if(role.get("roleId") != null && role.get("roleId").equals(103L)){
-            return true;
-        }
-        return false;
+        return role.get("roleId") != null && role.get("roleId").equals(103L);
     }
 
     private static Map<String, Object> convertEntityToMap(Object entity) {
