@@ -130,14 +130,18 @@ public class InteractionFuc {
      * @return SceneTrajectoryBo 包含场景轨迹信息的对象，若无则返回null。
      * @throws IOException 文件读取或JSON解析时发生的IO异常。
      */
-    public SceneTrajectoryBo getSceneTrajectory(Integer sceneId) throws IOException {
+    public SceneTrajectoryBo getSceneTrajectory(Integer sceneId, boolean isAll) throws IOException {
         // 查询场景详细信息
         TjFragmentedSceneDetail detail = tjFragmentedSceneDetailService.getById(sceneId);
         if (detail == null || detail.getTrajectoryInfo() == null) {
             return null;
         }
+        String filePath = detail.getTrajectoryInfo();
+        if (isAll){
+            filePath = detail.getRouteFile();
+        }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(detail.getTrajectoryInfo()))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             // 使用try-with-resources自动关闭reader
             StringBuilder content = new StringBuilder();
             String line;
@@ -156,7 +160,7 @@ public class InteractionFuc {
         if(StringUtils.isNotEmpty(sceneDetails)){
             for(SceneDetailVo sceneDetailVo: sceneDetails){
                 try {
-                    SceneTrajectoryBo sceneTrajectory = getSceneTrajectory(sceneDetailVo.getId());
+                    SceneTrajectoryBo sceneTrajectory = getSceneTrajectory(sceneDetailVo.getId(), false);
                     sceneDetailVo.setSceneTrajectoryBo(sceneTrajectory);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -178,7 +182,7 @@ public class InteractionFuc {
                         StartPoint startPoint = new StartPoint();
                         startPoint.setSequence(i + 1);
                         startPoint.setSceneId(sceneDetailVo.getId());
-                        startPoint.setName(sceneDetailVo.getSceneSort());
+                        startPoint.setName(sceneDetailVo.getTestSceneDesc());
                         startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
                         startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
 

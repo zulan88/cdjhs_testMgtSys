@@ -148,6 +148,9 @@ public class RestServiceImpl implements RestService {
     @Value("${tess.evaluationStatus}")
     private String evaluationTaskStatusUrl;
 
+    @Value("${tess.evaluationScore}")
+    private String scoreUrl;
+
     private static Gson gson = new GsonBuilder().create();
 
     @Resource
@@ -519,6 +522,35 @@ public class RestServiceImpl implements RestService {
             result.put("msg", "获取测试结果失败");
             return result;
         }
+    }
+
+    @Override
+    public Double getEvaluationResult(String taskId) {
+        try {
+            String resultUrl = scoreUrl;
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(resultUrl);
+            if(Objects.nonNull(taskId)){
+                builder.queryParam("taskID", taskId);
+                builder.queryParam("carName", 1);
+                builder.queryParam("type", "total");
+            }
+            String url = builder.toUriString();
+            log.info("请求查询任务评价总分url: {}", url);
+            ResponseEntity<String> response =
+                    restTemplate.exchange(url, HttpMethod.GET, null, String.class);
+            if(response.getStatusCodeValue() == 200){
+                JSONObject result = JSONObject.parseObject(response.getBody());
+                assert result != null;
+                log.info("请求查询任务评价总分返回参数: {}", result.toJSONString());
+                if(result.getIntValue("status") == 200){
+                    return result.getJSONObject("data").getDoubleValue("allSenseScore");
+                }
+            }
+        }catch (Exception e){
+            log.error("请求查询任务评价总分接口失败,任务报告id-{}", taskId);
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override

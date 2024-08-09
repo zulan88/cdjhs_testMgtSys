@@ -10,12 +10,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="testCaseCode"    column="test_case_code"    />
         <result property="testCaseName"    column="test_case_name"    />
         <result property="testPaperType"    column="test_paper_type"    />
+        <result property="testPlace" column="test_place"/>
         <result property="userName"    column="user_name"    />
+        <result property="teamName" column="team_name"/>
         <result property="mirrorName"    column="mirror_name"    />
         <result property="mirrorVersion"    column="mirror_version"    />
         <result property="mirrorId"    column="mirror_id"    />
         <result property="mirrorPath"    column="mirror_path"    />
         <result property="md5" column="md5"/>
+        <result property="carCode" column="car_code"/>
         <result property="deviceId"    column="device_id"    />
         <result property="status"    column="status"    />
         <result property="waitingNum"    column="waiting_num"    />
@@ -24,6 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="startTime"    column="start_time"    />
         <result property="endTime"    column="end_time"    />
         <result property="duration"    column="duration"    />
+        <result property="isCompetition" column="is_competition"/>
         <result property="score"    column="score"    />
         <result property="taskCaseVos" column="task_case_vos"/>
         <result property="fusionFilePath" column="fusion_file_path"/>
@@ -33,10 +37,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="evaluationTaskStatus" column="evaluation_task_status"/>
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="userId"   column="user_id"/>
+        <result property="teamId"   column="team_id"/>
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, user_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time, user_id, team_id from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -46,21 +52,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testCaseCode != null  and testCaseCode != ''"> and test_case_code = #{testCaseCode}</if>
             <if test="testCaseName != null  and testCaseName != ''"> and test_case_name like concat('%', #{testCaseName}, '%')</if>
             <if test="testPaperType != null "> and test_paper_type = #{testPaperType}</if>
+            <if test="testPlace != null and testPlace != ''">and test_place = #{testPlace}</if>
             <if test="userName != null  and userName != ''"> and user_name = #{userName}</if>
+            <if test="teamName != null and teamName != ''">and team_name = #{teamName}</if>
             <if test="mirrorName != null  and mirrorName != ''"> and mirror_name like concat('%', #{mirrorName}, '%')</if>
             <if test="mirrorVersion != null  and mirrorVersion != ''"> and mirror_version = #{mirrorVersion}</if>
             <if test="mirrorId != null  and mirrorId != ''"> and mirror_id = #{mirrorId}</if>
             <if test="mirrorPath != null  and mirrorPath != ''"> and mirror_path = #{mirrorPath}</if>
             <if test="md5 != null and md5 != ''">and md5 = #{md5}</if>
+            <if test="carCode != null and carCode != ''">and car_code = #{carCode}</if>
             <if test="deviceId != null  and deviceId != ''"> and device_id = #{deviceId}</if>
             <if test="status != null "> and status = #{status}</if>
             <if test="waitingNum != null "> and waiting_num = #{waitingNum}</if>
             <if test="checkResult != null "> and check_result = #{checkResult}</if>
             <if test="checkMsg != null  and checkMsg != ''"> and check_msg = #{checkMsg}</if>
-            <if test="startTime != null "> and start_time = #{startTime}</if>
-            <if test="endTime != null "> and end_time = #{endTime}</if>
+            <if test="startTime != null "> and end_time >= #{startTime}</if>
+            <if test="endTime != null "> and end_time <![CDATA[ <= #{endTime}]]></if>
             <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
-            <if test="score != null "> and score = #{score}</if>
+            <if test="isCompetition != null">and is_competition = #{isCompetition}</if>
+            <if test="score != null "> and score IS NOT NULL</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">and fusion_file_path = #{fusionFilePath}</if>
             <if test="networkId != null and networkId != ''">and network_id = #{networkId}</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">and evaluation_url = #{evaluationUrl}</if>
@@ -74,22 +84,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <select id="selectUnexecutedExercises" resultMap="CdjhsExerciseRecordResult">
-        <include refid="selectCdjhsExerciseRecordVo"/>
-        where status = 1 and device_id is null;
-    </select>
-
     <select id="selectCdjhsExerciseRecordByStatusAndIds" resultMap="CdjhsExerciseRecordResult">
         <include refid="selectCdjhsExerciseRecordVo"/>
         where status = #{status} and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
-    </select>
-
-    <select id="selectTasksByEvaluationStatus" parameterType="string" resultMap="CdjhsExerciseRecordResult">
-        <include refid="selectCdjhsExerciseRecordVo"/>
-        where evaluation_url is not null and (evaluation_task_status is null or evaluation_task_status != #{evalutionStatus})
     </select>
         
     <insert id="insertCdjhsExerciseRecord" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" useGeneratedKeys="true" keyProperty="id">
@@ -99,12 +99,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testCaseCode != null and testCaseCode != ''">test_case_code,</if>
             <if test="testCaseName != null and testCaseName != ''">test_case_name,</if>
             <if test="testPaperType != null">test_paper_type,</if>
+            <if test="testPlace != null and testPlace != ''">test_place,</if>
             <if test="userName != null">user_name,</if>
+            <if test="teamName != null and teamName != ''">team_name,</if>
             <if test="mirrorName != null">mirror_name,</if>
             <if test="mirrorVersion != null">mirror_version,</if>
             <if test="mirrorId != null">mirror_id,</if>
             <if test="mirrorPath != null">mirror_path,</if>
             <if test="md5 != null and md5 != ''">md5,</if>
+            <if test="carCode != null and carCode != ''">car_code,</if>
             <if test="deviceId != null">device_id,</if>
             <if test="status != null">status,</if>
             <if test="waitingNum != null">waiting_num,</if>
@@ -113,6 +116,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="startTime != null">start_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="duration != null">duration,</if>
+            <if test="isCompetition != null">is_competition,</if>
             <if test="score != null">score,</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">fusion_file_path,</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos,</if>
@@ -122,18 +126,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">evaluation_task_status,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="teamId != null">team_id,</if>
+            <if test="userId != null">user_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="testId != null">#{testId},</if>
             <if test="testCaseCode != null and testCaseCode != ''">#{testCaseCode},</if>
             <if test="testCaseName != null and testCaseName != ''">#{testCaseName},</if>
             <if test="testPaperType != null">#{testPaperType},</if>
+            <if test="testPlace != null and testPlace != ''">#{testPlace},</if>
             <if test="userName != null">#{userName},</if>
+            <if test="teamName != null and teamName != ''">#{teamName},</if>
             <if test="mirrorName != null">#{mirrorName},</if>
             <if test="mirrorVersion != null">#{mirrorVersion},</if>
             <if test="mirrorId != null">#{mirrorId},</if>
             <if test="mirrorPath != null">#{mirrorPath},</if>
             <if test="md5 != null and md5 != ''">#{md5},</if>
+            <if test="carCode != null and carCode != ''">#{carCode},</if>
             <if test="deviceId != null">#{deviceId},</if>
             <if test="status != null">#{status},</if>
             <if test="waitingNum != null">#{waitingNum},</if>
@@ -142,6 +151,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="startTime != null">#{startTime},</if>
             <if test="endTime != null">#{endTime},</if>
             <if test="duration != null">#{duration},</if>
+            <if test="isCompetition != null">#{isCompetition},</if>
             <if test="score != null">#{score},</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">#{taskCaseVos},</if>
             <if test="fusionFilePath != null and fusionFilePath != ''">#{fusionFilePath},</if>
@@ -151,6 +161,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">#{evaluationTaskStatus},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="teamId != null">#{teamId},</if>
+            <if test="userId != null">#{userId},</if>
          </trim>
     </insert>
 
@@ -161,12 +173,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testCaseCode != null and testCaseCode != ''">test_case_code = #{testCaseCode},</if>
             <if test="testCaseName != null and testCaseName != ''">test_case_name = #{testCaseName},</if>
             <if test="testPaperType != null">test_paper_type = #{testPaperType},</if>
+            <if test="testPlace != null and testPlace != ''">test_place = #{testPlace},</if>
             <if test="userName != null">user_name = #{userName},</if>
+            <if test="teamName != null and teamName != ''">team_name = #{teamName},</if>
             <if test="mirrorName != null">mirror_name = #{mirrorName},</if>
             <if test="mirrorVersion != null">mirror_version = #{mirrorVersion},</if>
             <if test="mirrorId != null">mirror_id = #{mirrorId},</if>
             <if test="mirrorPath != null">mirror_path = #{mirrorPath},</if>
             <if test="md5 != null">md5 = #{md5},</if>
+            <if test="carCode != null and carCode != ''">car_code = #{carCode},</if>
             <if test="deviceId != null">device_id = #{deviceId},</if>
             <if test="status != null">status = #{status},</if>
             <if test="waitingNum != null">waiting_num = #{waitingNum},</if>
@@ -175,6 +190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="startTime != null">start_time = #{startTime},</if>
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="duration != null">duration = #{duration},</if>
+            <if test="isCompetition != null">is_competition = #{isCompetition},</if>
             <if test="score != null">score = #{score},</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos = #{taskCaseVos},</if>
             <if test="fusionFilePath != null">fusion_file_path = #{fusionFilePath},</if>
@@ -184,6 +200,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">evaluation_task_status = #{evaluationTaskStatus},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="teamId != null">team_id = #{teamId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
         </trim>
         where id = #{id}
     </update>
@@ -222,4 +240,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectSortByScore" resultType="net.wanji.business.domain.vo.CdjhsErSort">
+        SELECT team_name, MAX(score) AS score FROM cdjhs_exercise_record
+        <where>
+            `is_competition` = 1 AND `status` = 3
+            <if test="testId != null">and test_id = #{testId}</if>
+            <if test="testPaperType != null "> and test_paper_type = #{testPaperType}</if>
+        </where>
+        GROUP BY team_name ORDER BY score DESC;
+    </select>
 </mapper>

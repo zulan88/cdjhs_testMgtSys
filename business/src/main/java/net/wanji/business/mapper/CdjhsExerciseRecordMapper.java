@@ -1,7 +1,9 @@
 package net.wanji.business.mapper;
 
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.vo.CdjhsErSort;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -61,11 +63,10 @@ public interface CdjhsExerciseRecordMapper
      */
     public int deleteCdjhsExerciseRecordByIds(Long[] ids);
 
-    public List<CdjhsExerciseRecord> selectUnexecutedExercises();
-
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(@Param("status") Integer status, @Param("ids") Long[] ids);
 
     public int updateBatch(List<CdjhsExerciseRecord> list);
 
-    public List<CdjhsExerciseRecord> selectTasksByEvaluationStatus(String evalutionStatus);
+    public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord);
+
 }

@@ -8,6 +8,7 @@ import net.wanji.business.domain.CdjhsMirrorMgt;
 import net.wanji.business.mapper.CdjhsMirrorMgtMapper;
 import net.wanji.business.oss.FileService;
 import net.wanji.business.service.ICdjhsMirrorMgtService;
+import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.utils.ConvertUtil;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.common.utils.SecurityUtils;
@@ -53,10 +54,11 @@ public class CdjhsMirrorMgtServiceImpl implements ICdjhsMirrorMgtService
     @Override
     public List<CdjhsMirrorMgt> selectCdjhsMirrorMgtList(CdjhsMirrorMgt cdjhsMirrorMgt)
     {
-        Long userId = SecurityUtils.getUserId();
-        boolean admin = SecurityUtils.isAdmin(userId);
-        if(!admin){
-            cdjhsMirrorMgt.setCreateBy(SecurityUtils.getUsername());
+        SysUser user = SecurityUtils.getLoginUser().getUser();
+        boolean student = SecurityUtils.isStudent(user);
+        if(student){
+            String username = SecurityUtils.getUsername();
+            cdjhsMirrorMgt.setCreateBy(username);
         }
         return cdjhsMirrorMgtMapper.selectCdjhsMirrorMgtList(cdjhsMirrorMgt);
     }

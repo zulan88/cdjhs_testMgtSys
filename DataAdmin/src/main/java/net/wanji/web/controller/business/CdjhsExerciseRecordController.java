@@ -2,7 +2,6 @@ package net.wanji.web.controller.business;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
@@ -12,15 +11,10 @@ import io.swagger.annotations.ApiOperationSort;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
-import net.wanji.business.domain.bo.SceneTrajectoryBo;
-import net.wanji.business.domain.vo.SceneDetailVo;
 import net.wanji.business.exercise.ExerciseHandler;
-import net.wanji.business.exercise.dto.evaluation.StartPoint;
-import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.pdf.PdfService;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
-import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
@@ -50,9 +44,6 @@ public class CdjhsExerciseRecordController extends BaseController
 
     @Autowired
     private PdfService pdfService;
-
-    @Autowired
-    private InteractionFuc interactionFuc;
 
     /**
      * 查询练习记录列表
@@ -179,44 +170,4 @@ public class CdjhsExerciseRecordController extends BaseController
         return AjaxResult.success("强制结束任务成功");
     }
 
-    @GetMapping("/test")
-    public AjaxResult test(Long taskId){
-        try {
-            CdjhsExerciseRecord record = cdjhsExerciseRecordService.selectCdjhsExerciseRecordById(taskId);
-            ExerciseHandler.taskQueue.add(record);
-            return AjaxResult.success();
-        }catch (Exception e){
-            e.printStackTrace();
-            return AjaxResult.error("算法入队列失败");
-        }
-    }
-
-    @GetMapping("/getSceneDetailsByTestId")
-    public AjaxResult getSceneDetailsByTestId(Integer testId){
-        List<SceneDetailVo> sceneDetail = interactionFuc.findSceneDetail(testId);
-        return AjaxResult.success(sceneDetail);
-    }
-
-    @GetMapping("/getSceneTrajectory")
-    public AjaxResult getSceneTrajectory(Integer sceneId){
-        try {
-            SceneTrajectoryBo sceneTrajectory = interactionFuc.getSceneTrajectory(sceneId);
-            return AjaxResult.success(sceneTrajectory);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return AjaxResult.error();
-    }
-
-    @GetMapping("/testSceneDetails")
-    public AjaxResult testSceneDetails(Integer testId){
-        SimulationSceneDto simulationSceneInfo = interactionFuc.getSimulationSceneInfo(testId);
-        return AjaxResult.success(simulationSceneInfo);
-    }
-
-    @GetMapping("/testStartPoints")
-    public AjaxResult testStartPoints(Integer testId){
-        List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(testId);
-        return AjaxResult.success(sceneStartPoints);
-    }
 }

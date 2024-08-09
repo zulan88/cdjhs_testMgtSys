@@ -72,10 +72,15 @@ public class PortalHandshakeInterceptor implements HandshakeInterceptor {
             if (ObjectUtils.isEmpty(loginUser)) {
                 return false;
             }
+            String username = loginUser.getUsername();
+            int clientType = Integer.parseInt(req.getParameter("clientType"));
+            if(clientType == 10){
+                username = req.getParameter("userName");
+            }
             logger.info("userName = {}, token = {}", loginUser.getUsername(), authorization);
 
             //存入数据，方便在hander中获取，这里只是在方便在webSocket中存储了数据，并不是在正常的httpSession中存储，想要在平时使用的session中获得这里的数据，需要使用session 来存储一下
-            map.put("userName", nullToEmpty(loginUser.getUsername(), ""));
+            map.put("userName", nullToEmpty(username, ""));
             map.put("createTime", System.currentTimeMillis());
             map.put("token", nullToEmpty(authorization, ""));
             map.put("id", nullToEmpty(req.getParameter("id"), -1));

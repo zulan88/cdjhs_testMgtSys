@@ -897,7 +897,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 .eq(TjDeviceDetail::getSupportRoles, "mvSimulation"));
 //        }
         String channel = ChannelBuilder.buildRoutingPlanChannel(SecurityUtils.getUsername(), task.getId());
-        Map<String, Object> params = buildRoutingPlanParam(task.getId(), routingPlanDto.getCases());
+        Map<String, Object> params = buildRoutingPlanParam(task.getId(), routingPlanDto.getCases(), routingPlanDto.getAllStartPoint());
         routingPlanConsumer.subscribeAndSend(channel, task.getId(), task.getTaskCode());
         int start = restService.startServer(svDeviceDetail.getIp(), Integer.valueOf(svDeviceDetail.getServiceAddress()),
                 new TessParam().buildRoutingPlanParam(21, channel, params, "21"));
@@ -909,7 +909,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         return true;
     }
 
-    private Map<String, Object> buildRoutingPlanParam(Integer taskId, List<CaseContinuousVo> caseContinuousInfo) throws BusinessException {
+    private Map<String, Object> buildRoutingPlanParam(Integer taskId, List<CaseContinuousVo> caseContinuousInfo, SitePoint allStartPoint) throws BusinessException {
         TjTaskCase param = new TjTaskCase();
         param.setTaskId(taskId);
         List<TaskCaseVo> taskCaseVos = tjTaskCaseMapper.selectByCondition(param);
@@ -932,6 +932,9 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 }
                 List<SitePoint> sitePoints = caseContinuousVo.getConnectInfo();
                 TrajectoryValueDto start = buildTrajectoryValueDto(sitePoints.get(0), speed);
+                if (caseContinuousVo.getSort()==1 && allStartPoint!=null){
+                    start = buildTrajectoryValueDto(allStartPoint, speed);
+                }
                 TrajectoryValueDto end = buildTrajectoryValueDto(sitePoints.get(sitePoints.size() - 1), speed);
                 List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
                 for (SitePoint sitePoint : sitePoints) {

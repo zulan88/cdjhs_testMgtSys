@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.CdjhsCarDetailMapper">
+    
+    <resultMap type="net.wanji.business.domain.CdjhsCarDetail" id="CdjhsCarDetailResult">
+        <result property="id"    column="id"    />
+        <result property="carCode"    column="car_code"    />
+        <result property="deviceCode"    column="device_code"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectCdjhsCarDetailVo">
+        select id, car_code, device_code, create_by, create_time, update_by, update_time from cdjhs_car_detail
+    </sql>
+
+    <select id="selectCdjhsCarDetailList" parameterType="net.wanji.business.domain.CdjhsCarDetail" resultMap="CdjhsCarDetailResult">
+        <include refid="selectCdjhsCarDetailVo"/>
+        <where>  
+            <if test="carCode != null  and carCode != ''"> and car_code = #{carCode}</if>
+            <if test="deviceCode != null  and deviceCode != ''"> and device_code = #{deviceCode}</if>
+        </where>
+    </select>
+
+    <select id="check" resultMap="CdjhsCarDetailResult">
+        <include refid="selectCdjhsCarDetailVo"/>
+        where car_code = #{carCode} or device_code = #{deviceCode}
+    </select>
+    
+    <select id="selectCdjhsCarDetailById" parameterType="Long" resultMap="CdjhsCarDetailResult">
+        <include refid="selectCdjhsCarDetailVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertCdjhsCarDetail" parameterType="net.wanji.business.domain.CdjhsCarDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into cdjhs_car_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="carCode != null and carCode != ''">car_code,</if>
+            <if test="deviceCode != null and deviceCode != ''">device_code,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="carCode != null and carCode != ''">#{carCode},</if>
+            <if test="deviceCode != null and deviceCode != ''">#{deviceCode},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCdjhsCarDetail" parameterType="net.wanji.business.domain.CdjhsCarDetail">
+        update cdjhs_car_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="carCode != null and carCode != ''">car_code = #{carCode},</if>
+            <if test="deviceCode != null and deviceCode != ''">device_code = #{deviceCode},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCdjhsCarDetailById" parameterType="Long">
+        delete from cdjhs_car_detail where id = #{id}
+    </delete>
+
+    <delete id="deleteCdjhsCarDetailByIds" parameterType="String">
+        delete from cdjhs_car_detail where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

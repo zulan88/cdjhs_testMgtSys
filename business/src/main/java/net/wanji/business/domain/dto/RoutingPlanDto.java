@@ -3,6 +3,7 @@ package net.wanji.business.domain.dto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import net.wanji.business.domain.SitePoint;
 import net.wanji.business.domain.vo.CaseContinuousVo;
 
 import java.util.List;
@@ -23,4 +24,6 @@ public class RoutingPlanDto {
     private List<CaseContinuousVo> cases;
 
     private String mapId;
+
+    private SitePoint allStartPoint;
 }

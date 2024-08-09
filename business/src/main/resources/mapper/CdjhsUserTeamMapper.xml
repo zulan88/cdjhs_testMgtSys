@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.business.mapper.CdjhsUserTeamMapper">
+    
+    <resultMap type="net.wanji.business.domain.CdjhsUserTeam" id="CdjhsUserTeamResult">
+        <result property="id"    column="id"    />
+        <result property="userName"    column="user_name"    />
+        <result property="teamId"    column="team_id"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectCdjhsUserTeamVo">
+        select id, user_name, team_id, create_by, create_time, update_by, update_time from cdjhs_user_team
+    </sql>
+
+    <select id="selectCdjhsUserTeamList" parameterType="net.wanji.business.domain.CdjhsUserTeam" resultMap="CdjhsUserTeamResult">
+        <include refid="selectCdjhsUserTeamVo"/>
+        <where>  
+            <if test="userName != null and userName != ''"> and user_name = #{userName}</if>
+            <if test="teamId != null "> and team_id = #{teamId}</if>
+        </where>
+    </select>
+
+    <select id="selectTeamNameByUserName" parameterType="string" resultType="string">
+        select ti.team_name
+        from cdjhs_user_team ut
+        LEFT JOIN cdjhs_team_info ti
+        on ut.team_id = ti.id
+        where ut.user_name = #{userName}
+    </select>
+    
+    <select id="selectCdjhsUserTeamById" parameterType="Long" resultMap="CdjhsUserTeamResult">
+        <include refid="selectCdjhsUserTeamVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertCdjhsUserTeam" parameterType="net.wanji.business.domain.CdjhsUserTeam" useGeneratedKeys="true" keyProperty="id">
+        insert into cdjhs_user_team
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userName != null and userName != ''">user_name,</if>
+            <if test="teamId != null">team_id,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userName != null and userName != ''">#{userName},</if>
+            <if test="teamId != null">#{teamId},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCdjhsUserTeam" parameterType="net.wanji.business.domain.CdjhsUserTeam">
+        update cdjhs_user_team
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="teamId != null">team_id = #{teamId},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCdjhsUserTeamById" parameterType="Long">
+        delete from cdjhs_user_team where id = #{id}
+    </delete>
+
+    <delete id="deleteCdjhsUserTeamByIds" parameterType="String">
+        delete from cdjhs_user_team where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

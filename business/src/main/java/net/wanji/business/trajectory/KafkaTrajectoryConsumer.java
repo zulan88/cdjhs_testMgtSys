@@ -10,6 +10,7 @@ import net.wanji.business.domain.RealWebsocketMessage;
 import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.business.entity.TjCaseRealRecord;
 import net.wanji.business.entity.TjTaskCaseRecord;
+import net.wanji.business.exercise.LuanshengDataSender;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.exercise.dto.jidaevaluation.trajectory.RealTimeParticipant;
 import net.wanji.business.exercise.dto.jidaevaluation.trajectory.RealTimeTrajectory;
@@ -31,6 +32,7 @@ import net.wanji.common.utils.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
@@ -65,6 +67,10 @@ public class KafkaTrajectoryConsumer {
     private final RedisCache redisCache;
     private final DataFileService dataFileService;
     private final KafkaProducer kafkaProducer;
+    private final LuanshengDataSender luanshengDataSender;
+
+    @Value("${luansheng.send}")
+    private String tempLuanshengYK;
 
     @KafkaListener(id = "singleTrajectory",
             topics = { "${trajectory.fusion}" },
@@ -78,10 +84,18 @@ public class KafkaTrajectoryConsumer {
         if(Objects.nonNull(toLocalDto)){
             JSONArray participantTrajectories = jsonObject.getJSONArray("participantTrajectories");
             //数据融合写入文件
+            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
+            //过滤掉没有主车的数据
+            boolean avNotExisted = data.stream()
+                    .noneMatch(item -> item.getRole().equals(Constants.PartRole.AV));
+            if(avNotExisted){
+                log.info("任务-{}的融合数据没有主车:{}", taskId, jsonObject.toString());
+                return;
+            }
+
             toLocalDto.getToLocalThread()
                     .write(participantTrajectories.toJSONString());
             //实时轨迹发送websocket
-            List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);
             int size = toLocalDto.getCount().incrementAndGet();
             String username = toLocalDto.getUsername();
             String key = taskId > 0 ?
@@ -97,7 +111,7 @@ public class KafkaTrajectoryConsumer {
             Double latitude = mainCar.getValue().get(0).getLatitude();
             Double longitude = mainCar.getValue().get(0).getLongitude();
             Point2D.Double position = new Point2D.Double(longitude, latitude);
-            //当前场景
+            //待触发场景
             List<StartPoint> sceneStartPoints = toLocalDto.getStartPoints();
             int sequence = toLocalDto.getSequence();
             if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
@@ -109,13 +123,18 @@ public class KafkaTrajectoryConsumer {
                     toLocalDto.switchScene();
                 }
             }
-
+            //比赛任务推送孪生
+            int index = toLocalDto.getSequence() > 0 ? toLocalDto.getSequence() - 1 : 0;
+            boolean qualified = toLocalDto.getDeviceId().equals(tempLuanshengYK) || toLocalDto.isCompetition();
+            if(qualified){
+                String sceneName = sceneStartPoints.get(index).getName();
+                luanshengDataSender.send(data, taskId, sceneName);
+            }
             RealWebsocketMessage msg = new RealWebsocketMessage(
                     Constants.RedisMessageType.TRAJECTORY, sceneStartPoints, data, duration, toLocalDto.getTriggeredScenes());
             WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
             //向济达发送实时轨迹
             if(StringUtils.isNotEmpty(toLocalDto.getKafkaTopic())){
-                int index = toLocalDto.getSequence() > 0 ? toLocalDto.getSequence() - 1 : 0;
                 Integer sceneId = sceneStartPoints.get(index).getSceneId();
                 sendRealTimeTrajecotory(toLocalDto, sceneId, data);
             }
@@ -282,6 +301,7 @@ public class KafkaTrajectoryConsumer {
                         //主车轨迹中增加场景id
                         if(isMain){
                             realTimeParticipant.setRegionalId(sceneId);
+                            realTimeParticipant.setIsSecurityInvolved(item.getAutoStatus() == 0 ? 1 : 0);
                         }
 
                         return realTimeParticipant;

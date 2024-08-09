@@ -224,4 +224,6 @@ public interface RestService {
      */
     JSONObject getCarTestResult(Integer taskId);
 
+    Double getEvaluationResult(String taskId);
+
 }

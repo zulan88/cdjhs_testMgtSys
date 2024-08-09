@@ -2,6 +2,7 @@ package net.wanji.business.service;
 
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.EvaluationReport;
+import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.exception.BusinessException;
 
 import java.io.IOException;
@@ -67,13 +68,17 @@ public interface ICdjhsExerciseRecordService
 
     public void playback(Integer taskId, Integer action) throws BusinessException, IOException;
 
-    public void putIntoTaskQueue(CdjhsExerciseRecord record) throws BusinessException;
-
-    public List<CdjhsExerciseRecord> selectUnexecutedExercises();
-
     public List<CdjhsExerciseRecord> selectCdjhsExerciseRecordByStatusAndIds(Integer status, Long[] ids);
 
     public int updateBatch(List<CdjhsExerciseRecord> list);
 
     public String queryEvaluationStatus(Long id, String evaluationUrl);
+
+    public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordList(CdjhsExerciseRecord cdjhsExerciseRecord);
+
+    public int createCompetitionRecord(CdjhsExerciseRecord cdjhsExerciseRecord);
+
+    public int deleteCompetitionRecordByIds(Long[] ids);
+
+    public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord);
 }

@@ -635,18 +635,18 @@ public class TaskController extends BaseController {
     }
 
     @GetMapping("/preview")
-    public AjaxResult preview(@RequestParam("taskId") Integer taskId) throws IOException {
+    public AjaxResult preview(@RequestParam("taskId") Integer taskId, @RequestParam("action") Integer action) throws IOException, BusinessException {
         TjTask tjTask = tjTaskService.getById(taskId);
         String routeFile = FileUploadUtils.getAbsolutePathFileName(tjTask.getMainPlanFile());
         List<SimulationTrajectoryDto> trajectories = FileUtils.readOriTrajectory(routeFile);
         ConTrace conTrace = new ConTrace();
         conTrace.setMainPoints(trajectories);
-        List<SceneTrajectoryBo> sceneTrajectoryBos = new ArrayList<>();
         List<SceneDetailVo> sceneDetailVos = interactionFuc.findSceneDetail(taskId);
+        List<SceneTrajectoryBo> sceneTrajectoryBos = new ArrayList<>();
         for (SceneDetailVo sceneDetailVo : sceneDetailVos) {
-            sceneTrajectoryBos.add(interactionFuc.getSceneTrajectory(sceneDetailVo.getId()));
+            sceneTrajectoryBos.add(interactionFuc.getSceneTrajectory(sceneDetailVo.getId(), true));
         }
-        conTrace.setSceneTrajectoryBoList(sceneTrajectoryBos);
+        taskCaseService.playback(taskId, sceneTrajectoryBos, action);
         return AjaxResult.success(conTrace);
     }
 }
