@@ -370,7 +370,14 @@ public class TaskExercise implements Runnable{
                     stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
-                ReportData reportData = JSONObject.parseObject(reportDataString, ReportData.class);
+                //暂时添加try-catch捕获主车轨迹转成实体类异常
+                ReportData reportData;
+                try {
+                    reportData = JSONObject.parseObject(reportDataString, ReportData.class);
+                }catch (Exception e){
+                    log.error("主车轨迹转成实体类异常: {}", reportDataString);
+                    continue;
+                }
                 ReportCurrentPointInfo vehicleCurrentInfo = mainVehicleCurrentInfo(reportData);
                 if(Objects.isNull(vehicleCurrentInfo)){
                     continue;
