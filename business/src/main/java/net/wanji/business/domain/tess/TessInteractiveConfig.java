@@ -23,4 +23,6 @@ public class TessInteractiveConfig {
     private String mainCarChannel;
 
     private String heartChannel;
+
+    private String mvCarChannel;
 }
