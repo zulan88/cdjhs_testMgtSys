@@ -137,7 +137,7 @@ public class InteractionFuc {
             return null;
         }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(detail.getTrajectoryInfo()))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(detail.getRouteFile()))) {
             // 使用try-with-resources自动关闭reader
             StringBuilder content = new StringBuilder();
             String line;
