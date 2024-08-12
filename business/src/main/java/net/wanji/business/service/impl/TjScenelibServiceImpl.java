@@ -478,10 +478,11 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
                 : null);
         tjScenelib.setUpdateBy("admin");
         tjScenelib.setUpdateDatetime(LocalDateTime.now());
-        if (tjScenelib.getImgPath() != null) {
+        if (tjScenelib.getImgPath() != null || tjScenelib.getSceneDesc() != null) {
             Integer secenceId = this.getById(tjScenelib.getId()).getSceneDetailId();
             TjFragmentedSceneDetail tjFragmentedSceneDetail = new TjFragmentedSceneDetail();
             tjFragmentedSceneDetail.setImgUrl(tjScenelib.getImgPath());
+            tjFragmentedSceneDetail.setTestSceneDesc(tjScenelib.getSceneDesc());
             tjFragmentedSceneDetail.setId(secenceId);
             if (tjScenelib.getLabels() != null) {
                 tjFragmentedSceneDetail.setLabel(tjScenelib.getLabels());
@@ -489,6 +490,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             }
             tjFragmentedSceneDetailService.updateById(tjFragmentedSceneDetail);
         }
+
         return tjScenelibMapper.updateById(tjScenelib);
     }
 

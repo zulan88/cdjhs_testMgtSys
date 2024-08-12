@@ -36,6 +36,7 @@ public class AnalyzeOpenX {
             HashMap<String, List<WoPostion>> woPostionMap = new LinkedHashMap<>(150);
             Double mintime = 500.0;
             for (Act act : openScenario.getStoryboard().getStory().get(0).getAct()){
+//                System.out.println(act.getName());
                 Polyline polyline = act.getManeuverGroup().get(0).getManeuver().get(0).getEvent().get(0).getAction().get(0).getPrivateAction().getRoutingAction().getFollowTrajectoryAction().getTrajectory().getShape().getPolyline();
                 Vertex vertex = polyline.getVertex().get(0);
                 if(mintime > Double.parseDouble(vertex.getTime())){
