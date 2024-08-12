@@ -932,12 +932,13 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 }
                 List<SitePoint> sitePoints = caseContinuousVo.getConnectInfo();
                 TrajectoryValueDto start = buildTrajectoryValueDto(sitePoints.get(0), speed);
+                List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
                 if (caseContinuousVo.getSort().equals(1) && allStartPoint!=null){
 //                    System.out.println("生效"+allStartPoint.getLatitude()+","+allStartPoint.getLongitude());
                     start = buildTrajectoryValueDto(allStartPoint, speed);
+                    mainTrajectories.add(start);
                 }
                 TrajectoryValueDto end = buildTrajectoryValueDto(sitePoints.get(sitePoints.size() - 1), speed);
-                List<TrajectoryValueDto> mainTrajectories = new ArrayList<>();
                 for (SitePoint sitePoint : sitePoints) {
                     mainTrajectories.add(buildTrajectoryValueDto(sitePoint, speed));
                 }
