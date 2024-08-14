@@ -225,7 +225,7 @@ public class ExerciseHandler {
                 tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
                 redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
                 restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
-                tjTaskMapper, interactionFuc, timeoutConfig);
+                tjTaskMapper, interactionFuc, timeoutConfig, paramConfig);
         Future<?> future = executor.submit(taskExercise);
         taskThreadMap.put(record.getId(), future);
     }

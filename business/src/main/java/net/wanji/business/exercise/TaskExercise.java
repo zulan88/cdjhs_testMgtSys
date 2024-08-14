@@ -48,6 +48,7 @@ import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.file.FileUploadUtils;
 import net.wanji.common.utils.file.FileUtils;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
@@ -127,9 +128,9 @@ public class TaskExercise implements Runnable{
 
     private TjDeviceDetail detail;
 
-    private ToLocalDto toLocalDto;
+    private String tessDataChannel;
 
-    private TestStartReqDto ykStartReq;
+    private ToLocalDto toLocalDto;
 
     private Map<Integer, Boolean> sceneStartTriggerMap = new HashMap<>();
 
@@ -166,7 +167,7 @@ public class TaskExercise implements Runnable{
         this.interactionFuc = interactionFuc;
         this.timeoutConfig = timeoutConfig;
         this.paramConfig = paramConfig;
-        this.taskStatus = TaskExerciseEnum.BEFORE_TESS_AWAKENED.getStatus();
+        this.taskStatus = TaskExerciseEnum.START_INTERACTION.getStatus();
     }
 
     @Override
@@ -177,50 +178,72 @@ public class TaskExercise implements Runnable{
             record.setWaitingNum(0);
             record.setStatus(TaskStatusEnum.RUNNING.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-            //获取镜像列表
-            List<String> imageList = getImageListReport(uniques);
-            if(Objects.isNull(imageList)){
+            //查询域控和仿真设备通道信息
+            detail = tjDeviceDetailMapper.selectByUniques(uniques);
+            if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                record.setCheckMsg("练习设备没有上报镜像列表,任务结束");
+                String checkMsg = String.format("数据库中没有查询到练习设备%s的数据通道或指令通道", uniques);
+                record.setCheckMsg(checkMsg);
                 record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
-            log.info("开始对镜像列表长度进行校验...");
+            String dataChannel = detail.getDataChannel();
+            String commandChannel = detail.getCommandChannel();
+            //构建唤醒仿真数据结构体
+            TessStartReq tessStartReq = buildTessStartReq(record.getUserName(), record.getId(), dataChannel, paramConfig.networkId,
+                    paramConfig.host, paramConfig.port, paramConfig.db, paramConfig.pwd, paramConfig.simulatorChannel);
+            String tessCommandChannel = tessStartReq.getData().getInteractiveConfig().getCommandChannel();
+            tessDataChannel = tessStartReq.getData().getInteractiveConfig().getTessngChannel();
+            String tessStatusChannel = tessStartReq.getData().getInteractiveConfig().getHeartChannel();
+
+            boolean isCompetition = record.getIsCompetition() == 1;
             String mirrorId = record.getMirrorId();
-            if(!imageList.contains(mirrorId)){
-                if(imageList.size() >= imageLengthThresold){
-                    //镜像清除指令下发 找出镜像列表中下发最早的镜像
-                    String image = cdjhsDeviceImageRecordMapper.selectEarliestImage(uniques, imageList.toArray(new String[0]));
-                    Integer status = imageDelete(uniques, image);
-                    if(Objects.isNull(status)){
+            if(!isCompetition){
+                //获取镜像列表
+                List<String> imageList = getImageListReport(uniques);
+                if(Objects.isNull(imageList)){
+                    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                    record.setCheckMsg("练习设备没有上报镜像列表,任务结束");
+                    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                    return;
+                }
+                log.info("开始对镜像列表长度进行校验...");
+                if(!imageList.contains(mirrorId)){
+                    if(imageList.size() >= imageLengthThresold){
+                        //镜像清除指令下发 找出镜像列表中下发最早的镜像
+                        String image = cdjhsDeviceImageRecordMapper.selectEarliestImage(uniques, imageList.toArray(new String[0]));
+                        Integer status = imageDelete(uniques, image);
+                        if(Objects.isNull(status)){
+                            record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                            record.setCheckMsg(String.format("练习设备没有上报清除镜像结果状态: %s", image));
+                            record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                            return;
+                        }else if(status == 0){
+                            record.setCheckResult(CheckResultEnum.FAILURE.getResult());
+                            record.setCheckMsg(String.format("练习设备清除镜像失败: %s", image));
+                            record.setStatus(TaskStatusEnum.FINISHED.getStatus());
+                            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+                            return;
+                        }
+                    }
+                    //镜像下发
+                    ImageIssueResultDto imageIssueResultDto = imageIssue(uniques, record.getMd5(), mirrorId, record.getMirrorPath());
+                    if(Objects.isNull(imageIssueResultDto)){
                         record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                        record.setCheckMsg(String.format("练习设备没有上报清除镜像结果状态: %s", image));
+                        record.setCheckMsg(String.format("%s镜像下发后,未收到练习设备上报结果", mirrorId));
                         record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                         cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                         return;
-                    }else if(status == 0){
+                    }else if(imageIssueResultDto.getImageStatus() == 0){
                         record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                        record.setCheckMsg(String.format("练习设备清除镜像失败: %s", image));
+                        record.setCheckMsg(String.format("%s镜像文件完整性校验失败,异常信息如下:\n%s", mirrorId, imageIssueResultDto.getMessage()));
                         record.setStatus(TaskStatusEnum.FINISHED.getStatus());
                         cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                         return;
                     }
-                }
-                //镜像下发
-                ImageIssueResultDto imageIssueResultDto = imageIssue(uniques, record.getMd5(), mirrorId, record.getMirrorPath());
-                if(Objects.isNull(imageIssueResultDto)){
-                    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                    record.setCheckMsg(String.format("%s镜像下发后,未收到练习设备上报结果", mirrorId));
-                    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                    return;
-                }else if(imageIssueResultDto.getImageStatus() == 0){
-                    record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                    record.setCheckMsg(String.format("%s镜像文件完整性校验失败,异常信息如下:\n%s", mirrorId, imageIssueResultDto.getMessage()));
-                    record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                    cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                    return;
                 }
             }
             //练习任务下发
@@ -244,24 +267,7 @@ public class TaskExercise implements Runnable{
                 cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                 return;
             }
-            //域控信息
-            detail = tjDeviceDetailMapper.selectByUniques(uniques);
-            if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
-                record.setCheckResult(CheckResultEnum.FAILURE.getResult());
-                String checkMsg = String.format("数据库中没有查询到练习设备%s的数据通道或指令通道", uniques);
-                record.setCheckMsg(checkMsg);
-                record.setStatus(TaskStatusEnum.FINISHED.getStatus());
-                cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-                return;
-            }
-            String dataChannel = detail.getDataChannel();
-            String commandChannel = detail.getCommandChannel();
-            //唤醒仿真 构建唤醒仿真开始结构体
-            TessStartReq tessStartReq = buildTessStartReq(record.getUserName(), record.getId(), dataChannel, paramConfig.networkId,
-                    paramConfig.host, paramConfig.port, paramConfig.db, paramConfig.pwd, paramConfig.simulatorChannel);
-            String tessCommandChannel = tessStartReq.getData().getInteractiveConfig().getCommandChannel();
-            String tessDataChannel = tessStartReq.getData().getInteractiveConfig().getTessngChannel();
-            String tessStatusChannel = tessStartReq.getData().getInteractiveConfig().getHeartChannel();
+            //唤醒仿真
             int tessStatus = restService.startTessng(tessIp, tessPort, tessStartReq);
             if(tessStatus != 1){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
@@ -303,7 +309,7 @@ public class TaskExercise implements Runnable{
             }
             //获取每个场景的起点列表
             List<SceneSitePoint> sceneSitePoints = interactionFuc.getSceneSitePoints(record.getTestId().intValue());
-            //任务开始
+            //任务开始前准备工作
             //添加主车轨迹数据通道监听
             LinkedBlockingQueue<String> queue = getAVRedisQueue(dataChannel);
             taskStatus = TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus();
@@ -317,7 +323,7 @@ public class TaskExercise implements Runnable{
             List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
             toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
                     dataFile.getId(), evaluationKafkaTopic, record.getUserName(),
-                    sceneStartPoints, radius, dataChannel);
+                    sceneStartPoints, radius, dataChannel, isCompetition, uniques);
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
@@ -326,7 +332,7 @@ public class TaskExercise implements Runnable{
             log.info("向topic-{}发送数据融合开始策略: {}", kafkaTopic, startStrategy);
             taskStatus = TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus();
             //域控开始任务指令
-            ykStartReq = buildYKTestStart(dataChannel, tessDataChannel);
+            TestStartReqDto ykStartReq = buildYKTestStart(dataChannel, tessDataChannel);
             String ykMessage = JSONObject.toJSONString(ykStartReq);
             JSONObject ykStartMessage = JSONObject.parseObject(ykMessage);
             redisCache.publishMessage(commandChannel, ykStartMessage);
@@ -347,10 +353,17 @@ public class TaskExercise implements Runnable{
                 String reportDataString = queue.poll(timeoutConfig.mainCarTrajectory, TimeUnit.SECONDS);
                 if(Objects.isNull(reportDataString)){
                     log.info("{}s内没有接收到主车轨迹数据", timeoutConfig.mainCarTrajectory);
-                    stop(ykStartReq, toLocalDto, detail);
+                    stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
-                ReportData reportData = JSONObject.parseObject(reportDataString, ReportData.class);
+                //暂时添加try-catch捕获主车轨迹转成实体类异常
+                ReportData reportData;
+                try {
+                    reportData = JSONObject.parseObject(reportDataString, ReportData.class);
+                }catch (Exception e){
+                    log.error("主车轨迹转成实体类异常: {}", reportDataString);
+                    continue;
+                }
                 ReportCurrentPointInfo vehicleCurrentInfo = mainVehicleCurrentInfo(reportData);
                 if(Objects.isNull(vehicleCurrentInfo)){
                     continue;
@@ -366,27 +379,53 @@ public class TaskExercise implements Runnable{
                         boolean motionless = LongitudeLatitudeUtils.isInCriticalDistance(firstFramePostion, position, 0.5);
                         if(motionless){
                             log.info("1分钟内重复发送第一帧数据,强制结束任务");
-                            stop(ykStartReq, toLocalDto, detail);
+                            stop(toLocalDto, detail, tessDataChannel);
                             break;
                         }
                     }
 
                 }
+                //动态检测指定检测时间内的移动距离
+                String globalTimeStamp = vehicleCurrentInfo.getGlobalTimeStamp();
+                long currentTimeStamp = Long.parseLong(globalTimeStamp);
+                String mainCarTrajectoryKey = RedisKeyUtils.getCdjhsMainCarTrajectoryKey(record.getId());
+                redisCache.zAdd(mainCarTrajectoryKey, position, currentTimeStamp);
+                Set<ZSetOperations.TypedTuple<Point2D.Double>> typedTuples = redisCache.rangeWithScores(mainCarTrajectoryKey, 0, 0);
+                ZSetOperations.TypedTuple<Point2D.Double> typedTuple = new ArrayList<>(typedTuples).get(0);
+                Double score = typedTuple.getScore();
+                Point2D.Double tupleValue = typedTuple.getValue();
+                assert score != null;
+                if(currentTimeStamp - score.longValue() >= timeoutConfig.driveDectionTime * 60 * 1000){
+                    assert tupleValue != null;
+                    double distance = LongitudeLatitudeUtils.ellipsoidalDistance(tupleValue, position);
+                    if(distance < timeoutConfig.driveDistance){
+                        log.info("【{}】--【{}】时间段内，车辆从 【{}】 行驶到 【{}】,移动距离【{}】m,小于【{}】m,任务结束",
+                                score.longValue(), globalTimeStamp,
+                                tupleValue.x + "," + tupleValue.y,
+                                position.x + "," + position.y,
+                                distance, timeoutConfig.driveDistance);
+                        stop(toLocalDto, detail, tessDataChannel);
+                        break;
+                    }
+                    long max = currentTimeStamp - timeoutConfig.driveDectionTime * 60 * 1000;
+                    redisCache.removeRange(mainCarTrajectoryKey, 0, max);
+                }
+
                 boolean inPolygon = LongitudeLatitudeUtils.isInPolygon(position, MapArea.areaPoints);
                 if(!inPolygon){
                     log.info("主车轨迹超出地图区域");
-                    stop(ykStartReq, toLocalDto, detail);
+                    stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
                 boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
                 if(taskEnd){
                     log.info("主车已到达终点,任务结束");
-                    stop(ykStartReq, toLocalDto, detail);
+                    stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
                 if(System.currentTimeMillis() - taskStartTime > timeoutConfig.taskDuration * 60 * 1000){
                     log.info("任务运行时间已超过{}分钟,强制结束任务", timeoutConfig.taskDuration);
-                    stop(ykStartReq, toLocalDto, detail);
+                    stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
                 //判断主车位置是否到达场景起点和场景终点
@@ -404,7 +443,7 @@ public class TaskExercise implements Runnable{
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
                         if(Objects.isNull(state) || state != 1){
                             log.info("主车已行驶到场景{}开始触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
-                            stop(ykStartReq, toLocalDto, detail);
+                            stop(toLocalDto, detail, tessDataChannel);
                             break;
                         }
                         //当前场景开始指令数据组装
@@ -425,7 +464,7 @@ public class TaskExercise implements Runnable{
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
                         if(Objects.isNull(state) || state != 1){
                             log.info("主车已行驶到场景{}结束触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
-                            stop(ykStartReq, toLocalDto, detail);
+                            stop(toLocalDto, detail, tessDataChannel);
                             break;
                         }
                         //当前场景结束数据组装
@@ -443,6 +482,7 @@ public class TaskExercise implements Runnable{
             }
             taskStatus = TaskExerciseEnum.TASK_IS_FINISHED.getStatus();
             processAfterTaskEnd();
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } catch (InterruptedException e){
             log.info("任务被强制结束...");
             if(taskStatus.compareTo(TaskExerciseEnum.TASK_IS_FINISHED.getStatus()) != 0){
@@ -466,21 +506,10 @@ public class TaskExercise implements Runnable{
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
             ExerciseHandler.taskThreadMap.remove(record.getId());
+            //删除缓存主车轨迹数据
+            String mainCarTrajectoryKey = RedisKeyUtils.getCdjhsMainCarTrajectoryKey(record.getId());
+            redisCache.deleteObject(mainCarTrajectoryKey);
         }
-    }
-
-    private void stop(TestStartReqDto yk, ToLocalDto toLocalDto, TjDeviceDetail detail) {
-        //域控
-        issueEnd2YK(yk, detail.getCommandChannel());
-
-        //停止数据融合
-        stopFusion(toLocalDto, detail);
-
-        //停止监听主车轨迹
-        stopListenMainTrajectory(detail.getDataChannel());
-
-        //仿真关闭
-        closeSimulationServer();
     }
 
     private void processAfterTaskEnd() {
@@ -495,21 +524,25 @@ public class TaskExercise implements Runnable{
         //请求算法输出场景评分
         String evaluationUrl = getOfflineEvaluationUrl(record.getTestId(), toLocalDto.getKafkaTopic(), toLocalDto.getMainVehicleId());
         record.setEvaluationUrl(evaluationUrl);
-        cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
     }
 
     private void forceEnd(){
         if(taskStatus.compareTo(TaskExerciseEnum.IS_TASK_STARTED.getStatus()) == 0){
-            stop(ykStartReq, toLocalDto, detail);
+            stop(toLocalDto, detail, tessDataChannel);
+            processAfterTaskEnd();//练习任务开始后，强制结束或后端异常仍然需要评价
         }else if(taskStatus.compareTo(TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus()) == 0){
-            stopFusion(toLocalDto, detail);
-            stopListenMainTrajectory(detail.getDataChannel());
-            closeSimulationServer();
+            stop(toLocalDto, detail, tessDataChannel);
         }else if(taskStatus.compareTo(TaskExerciseEnum.STARTING_LISTEN_MAIN_TRAJECTORY.getStatus()) == 0){
+            issueEnd2YK(detail.getDataChannel(), tessDataChannel, detail.getCommandChannel());
             stopListenMainTrajectory(detail.getDataChannel());
             closeSimulationServer();
         }else if(taskStatus.compareTo(TaskExerciseEnum.IS_TESS_AWAKENDED.getStatus()) == 0){
+            issueEnd2YK(detail.getDataChannel(), tessDataChannel, detail.getCommandChannel());
             closeSimulationServer();
+        }else if(taskStatus.compareTo(TaskExerciseEnum.TASK_ISSUED.getStatus()) == 0){
+            issueEnd2YK(detail.getDataChannel(), tessDataChannel, detail.getCommandChannel());
+        }else if(taskStatus.compareTo(TaskExerciseEnum.IMAGE_ISSUED.getStatus()) == 0){
+            issueEnd2YK(detail.getDataChannel(), tessDataChannel, detail.getCommandChannel());
         }
     }
 
@@ -613,6 +646,7 @@ public class TaskExercise implements Runnable{
         JSONObject testIssue = JSONObject.parseObject(testMessage);
         String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
         redisCache.publishMessage(testIssueChannel, testIssue);
+        taskStatus = TaskExerciseEnum.TASK_ISSUED.getStatus();
         log.info("给设备{}下发练习任务信息成功", uniques);
         return testIssueResultListener.awaitingMessage(uniques, timeoutConfig.taskIssue, TimeUnit.MINUTES);
     }
@@ -630,6 +664,7 @@ public class TaskExercise implements Runnable{
         JSONObject imageIssue = JSONObject.parseObject(imageIssueMessage);
         log.info("向域控{}下发镜像: {}", uniques, imageIssueMessage);
         redisCache.publishMessage(imageIssueChannel, imageIssue);
+        taskStatus = TaskExerciseEnum.IMAGE_ISSUED.getStatus();
         ImageIssueResultDto imageIssueResultDto = imageIssueResultListener.awaitingMessage(uniques, mirrorId, timeoutConfig.imageIssue, TimeUnit.MINUTES);
         log.info("域控{}上报镜像下发结果: {}", uniques, JSONObject.toJSONString(imageIssueResultDto));
         //添加镜像下发域控记录
@@ -672,6 +707,20 @@ public class TaskExercise implements Runnable{
         List<String> imageList = imageListReportListener.awaitMessage(uniques, timeoutConfig.imageReport, TimeUnit.SECONDS);
         log.info("获取到域控-{}上报的镜像列表:{}", uniques, JSONObject.toJSONString(imageList));
         return imageList;
+    }
+
+    private void stop(ToLocalDto toLocalDto, TjDeviceDetail detail, String tessDataChannel){
+        //域控下发任务结束
+        issueEnd2YK(detail.getDataChannel(), tessDataChannel, detail.getCommandChannel());
+
+        //停止数据融合
+        stopFusion(toLocalDto, detail);
+
+        //停止监听主车轨迹
+        stopListenMainTrajectory(detail.getDataChannel());
+
+        //关闭仿真
+        closeSimulationServer();
     }
 
     private void stopFusion(ToLocalDto toLocalDto, TjDeviceDetail detail) {
@@ -728,39 +777,6 @@ public class TaskExercise implements Runnable{
                 .build();
     }
 
-    private TestStartReqDto buildYKTestStart(String dataChannel, String tessDataChannel){
-        List<TestProtocol> protocols = new ArrayList<>();
-        //数据接收-背景车
-        TestProtocol receiveProtocol = TestProtocol.builder()
-                .type(0)
-                .channel(tessDataChannel)
-                .build();
-        protocols.add(receiveProtocol);
-        //主车数据发送
-        TestProtocol carProtocol = TestProtocol.builder()
-                .type(1)
-                .channel(dataChannel)
-                .build();
-        protocols.add(carProtocol);
-        //融合数据发送
-        String mixedDataChannel = StringUtils.format("{}_{}", dataChannel, Constants.ChannelBuilder.MIXED_SUFFIX);
-        TestProtocol mixedDataProtocol = TestProtocol.builder()
-                .type(2)
-                .channel(mixedDataChannel)
-                .build();
-        protocols.add(mixedDataProtocol);
-
-        TestStartParams params = TestStartParams.builder()
-                .taskType(1)
-                .protocols(protocols)
-                .build();
-        return TestStartReqDto.builder()
-                .timestamp(System.currentTimeMillis())
-                .params(params)
-                .type(OperationTypeEnum.TEST_CONTROL_REQ.getType())
-                .build();
-    }
-
     private LinkedBlockingQueue<String> getAVRedisQueue(String dataChannel) {
         trajectoryListener = new MainCarTrajectoryListener();
         trajectoryListener.add(dataChannel, new LinkedBlockingQueue<>(100));
@@ -791,15 +807,53 @@ public class TaskExercise implements Runnable{
         log.info("停止监听主车轨迹通道: {}", dataChannel);
     }
 
-    private void issueEnd2YK(TestStartReqDto yk, String commandChannel) {
-        TestStartParams ykParams = yk.getParams();
-        ykParams.setTaskType(0);
-        yk.setParams(ykParams);
-        yk.setTimestamp(System.currentTimeMillis());
+    private void issueEnd2YK(String dataChannel, String tessDataChannel, String commandChannel){
+        TestStartReqDto yk = buildYKTestEnd(dataChannel, tessDataChannel);
         String ykMessage = JSONObject.toJSONString(yk);
         JSONObject ykEndMessage = JSONObject.parseObject(ykMessage);
         redisCache.publishMessage(commandChannel, ykEndMessage);
         log.info("给域控指令通道-{}下发任务结束:{}", commandChannel, ykMessage);
+    }
+
+    private TestStartReqDto buildYKTestStart(String dataChannel, String tessDataChannel){
+        return buildYKTestStartEnd(dataChannel, tessDataChannel, 1);
+    }
+
+    private TestStartReqDto buildYKTestEnd(String dataChannel, String tessDataChannel){
+        return buildYKTestStartEnd(dataChannel, tessDataChannel, 0);
+    }
+
+    private TestStartReqDto buildYKTestStartEnd(String dataChannel, String tessDataChannel, int taskType){
+        List<TestProtocol> protocols = new ArrayList<>();
+        //数据接收-背景车
+        TestProtocol receiveProtocol = TestProtocol.builder()
+                .type(0)
+                .channel(tessDataChannel)
+                .build();
+        protocols.add(receiveProtocol);
+        //主车数据发送
+        TestProtocol carProtocol = TestProtocol.builder()
+                .type(1)
+                .channel(dataChannel)
+                .build();
+        protocols.add(carProtocol);
+        //融合数据发送
+        String mixedDataChannel = StringUtils.format("{}_{}", dataChannel, Constants.ChannelBuilder.MIXED_SUFFIX);
+        TestProtocol mixedDataProtocol = TestProtocol.builder()
+                .type(2)
+                .channel(mixedDataChannel)
+                .build();
+        protocols.add(mixedDataProtocol);
+
+        TestStartParams params = TestStartParams.builder()
+                .taskType(taskType)
+                .protocols(protocols)
+                .build();
+        return TestStartReqDto.builder()
+                .timestamp(System.currentTimeMillis())
+                .params(params)
+                .type(OperationTypeEnum.TEST_CONTROL_REQ.getType())
+                .build();
     }
 
     private void closeSimulationServer(){
