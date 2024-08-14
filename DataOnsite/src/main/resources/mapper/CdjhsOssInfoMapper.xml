@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.wanji.onsite.mapper.CdjhsOssInfoMapper">
+
+    <select id="getnewest" resultType="net.wanji.onsite.entity.CdjhsOssInfo">
+        SELECT type,path,version,upload_date
+        FROM `cdjhs_oss_info` AS a
+        WHERE (a.type, a.upload_date) IN (
+        SELECT
+        `type`,
+        MAX(`upload_date`) AS upload_date
+        FROM `cdjhs_oss_info`
+        GROUP BY `type`
+        )
+    </select>
+</mapper>

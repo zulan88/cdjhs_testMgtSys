@@ -490,6 +490,7 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
             }
             tjFragmentedSceneDetailService.updateById(tjFragmentedSceneDetail);
         }
+
         return tjScenelibMapper.updateById(tjScenelib);
     }
 

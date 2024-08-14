@@ -11,6 +11,7 @@ import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.common.utils.DateUtils;
 import net.wanji.onsite.entity.TjOnsiteCase;
+import net.wanji.onsite.service.CdjhsOssInfoService;
 import net.wanji.onsite.service.TjOnsiteRestService;
 import net.wanji.onsite.service.TjOnsiteCaseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,9 @@ public class TjOnsiteCaseController extends BaseController {
 
     @Autowired
     private TjCaseService caseService;
+
+    @Autowired
+    private CdjhsOssInfoService cdjhsOssInfoService;
 
 
     @GetMapping("/list")
@@ -92,6 +96,11 @@ public class TjOnsiteCaseController extends BaseController {
     @GetMapping("/starttest")
     public AjaxResult start(String onsiteNumber) {
         return toAjax(tjOnsiteRestService.routePlanOnsite(onsiteNumber));
+    }
+
+    @GetMapping("/resource")
+    public AjaxResult test() {
+        return AjaxResult.success(cdjhsOssInfoService.getnewest());
     }
 
 }
