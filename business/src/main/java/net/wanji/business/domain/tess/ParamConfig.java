@@ -23,4 +23,7 @@ public class ParamConfig {
 
     @Value("${tess.networkId}")
     public String networkId;
+
+    @Value("${redis.channel.simulator}")
+    public String simulatorChannel;
 }

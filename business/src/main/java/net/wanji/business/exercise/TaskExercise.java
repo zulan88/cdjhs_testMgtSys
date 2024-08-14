@@ -258,7 +258,7 @@ public class TaskExercise implements Runnable{
             String commandChannel = detail.getCommandChannel();
             //唤醒仿真 构建唤醒仿真开始结构体
             TessStartReq tessStartReq = buildTessStartReq(record.getUserName(), record.getId(), dataChannel, paramConfig.networkId,
-                    paramConfig.host, paramConfig.port, paramConfig.db, paramConfig.pwd);
+                    paramConfig.host, paramConfig.port, paramConfig.db, paramConfig.pwd, paramConfig.simulatorChannel);
             String tessCommandChannel = tessStartReq.getData().getInteractiveConfig().getCommandChannel();
             String tessDataChannel = tessStartReq.getData().getInteractiveConfig().getTessngChannel();
             String tessStatusChannel = tessStartReq.getData().getInteractiveConfig().getHeartChannel();
@@ -685,7 +685,7 @@ public class TaskExercise implements Runnable{
     }
 
     private TessStartReq buildTessStartReq(String username, Long taskId, String dataChannel, String networkId,
-                                           String host, Integer port, Integer db, String pwd){
+                                           String host, Integer port, Integer db, String pwd, String mvCarChannel){
         //redis配置信息
         RedisConfigure configure = RedisConfigure.builder()
                 .host(host)
@@ -700,6 +700,7 @@ public class TaskExercise implements Runnable{
                 .tessngChannel(Constants.ChannelBuilder.buildTaskDataChannel(username, taskId.intValue()))
                 .heartChannel(Constants.ChannelBuilder.buildTaskStatusChannel(username, taskId.intValue()))
                 .mainCarChannel(dataChannel)
+                .mvCarChannel(mvCarChannel)
                 .build();
 
         TessStartParam data = TessStartParam.builder()
