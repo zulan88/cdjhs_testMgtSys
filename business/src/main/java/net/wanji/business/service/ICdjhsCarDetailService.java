@@ -61,4 +61,6 @@ public interface ICdjhsCarDetailService
     public int deleteCdjhsCarDetailById(Long id);
 
     public boolean isUnique(CdjhsCarDetail cdjhsCarDetail);
+
+    public List<CdjhsCarDetail> queryByCondition(CdjhsCarDetail cdjhsCarDetail);
 }

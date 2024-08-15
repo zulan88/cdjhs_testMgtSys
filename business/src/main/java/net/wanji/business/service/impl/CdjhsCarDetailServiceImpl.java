@@ -59,33 +59,7 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
     @Override
     public List<CdjhsCarDetail> selectCdjhsCarDetailList(CdjhsCarDetail cdjhsCarDetail)
     {
-        List<CdjhsCarDetail> cdjhsCarDetails = cdjhsCarDetailMapper.selectCdjhsCarDetailList(cdjhsCarDetail);
-        for(CdjhsCarDetail carDetail: cdjhsCarDetails){
-            //默认状态空闲
-            carDetail.setStatus(CarStatusEnum.IDLE.getStatus());
-            //查询绑定域控是否有上报绑定关系
-            String deviceId = carDetail.getDeviceCode();
-            String key = RedisKeyUtils.getCdjhsYkscResultKey(deviceId);
-            YkscResultDto ykReportInfo = redisCache.getCacheObject(key);
-            if(Objects.nonNull(ykReportInfo)){
-                String username = ykReportInfo.getTeamName();
-                String teamName = cdjhsUserTeamMapper.selectTeamNameByUserName(username);
-                carDetail.setUserName(username);
-                carDetail.setTeamName(Objects.isNull(teamName) ? username : teamName);
-                carDetail.setImageId(ykReportInfo.getImageId());
-                carDetail.setImageName(ykReportInfo.getImageName());
-                carDetail.setMd5(ykReportInfo.getMd5());
-                carDetail.setReportTime(DateUtils.getDateString(new Date(ykReportInfo.getTimestamp())));
-
-                int status = ykReportInfo.getStatus() == 2 && !ExerciseHandler.occupationMap.containsKey(deviceId) ? CarStatusEnum.PREPARE.getStatus() : CarStatusEnum.RUNNING.getStatus();
-                carDetail.setStatus(status);
-            }
-        }
-        if(Objects.nonNull(cdjhsCarDetail.getStatus())){
-            cdjhsCarDetails = cdjhsCarDetails.stream()
-                    .filter(car -> car.getStatus().compareTo(cdjhsCarDetail.getStatus()) == 0)
-                    .collect(Collectors.toList());
-        }
+        List<CdjhsCarDetail> cdjhsCarDetails = queryByCondition(cdjhsCarDetail);
         SysUser user = SecurityUtils.getLoginUser().getUser();
         boolean student = SecurityUtils.isStudent(user);
         if(student){
@@ -155,5 +129,37 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
             return list.isEmpty();
         }
         return list.isEmpty() || (list.size() == 1 && list.get(0).getId().compareTo(cdjhsCarDetail.getId()) == 0);
+    }
+
+    @Override
+    public List<CdjhsCarDetail> queryByCondition(CdjhsCarDetail cdjhsCarDetail) {
+        List<CdjhsCarDetail> cdjhsCarDetails = cdjhsCarDetailMapper.selectCdjhsCarDetailList(cdjhsCarDetail);
+        for(CdjhsCarDetail carDetail: cdjhsCarDetails){
+            //默认状态空闲
+            carDetail.setStatus(CarStatusEnum.IDLE.getStatus());
+            //查询绑定域控是否有上报绑定关系
+            String deviceId = carDetail.getDeviceCode();
+            String key = RedisKeyUtils.getCdjhsYkscResultKey(deviceId);
+            YkscResultDto ykReportInfo = redisCache.getCacheObject(key);
+            if(Objects.nonNull(ykReportInfo)){
+                String username = ykReportInfo.getTeamName();
+                String teamName = cdjhsUserTeamMapper.selectTeamNameByUserName(username);
+                carDetail.setUserName(username);
+                carDetail.setTeamName(Objects.isNull(teamName) ? username : teamName);
+                carDetail.setImageId(ykReportInfo.getImageId());
+                carDetail.setImageName(ykReportInfo.getImageName());
+                carDetail.setMd5(ykReportInfo.getMd5());
+                carDetail.setReportTime(DateUtils.getDateString(new Date(ykReportInfo.getTimestamp())));
+
+                int status = ykReportInfo.getStatus() == 2 && !ExerciseHandler.occupationMap.containsKey(deviceId) ? CarStatusEnum.PREPARE.getStatus() : CarStatusEnum.RUNNING.getStatus();
+                carDetail.setStatus(status);
+            }
+        }
+        if(Objects.nonNull(cdjhsCarDetail.getStatus())){
+            cdjhsCarDetails = cdjhsCarDetails.stream()
+                    .filter(car -> car.getStatus().compareTo(cdjhsCarDetail.getStatus()) == 0)
+                    .collect(Collectors.toList());
+        }
+        return cdjhsCarDetails;
     }
 }
