@@ -39,7 +39,7 @@ public class PlaybackSchedule {
     }
 
     public static void startSendingOnsiteData(String key, List<Tjshape> data) throws BusinessException, IOException {
-        stopSendingData(key);
+        stopSendingDataOnsite(key);
         onsiteMap.put(key, new PlaybackOnsite(key, data));
         log.info("成功创建回放任务{}", key);
     }
