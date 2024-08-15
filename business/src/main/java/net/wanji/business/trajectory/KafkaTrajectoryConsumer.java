@@ -92,6 +92,14 @@ public class KafkaTrajectoryConsumer {
                 log.info("任务-{}的融合数据没有主车:{}", taskId, jsonObject.toString());
                 return;
             }
+            for(ClientSimulationTrajectoryDto dto: data){
+                String role = dto.getRole();
+                String sendTime = dto.getTimestamp();
+                String originTime = dto.getValue().get(0).getGlobalTimeStamp();
+                boolean isMainCar = role.equals(Constants.PartRole.AV);
+                String carName = isMainCar ? "主车" : "背景车";
+                log.info("flink融合数据【{}】数据处理耗时: 【{}】", carName, Long.parseLong(sendTime) - Long.parseLong(originTime));
+            }
 
             toLocalDto.getToLocalThread()
                     .write(participantTrajectories.toJSONString());

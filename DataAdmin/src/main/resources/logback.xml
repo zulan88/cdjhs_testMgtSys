@@ -253,6 +253,18 @@
         <appender-ref ref="sys-user"/>
     </logger>
 
+    <logger name="exercise" level="info">
+        <appender-ref ref="exercise" />
+    </logger>
+
+    <logger name="deviceStatusLog" level="info">
+        <appender-ref ref="deviceStatusLog"/>
+    </logger>
+
+    <logger name="device" level="info">
+        <appender-ref ref="device" />
+    </logger>
+
     <root name="business" level="info">
         <appender-ref ref="business" />
     </root>
@@ -264,16 +276,5 @@
     </root>
     <root name="kafka" level="info">
         <appender-ref ref="kafka" />
-    </root>
-    <root name="device" level="info">
-        <appender-ref ref="device" />
-    </root>
-
-    <root name="exercise" level="info">
-        <appender-ref ref="exercise" />
-    </root>
-
-    <root name="deviceStatusLog" level="info">
-        <appender-ref ref="deviceStatusLog"/>
     </root>
 </configuration> 

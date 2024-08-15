@@ -69,4 +69,6 @@ public interface CdjhsExerciseRecordMapper
 
     public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord);
 
+    public CdjhsExerciseRecord selectMatchedRecordByCondition(CdjhsExerciseRecord cdjhsExerciseRecord);
+
 }

@@ -3,6 +3,8 @@ package net.wanji.common.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+
 /**
  * 读取项目相关配置
  * 
@@ -152,5 +154,9 @@ public class WanjiConfig
     public static String getScenelibPath()
     {
         return getProfile() + "/scenelib";
+    }
+
+    public static String getTaskTracePath(String taskId){
+        return getProfile() + File.separator + "trace" + File.separator + taskId + File.separator;
     }
 }
