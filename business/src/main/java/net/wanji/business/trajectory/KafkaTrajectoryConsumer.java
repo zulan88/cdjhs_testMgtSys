@@ -96,9 +96,7 @@ public class KafkaTrajectoryConsumer {
                 String role = dto.getRole();
                 String sendTime = dto.getTimestamp();
                 String originTime = dto.getValue().get(0).getGlobalTimeStamp();
-                boolean isMainCar = role.equals(Constants.PartRole.AV);
-                String carName = isMainCar ? "主车" : "背景车";
-                log.info("flink融合数据【{}】数据处理耗时: 【{}】", carName, Long.parseLong(sendTime) - Long.parseLong(originTime));
+                log.info("flink融合数据【{}】数据处理耗时: 【{}】", role, Long.parseLong(sendTime) - Long.parseLong(originTime));
             }
 
             toLocalDto.getToLocalThread()

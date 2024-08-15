@@ -129,8 +129,8 @@ public class DeviceStatusReflash {
                     }
                 }
             }
-            log.info("当前在线设备: {}", JSONObject.toJSONString(onlineDevices));
-            log.info("当前空闲设备: {}", JSONObject.toJSONString(idleDevices));
+            log.info("当前在线练习域控: {}", JSONObject.toJSONString(onlineDevices));
+            log.info("当前空闲练习域控: {}", JSONObject.toJSONString(idleDevices));
         }else{
             log.info("当前无在线域控设备");
         }

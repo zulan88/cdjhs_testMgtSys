@@ -823,7 +823,7 @@ public class TaskExercise implements Runnable{
         return buildYKTestStartEnd(dataChannel, tessDataChannel, 0);
     }
 
-    private TestStartReqDto buildYKTestStartEnd(String dataChannel, String tessDataChannel, int taskType){
+    public static TestStartReqDto buildYKTestStartEnd(String dataChannel, String tessDataChannel, int taskType){
         List<TestProtocol> protocols = new ArrayList<>();
         //数据接收-背景车
         TestProtocol receiveProtocol = TestProtocol.builder()
