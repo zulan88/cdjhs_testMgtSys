@@ -288,6 +288,7 @@ public class LabelsController extends BaseController {
             for (TaskCaseVo taskCaseVo : taskCaseVos) {
                 List<String> data = new ArrayList<>();
                 FragmentedScenesDetailVo detailVo = tjFragmentedSceneDetailService.getDetailVo(taskCaseVo.getSceneDetailId(), null);
+                detailVo.setEvaNum(taskCaseVo.getEvaNum());
                 List<String> labels = detailVo.getLabelList();
                 for (String str : labels) {
                     try {

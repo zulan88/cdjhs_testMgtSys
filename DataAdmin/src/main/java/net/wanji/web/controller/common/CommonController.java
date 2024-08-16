@@ -163,6 +163,9 @@ public class CommonController {
                 ajax.put("xodrFile", xodrFile);
                 ajax.put("xoscFile", xoscFile);
                 data.add(ajax);
+                if (xoscFile.equals("")){
+                    return AjaxResult.error("文件上传异常，请检测压缩包中文件格式");
+                }
             }
             return AjaxResult.success(data);
         } catch (Exception e) {

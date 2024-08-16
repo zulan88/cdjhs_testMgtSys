@@ -69,6 +69,8 @@ public class FragmentedScenesDetailVo extends TjFragmentedSceneDetail {
 
     JSONArray referencePoints;
 
+    private String evaNum;
+
     public void setReferencePoints(JSONArray referencePoints) {
         this.referencePoints = referencePoints;
     }
@@ -221,5 +223,13 @@ public class FragmentedScenesDetailVo extends TjFragmentedSceneDetail {
 
     public void setLabelList(List<String> labelList) {
         this.labelList = labelList;
+    }
+
+    public String getEvaNum() {
+        return evaNum;
+    }
+
+    public void setEvaNum(String evaNum) {
+        this.evaNum = evaNum;
     }
 }
