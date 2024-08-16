@@ -94,21 +94,9 @@ public class TaskExercise implements Runnable{
 
     private InteractionFuc interactionFuc;
 
-    private Integer imageLengthThresold;
-
     private CdjhsExerciseRecord record;
 
     private String uniques;
-
-    private String tessIp;
-
-    private Integer tessPort;
-
-    private Double radius;
-
-    private String kafkaTopic;
-
-    private String kafkaHost;
 
     private TimeoutConfig timeoutConfig;
 
@@ -136,20 +124,13 @@ public class TaskExercise implements Runnable{
 
     private Map<Integer, Boolean> sceneEndTriggerMap = new HashMap<>();
 
-    public TaskExercise(Integer imageLengthThresold, CdjhsExerciseRecord record, String uniques, String tessIp, Integer tessPort, Double radius, String kafkaTopic, String kafkaHost,
-                        CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper, RedisCache redisCache,
-                        ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
+    public TaskExercise(CdjhsExerciseRecord record, String uniques, CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper, CdjhsDeviceImageRecordMapper cdjhsDeviceImageRecordMapper,
+                        RedisCache redisCache, ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
                         TestIssueResultListener testIssueResultListener, RestService restService, TjDeviceDetailMapper tjDeviceDetailMapper, RedisMessageListenerContainer redisMessageListenerContainer,
                         KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc,
                         TimeoutConfig timeoutConfig, ParamConfig paramConfig){
-        this.imageLengthThresold = imageLengthThresold;
         this.record = record;
         this.uniques = uniques;
-        this.tessIp = tessIp;
-        this.tessPort = tessPort;
-        this.radius = radius;
-        this.kafkaTopic = kafkaTopic;
-        this.kafkaHost = kafkaHost;
         this.cdjhsExerciseRecordMapper = cdjhsExerciseRecordMapper;
         this.cdjhsDeviceImageRecordMapper = cdjhsDeviceImageRecordMapper;
         this.redisCache = redisCache;
@@ -211,7 +192,7 @@ public class TaskExercise implements Runnable{
                 }
                 log.info("开始对镜像列表长度进行校验...");
                 if(!imageList.contains(mirrorId)){
-                    if(imageList.size() >= imageLengthThresold){
+                    if(imageList.size() >= paramConfig.imageLengthThresold){
                         //镜像清除指令下发 找出镜像列表中下发最早的镜像
                         String image = cdjhsDeviceImageRecordMapper.selectEarliestImage(uniques, imageList.toArray(new String[0]));
                         Integer status = imageDelete(uniques, image);
@@ -268,7 +249,7 @@ public class TaskExercise implements Runnable{
                 return;
             }
             //唤醒仿真
-            int tessStatus = restService.startTessng(tessIp, tessPort, tessStartReq);
+            int tessStatus = restService.startTessng(paramConfig.tessIp, paramConfig.tessPort, tessStartReq);
             if(tessStatus != 1){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("唤醒仿真失败,任务结束");
@@ -323,13 +304,13 @@ public class TaskExercise implements Runnable{
             List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
             toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
                     dataFile.getId(), evaluationKafkaTopic, record.getUserName(),
-                    sceneStartPoints, radius, dataChannel, isCompetition, uniques);
+                    sceneStartPoints, paramConfig.radius, dataChannel, isCompetition, uniques);
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
             String startStrategy = JSONObject.toJSONString(caseStrategy);
-            kafkaProducer.sendMessage(kafkaTopic, startStrategy);
-            log.info("向topic-{}发送数据融合开始策略: {}", kafkaTopic, startStrategy);
+            kafkaProducer.sendMessage(paramConfig.kafkaTopic, startStrategy);
+            log.info("向topic-{}发送数据融合开始策略: {}", paramConfig.kafkaTopic, startStrategy);
             taskStatus = TaskExerciseEnum.FUSION_STRATEGY_IS_ISSUED.getStatus();
             //域控开始任务指令
             TestStartReqDto ykStartReq = buildYKTestStart(dataChannel, tessDataChannel);
@@ -417,7 +398,7 @@ public class TaskExercise implements Runnable{
                     stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
-                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, radius);
+                boolean taskEnd = LongitudeLatitudeUtils.isInCriticalDistance(endPoint, position, paramConfig.radius);
                 if(taskEnd){
                     log.info("主车已到达终点,任务结束");
                     stop(toLocalDto, detail, tessDataChannel);
@@ -437,7 +418,7 @@ public class TaskExercise implements Runnable{
                     Point2D.Double sceneStartPoint = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
                     boolean arrivedSceneStartPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPoint,
                             position,
-                            radius);
+                            paramConfig.radius);
                     if(arrivedSceneStartPoint && !sceneStartTriggerMap.containsKey(sequence)){
                         log.info("是否到达场景{}的开始触发点:{}", sequence, true);
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
@@ -458,7 +439,7 @@ public class TaskExercise implements Runnable{
                     Point2D.Double sceneEndPoint = new Point2D.Double(siteEndPoint.getLongitude(), siteEndPoint.getLatitude());
                     boolean arrivedSceneEndPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneEndPoint,
                             position,
-                            radius);
+                            paramConfig.radius);
                     if(arrivedSceneEndPoint && !sceneEndTriggerMap.containsKey(sequence)){
                         log.info("是否到达场景{}的结束触发点:{}", sequence, true);
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
@@ -557,7 +538,7 @@ public class TaskExercise implements Runnable{
                 data.setNetId(networkId);
                 data.setMainVehiId(mainVehicleId);
 
-                String[] split = kafkaHost.split(":");
+                String[] split = paramConfig.kafkaHost.split(":");
                 String host = split[0].trim();
                 String port = split[1].trim();
                 KafkaTopic kafkaTopic = new KafkaTopic();
@@ -727,7 +708,7 @@ public class TaskExercise implements Runnable{
         //停止数据融合
         CaseStrategy endCaseStrategy = buildCaseStrategy(record.getId().intValue(), 0, detail);
         String endMessage = JSONObject.toJSONString(endCaseStrategy);
-        kafkaProducer.sendMessage(kafkaTopic, endMessage);
+        kafkaProducer.sendMessage(paramConfig.kafkaTopic, endMessage);
         log.info("停止数据融合: {}", endMessage);
         //停止监听kafka和文件记录
         kafkaTrajectoryConsumer.unSubscribe(toLocalDto);
@@ -858,7 +839,7 @@ public class TaskExercise implements Runnable{
 
     private void closeSimulationServer(){
         TessStopReq tessStopReq = buildTessStopReq(Collections.singletonList(String.valueOf(record.getId())), null);
-        boolean isClosed = restService.stopTessng(tessIp, tessPort, tessStopReq);
+        boolean isClosed = restService.stopTessng(paramConfig.tessIp, paramConfig.tessPort, tessStopReq);
         log.info("关闭仿真{}", isClosed ? "成功" : "失败");
     }
 

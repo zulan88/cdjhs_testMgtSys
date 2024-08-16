@@ -116,24 +116,6 @@ public class ExerciseHandler {
     @Autowired
     private ParamConfig paramConfig;
 
-    @Value("${image.length.thresold}")
-    private Integer imageLengthThresold;
-
-    @Value("${tess.ip}")
-    private String tessIp;
-
-    @Value("${tess.port}")
-    private Integer tessPort;
-
-    @Value("${trajectory.radius}")
-    private Double radius;
-
-    @Value("${trajectory.topic}")
-    private String kafkaTopic;
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String kafkaHost;
-
     @Autowired
     private BindingConfig bindingConfig;
 
@@ -221,10 +203,12 @@ public class ExerciseHandler {
 
     public void run(CdjhsExerciseRecord record, String uniques) {
         occupationMap.put(uniques, record.getId());//占用该域控
-        TaskExercise taskExercise = new TaskExercise(imageLengthThresold, record, uniques,
-                tessIp, tessPort, radius, kafkaTopic, kafkaHost, cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
-                redisCache, imageListReportListener, imageDelResultListener, imageIssueResultListener, testIssueResultListener,
-                restService, tjDeviceDetailMapper, redisMessageListenerContainer, kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
+        TaskExercise taskExercise = new TaskExercise(record, uniques,
+                cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
+                redisCache, imageListReportListener, imageDelResultListener,
+                imageIssueResultListener, testIssueResultListener,
+                restService, tjDeviceDetailMapper, redisMessageListenerContainer,
+                kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
                 tjTaskMapper, interactionFuc, timeoutConfig, paramConfig);
         Future<?> future = executor.submit(taskExercise);
         taskThreadMap.put(record.getId(), future);

@@ -26,4 +26,22 @@ public class ParamConfig {
 
     @Value("${redis.channel.simulator}")
     public String simulatorChannel;
+
+    @Value("${image.length.thresold}")
+    public Integer imageLengthThresold;
+
+    @Value("${tess.ip}")
+    public String tessIp;
+
+    @Value("${tess.port}")
+    public Integer tessPort;
+
+    @Value("${trajectory.radius}")
+    public Double radius;
+
+    @Value("${trajectory.topic}")
+    public String kafkaTopic;
+
+    @Value("${spring.kafka.bootstrap-servers}")
+    public String kafkaHost;
 }
