@@ -1,5 +1,6 @@
 package net.wanji.business.service;
 
+import ch.qos.logback.classic.Logger;
 import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.domain.TrafficFlow;
 import net.wanji.business.domain.bo.SaveCustomIndexWeightBo;
@@ -45,9 +46,9 @@ public interface RestService {
      */
     int startServer(String ip, Integer port, TessParam tessParam);
 
-    int startTessng(String ip, Integer port, TessStartReq tessStartReq);
+    int startTessng(String ip, Integer port, TessStartReq tessStartReq, Logger log);
 
-    boolean stopTessng(String ip, Integer port, TessStopReq tessStopReq);
+    boolean stopTessng(String ip, Integer port, TessStopReq tessStopReq, Logger log);
 
     String queryTessStatus(String ip, Integer port, String taskId, String status, Integer count);
 

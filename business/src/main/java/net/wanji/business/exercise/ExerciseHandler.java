@@ -1,10 +1,12 @@
 package net.wanji.business.exercise;
 
+import ch.qos.logback.classic.Logger;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.tess.ParamConfig;
+import net.wanji.business.exercise.enums.LogTypeEnum;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.listener.ImageDelResultListener;
 import net.wanji.business.listener.ImageIssueResultListener;
@@ -203,13 +205,14 @@ public class ExerciseHandler {
 
     public void run(CdjhsExerciseRecord record, String uniques) {
         occupationMap.put(uniques, record.getId());//占用该域控
+        Logger logger = AppenderManager.createAppender(record.getId(), LogTypeEnum.COMMAND.getName(), record.getIsCompetition() == 1);
         TaskExercise taskExercise = new TaskExercise(record, uniques,
                 cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,
                 redisCache, imageListReportListener, imageDelResultListener,
                 imageIssueResultListener, testIssueResultListener,
                 restService, tjDeviceDetailMapper, redisMessageListenerContainer,
                 kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
-                tjTaskMapper, interactionFuc, timeoutConfig, paramConfig);
+                tjTaskMapper, interactionFuc, timeoutConfig, paramConfig, logger);
         Future<?> future = executor.submit(taskExercise);
         taskThreadMap.put(record.getId(), future);
     }

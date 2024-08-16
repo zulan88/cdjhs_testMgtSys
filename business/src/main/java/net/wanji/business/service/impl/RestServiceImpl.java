@@ -194,23 +194,23 @@ public class RestServiceImpl implements RestService {
     }
 
     @Override
-    public int startTessng(String ip, Integer port, TessStartReq tessStartReq) {
+    public int startTessng(String ip, Integer port, TessStartReq tessStartReq, ch.qos.logback.classic.Logger log) {
         String resultUrl = ip + ":" + port + startTessngUrl;
-        log.info("============================== tessServerUrl：{}", resultUrl);
+        log.info("唤醒仿真请求url: {}", resultUrl);
         try {
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<TessStartReq> resultHttpEntity = new HttpEntity<>(tessStartReq, httpHeaders);
-            log.info("============================== tessServerUrl：{}", JSONObject.toJSONString(tessStartReq));
+            log.info("唤醒仿真请求参数: {}", JSONObject.toJSONString(tessStartReq));
             ResponseEntity<String> response =
                     restTemplate.exchange(resultUrl, HttpMethod.POST, resultHttpEntity, String.class);
             if (response.getStatusCodeValue() == 200) {
                 JSONObject result = JSONObject.parseObject(response.getBody(), JSONObject.class);
                 assert result != null;
-                log.info("============================== tess server start result:{}", result.toJSONString());
+                log.info("唤醒仿真接口返回参数 :{}", result.toJSONString());
                 if (result.getIntValue("status") != 200) {
                     String msg = result.get("message").toString();
-                    log.error("远程服务调用失败:{}", msg);
+                    log.error("唤醒仿真失败:{}", msg);
                     if (msg.contains("service is overloaded")) {
                         return 2;
                     }
@@ -221,20 +221,20 @@ public class RestServiceImpl implements RestService {
                     return 1;
                 }
                 String message = result.getJSONObject("data").getString("message");
-                log.error("创建仿真任务失败: {}",message);
+                log.error("唤醒仿真失败: {}",message);
                 return 0;
             }
         } catch (Exception e) {
-            log.error("远程服务调用失败:{}", e.getMessage());
+            log.error("唤醒仿真失败", e);
         }
         return 0;
     }
 
     @Override
-    public boolean stopTessng(String ip, Integer port, TessStopReq tessStopReq) {
+    public boolean stopTessng(String ip, Integer port, TessStopReq tessStopReq, ch.qos.logback.classic.Logger log) {
         try {
             String resultUrl = ip + ":" + port + stopTessngUrl;
-            log.info("============================== tessServerUrl：{}", resultUrl);
+            log.info("仿真关闭请求url: {}", resultUrl);
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<TessStopReq> resultHttpEntity = new HttpEntity<>(tessStopReq, httpHeaders);
@@ -243,16 +243,16 @@ public class RestServiceImpl implements RestService {
             if (response.getStatusCodeValue() == 200) {
                 JSONObject result = JSONObject.parseObject(response.getBody(), JSONObject.class);
                 assert result != null;
-                log.info("============================== tess server end result:{}", result.toJSONString());
+                log.info("仿真关闭接口返回参数: {}", result.toJSONString());
                 if (result.getIntValue("status") != 200) {
-                    log.error("远程服务调用失败:{}", result.get("message"));
+                    log.error("仿真关闭服务调用失败:{}", result.get("message"));
                     return false;
                 }
                 return true;
             }
             return false;
         }catch (Exception e){
-            e.printStackTrace();
+            log.error("仿真关闭服务调用失败", e);
             return false;
         }
     }

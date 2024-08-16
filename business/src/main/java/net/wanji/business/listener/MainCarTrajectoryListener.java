@@ -1,5 +1,6 @@
 package net.wanji.business.listener;
 
+import ch.qos.logback.classic.Logger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -15,15 +16,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Slf4j
 public class MainCarTrajectoryListener implements MessageListener {
     private static Map<String, LinkedBlockingQueue<String>> queueMap = new ConcurrentHashMap<>();
+    private static Map<String, Logger> loggerMap = new ConcurrentHashMap<>();
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
             String channel = new String(message.getChannel());
             String trajectory = new String(message.getBody());
+            Logger logger = loggerMap.get(channel);
+            if(null != logger){
+                logger.info(trajectory);
+            }
             LinkedBlockingQueue<String> queue = queueMap.get(channel);
             if (null == queue) {
-                add(channel, new LinkedBlockingQueue<>(100));
+                queueMap.put(channel, new LinkedBlockingQueue<>(100));
             }
             queueMap.get(channel).add(trajectory);
         } catch (Exception e) {
@@ -33,12 +39,12 @@ public class MainCarTrajectoryListener implements MessageListener {
         }
     }
 
-    public void add(String channel, LinkedBlockingQueue<String> queue) {
+    public void add(String channel, LinkedBlockingQueue<String> queue, Logger logger) {
         log.info("--------------- channel info start ---------------");
         log.info("add channel[{}] running channel ", channel);
-        queueMap.forEach((k, v) -> log.info("channel[{}] size [{}]", channel, v.size()));
         log.info("---------------- channel info end ----------------");
         queueMap.put(channel, queue);
+        loggerMap.put(channel, logger);
     }
 
     public void remove(String channel) {
@@ -46,6 +52,8 @@ public class MainCarTrajectoryListener implements MessageListener {
         queueMap.remove(channel);
         trajectories.clear();
         trajectories = null;
+
+        loggerMap.remove(channel);
     }
 
     public LinkedBlockingQueue<String> getQueue(String channel) {

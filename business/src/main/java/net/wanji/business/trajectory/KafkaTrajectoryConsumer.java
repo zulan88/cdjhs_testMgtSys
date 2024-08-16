@@ -76,12 +76,15 @@ public class KafkaTrajectoryConsumer {
             topics = { "${trajectory.fusion}" },
             groupId = "#{T(java.lang.String).valueOf(new java.util.Random().nextInt(1000))}")
     public void listen(ConsumerRecord<String, String> record) {
-        JSONObject jsonObject = JSONObject.parseObject(record.value());
+        String value = record.value();
+        JSONObject jsonObject = JSONObject.parseObject(value);
         Integer taskId = jsonObject.getInteger("taskId");
         Integer caseId = jsonObject.getInteger("caseId");
 
         ToLocalDto toLocalDto = queryTolocalDto(taskId, caseId);
         if(Objects.nonNull(toLocalDto)){
+            ch.qos.logback.classic.Logger logger = toLocalDto.getLogger();
+            logger.info(value);
             JSONArray participantTrajectories = jsonObject.getJSONArray("participantTrajectories");
             //数据融合写入文件
             List<ClientSimulationTrajectoryDto> data = participantTrajectories.toJavaList(ClientSimulationTrajectoryDto.class);

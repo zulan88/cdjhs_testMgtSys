@@ -1,7 +1,7 @@
 package net.wanji.business.exercise;
 
+import ch.qos.logback.classic.Logger;
 import com.alibaba.fastjson.JSONObject;
-import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsDeviceImageRecord;
 import net.wanji.business.domain.CdjhsExerciseRecord;
@@ -24,10 +24,7 @@ import net.wanji.business.exercise.dto.simulation.SimulationSceneParticipant;
 import net.wanji.business.exercise.dto.strategy.CaseStrategy;
 import net.wanji.business.exercise.dto.strategy.DeviceConnInfo;
 import net.wanji.business.exercise.dto.strategy.Strategy;
-import net.wanji.business.exercise.enums.CheckResultEnum;
-import net.wanji.business.exercise.enums.OperationTypeEnum;
-import net.wanji.business.exercise.enums.TaskExerciseEnum;
-import net.wanji.business.exercise.enums.TaskStatusEnum;
+import net.wanji.business.exercise.enums.*;
 import net.wanji.business.exercise.utils.SimulationAreaCalculator;
 import net.wanji.business.listener.*;
 import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
@@ -48,6 +45,7 @@ import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.file.FileUploadUtils;
 import net.wanji.common.utils.file.FileUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -62,7 +60,6 @@ import java.util.concurrent.TimeUnit;
  * @author: jenny
  * @create: 2024-06-24 11:21 上午
  */
-@Slf4j(topic = "exercise")
 public class TaskExercise implements Runnable{
     private CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper;
 
@@ -102,6 +99,8 @@ public class TaskExercise implements Runnable{
 
     private ParamConfig paramConfig;
 
+    private Logger log;
+
     private MainCarTrajectoryListener trajectoryListener;
 
     private int sceneIndex = 0;
@@ -128,7 +127,7 @@ public class TaskExercise implements Runnable{
                         RedisCache redisCache, ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
                         TestIssueResultListener testIssueResultListener, RestService restService, TjDeviceDetailMapper tjDeviceDetailMapper, RedisMessageListenerContainer redisMessageListenerContainer,
                         KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc,
-                        TimeoutConfig timeoutConfig, ParamConfig paramConfig){
+                        TimeoutConfig timeoutConfig, ParamConfig paramConfig, Logger logger){
         this.record = record;
         this.uniques = uniques;
         this.cdjhsExerciseRecordMapper = cdjhsExerciseRecordMapper;
@@ -148,6 +147,7 @@ public class TaskExercise implements Runnable{
         this.interactionFuc = interactionFuc;
         this.timeoutConfig = timeoutConfig;
         this.paramConfig = paramConfig;
+        this.log = logger;
         this.taskStatus = TaskExerciseEnum.START_INTERACTION.getStatus();
     }
 
@@ -249,7 +249,7 @@ public class TaskExercise implements Runnable{
                 return;
             }
             //唤醒仿真
-            int tessStatus = restService.startTessng(paramConfig.tessIp, paramConfig.tessPort, tessStartReq);
+            int tessStatus = restService.startTessng(paramConfig.tessIp, paramConfig.tessPort, tessStartReq, log);
             if(tessStatus != 1){
                 record.setCheckResult(CheckResultEnum.FAILURE.getResult());
                 record.setCheckMsg("唤醒仿真失败,任务结束");
@@ -302,9 +302,11 @@ public class TaskExercise implements Runnable{
             // 监听kafka、文件记录
             String evaluationKafkaTopic = Constants.ChannelBuilder.buildTaskEvaluationKafkaTopic(record.getId());
             List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
+            Logger fusionAppender = AppenderManager.createAppender(record.getId(), LogTypeEnum.FUSION_TRAJECTORT.getName(), isCompetition);
             toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
                     dataFile.getId(), evaluationKafkaTopic, record.getUserName(),
-                    sceneStartPoints, paramConfig.radius, dataChannel, isCompetition, uniques);
+                    sceneStartPoints, paramConfig.radius, dataChannel, isCompetition,
+                    uniques, fusionAppender);
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
@@ -474,7 +476,7 @@ public class TaskExercise implements Runnable{
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } catch (Exception e){
-            log.info("正在执行任务的线程捕获到异常");
+            log.info("正在执行任务的线程捕获到异常", e);
             if(taskStatus.compareTo(TaskExerciseEnum.TASK_IS_FINISHED.getStatus()) != 0){
                 forceEnd();
             }
@@ -482,7 +484,6 @@ public class TaskExercise implements Runnable{
             record.setCheckMsg("后台原因");
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-            e.printStackTrace();
         } finally {
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
@@ -490,6 +491,8 @@ public class TaskExercise implements Runnable{
             //删除缓存主车轨迹数据
             String mainCarTrajectoryKey = RedisKeyUtils.getCdjhsMainCarTrajectoryKey(record.getId());
             redisCache.deleteObject(mainCarTrajectoryKey);
+            //自定义appender销毁
+            AppenderManager.destroyAppender(record.getId(), LogTypeEnum.COMMAND.getName());
         }
     }
 
@@ -551,8 +554,7 @@ public class TaskExercise implements Runnable{
                 return restService.createEvaluation(evaluationCreateDto);
             }
         }catch (Exception e){
-            log.info("请求新建评价接口报错");
-            e.printStackTrace();
+            log.info("请求新建评价接口报错", e);
         }
         return null;
     }
@@ -606,8 +608,7 @@ public class TaskExercise implements Runnable{
 
             return restService.createNetwork(networkCreateDto);
         }catch (Exception e){
-            log.info("请求新建路网接口报错");
-            e.printStackTrace();
+            log.info("请求新建路网接口报错", e);
         }
         return null;
     }
@@ -628,7 +629,7 @@ public class TaskExercise implements Runnable{
         String testIssueChannel = RedisKeyUtils.getTestIssueChannel(uniques);
         redisCache.publishMessage(testIssueChannel, testIssue);
         taskStatus = TaskExerciseEnum.TASK_ISSUED.getStatus();
-        log.info("给设备{}下发练习任务信息成功", uniques);
+        log.info("给设备{}下发练习任务信息成功: {}", uniques, testMessage);
         return testIssueResultListener.awaitingMessage(uniques, timeoutConfig.taskIssue, TimeUnit.MINUTES);
     }
 
@@ -712,6 +713,8 @@ public class TaskExercise implements Runnable{
         log.info("停止数据融合: {}", endMessage);
         //停止监听kafka和文件记录
         kafkaTrajectoryConsumer.unSubscribe(toLocalDto);
+        //删除融合数据appender
+        AppenderManager.destroyAppender(record.getId(), LogTypeEnum.FUSION_TRAJECTORT.getName());
     }
 
     private TessStartReq buildTessStartReq(String username, Long taskId, String dataChannel, String networkId,
@@ -760,7 +763,8 @@ public class TaskExercise implements Runnable{
 
     private LinkedBlockingQueue<String> getAVRedisQueue(String dataChannel) {
         trajectoryListener = new MainCarTrajectoryListener();
-        trajectoryListener.add(dataChannel, new LinkedBlockingQueue<>(100));
+        Logger mainTrajectoryLogger = AppenderManager.createAppender(record.getId(), LogTypeEnum.MAIN_CAR_TRAJECTORY.getName(), record.getIsCompetition() == 1);
+        trajectoryListener.add(dataChannel, new LinkedBlockingQueue<>(100), mainTrajectoryLogger);
         LinkedBlockingQueue<String> queue = trajectoryListener.getQueue(dataChannel);
         redisMessageListenerContainer.addMessageListener(trajectoryListener, new ChannelTopic(dataChannel));
         return queue;
@@ -783,8 +787,8 @@ public class TaskExercise implements Runnable{
     private void stopListenMainTrajectory(String dataChannel) {
         //停止监听主车数据通道
         redisMessageListenerContainer.removeMessageListener(trajectoryListener, new ChannelTopic(dataChannel));
-        //删除消息队列
         trajectoryListener.remove(dataChannel);
+        AppenderManager.destroyAppender(record.getId(), LogTypeEnum.MAIN_CAR_TRAJECTORY.getName());
         log.info("停止监听主车轨迹通道: {}", dataChannel);
     }
 
@@ -839,7 +843,7 @@ public class TaskExercise implements Runnable{
 
     private void closeSimulationServer(){
         TessStopReq tessStopReq = buildTessStopReq(Collections.singletonList(String.valueOf(record.getId())), null);
-        boolean isClosed = restService.stopTessng(paramConfig.tessIp, paramConfig.tessPort, tessStopReq);
+        boolean isClosed = restService.stopTessng(paramConfig.tessIp, paramConfig.tessPort, tessStopReq, log);
         log.info("关闭仿真{}", isClosed ? "成功" : "失败");
     }
 
