@@ -30,7 +30,7 @@ public class CaseQueryDto {
     private Integer id;
 
     @ApiModelProperty(value = "用例文件夹", example = "1")
-    @NotBlank(message = "请选择所属文件夹")
+//    @NotBlank(message = "请选择所属文件夹")
     private String treeId;
 
     @ApiModelProperty(value = "用例编号", example = "CASE20230925000")
