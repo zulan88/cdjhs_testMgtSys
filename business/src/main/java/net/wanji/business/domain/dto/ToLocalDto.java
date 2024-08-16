@@ -1,5 +1,6 @@
 package net.wanji.business.domain.dto;
 
+import ch.qos.logback.classic.Logger;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
@@ -36,6 +37,7 @@ public class ToLocalDto {
     private String mainChannel;
     private boolean isCompetition;
     private String deviceId;
+    private Logger logger;
 
     public ToLocalDto(Integer taskId, Integer caseId) {
         this.taskId = taskId;
@@ -59,7 +61,7 @@ public class ToLocalDto {
     public ToLocalDto(Integer taskId, Integer caseId, String fileName,
                       Integer fileId, String kafkaTopic, String username,
                       List<StartPoint> startPoints, double radius,
-                      String mainChannel, boolean isCompetition, String deviceId) {
+                      String mainChannel, boolean isCompetition, String deviceId, Logger logger) {
         this.taskId = taskId;
         this.caseId = caseId;
         this.fileName = fileName;
@@ -72,6 +74,7 @@ public class ToLocalDto {
         this.mainChannel = mainChannel;
         this.isCompetition = isCompetition;
         this.deviceId = deviceId;
+        this.logger = logger;
     }
 
     @Override

@@ -12,6 +12,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.encoder.Encoder;
+import net.wanji.business.exercise.enums.LogTypeEnum;
 import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.utils.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -28,13 +29,13 @@ public class AppenderManager {
     private static final String appenderNameTemplate = "FileAppender-{}-{}";
 
     // 根据 taskId 创建 appender
-    public static Logger createAppender(String taskId, String logTypeName) {
+    public static Logger createAppender(Long taskId, String logTypeName, boolean isCompetition) {
         String loggerName = StringUtils.format(loggerNameTemplate, taskId, logTypeName);
         String appenderName = StringUtils.format(appenderNameTemplate, taskId, logTypeName);
         if (appenderMap.containsKey(appenderName)) {
             return loggerContext.getLogger(loggerName); // 已经存在，不需要重新创建
         }
-        String taskTracePath = WanjiConfig.getTaskTracePath(taskId);
+        String taskTracePath = WanjiConfig.getTaskTracePath(taskId, isCompetition);
         String filePath = StringUtils.format(filePathTemplate, taskTracePath, logTypeName);
         FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
         fileAppender.setName(appenderName);
@@ -47,6 +48,9 @@ public class AppenderManager {
         Logger logger = loggerContext.getLogger(loggerName);
         logger.setLevel(Level.INFO);
         logger.addAppender(fileAppender);
+        if(!logTypeName.equals(LogTypeEnum.COMMAND.getName())){
+            logger.setAdditive(false);
+        }
         appenderMap.put(appenderName, fileAppender);
         return logger;
     }
@@ -61,7 +65,7 @@ public class AppenderManager {
     }
 
     // 根据 taskId 销毁 appender
-    public static void destroyAppender(String taskId, String logTypeName) {
+    public static void destroyAppender(Long taskId, String logTypeName) {
         String loggerName = StringUtils.format(loggerNameTemplate, taskId, logTypeName);
         String appenderName = StringUtils.format(appenderNameTemplate, taskId, logTypeName);
         Appender<ILoggingEvent> appender = appenderMap.remove(appenderName);

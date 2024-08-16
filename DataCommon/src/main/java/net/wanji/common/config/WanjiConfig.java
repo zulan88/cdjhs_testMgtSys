@@ -156,7 +156,11 @@ public class WanjiConfig
         return getProfile() + "/scenelib";
     }
 
-    public static String getTaskTracePath(String taskId){
-        return getProfile() + File.separator + "trace" + File.separator + taskId + File.separator;
+    public static String getTaskTracePath(Long taskId, boolean isCompetition){
+        String subDir = isCompetition ? "competition" : "exercise";
+        return getProfile() + File.separator
+                + "trace" + File.separator
+                + subDir + File.separator
+                + taskId + File.separator;
     }
 }
