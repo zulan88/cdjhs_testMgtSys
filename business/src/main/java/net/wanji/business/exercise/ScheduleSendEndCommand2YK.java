@@ -81,8 +81,7 @@ public class ScheduleSendEndCommand2YK {
                 }
             }
         }catch (Exception e){
-            log.error("定时给实车域控下发结束指令报错");
-            e.printStackTrace();
+            log.error("定时给实车域控下发结束指令报错", e);
         }
     }
 
@@ -126,8 +125,7 @@ public class ScheduleSendEndCommand2YK {
             }
 
         }catch (Exception e){
-            log.error("定时给练习域控下发结束指令报错");
-            e.printStackTrace();
+            log.error("定时给练习域控下发结束指令报错", e);
         }
     }
 
