@@ -190,46 +190,49 @@ public class TjScenelibServiceImpl extends ServiceImpl<TjScenelibMapper, TjScene
 
         //读文件， 拼trajectoryDetail routingFile
         Map<String, List<TrajectoryDetailBo>> map = new HashMap<>();
-        List<CdShape> analyze = analyzeOpenX.cdParseXML(xoscPath);
-
-        String proj = projca;
-        if (tjScenelib.getGeojsonPath().equals("10")) {
-            proj = projtj;
-        }
-
-        String finalProj = proj;
-        analyze.forEach(item -> {
-            List<TrajectoryDetailBo> trajectoryDetailBos = new ArrayList<>();
-            long index = 1;
-            for (WoPostion wo : item.getWoPostionList()) {
-                JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), finalProj, Double.parseDouble(wo.getH()));
-                TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
-                trajectoryDetailBo.setLane("0");
-                trajectoryDetailBo.setLongitude(retotrans.getString("longitude"));
-                trajectoryDetailBo.setLatitude(retotrans.getString("latitude"));
-                trajectoryDetailBo.setSpeed(0.0);
-                trajectoryDetailBo.setHeading(retotrans.getString("degree"));
-                Double time = Double.valueOf(wo.getTime());
-                if (time < 0) {
-//                    System.out.println("时间"+item.getDuration());
-                    continue;
-                }
-                trajectoryDetailBo.setTime(wo.getTime());
-                trajectoryDetailBo.setType("pathway");
-                trajectoryDetailBo.setModel(wo.getType());
-                trajectoryDetailBo.setFrameId(index);
-                if (index == 1) {
-                    trajectoryDetailBo.setType("start");
-                    trajectoryDetailBos.add(trajectoryDetailBo);
-                } else {
-                    trajectoryDetailBos.add(trajectoryDetailBo);
-                }
-                index++;
-
+        try {
+            List<CdShape> analyze = analyzeOpenX.cdParseXML(xoscPath);
+            String proj = projca;
+            if (tjScenelib.getGeojsonPath().equals("10")) {
+                proj = projtj;
             }
-            map.put(item.getId(), trajectoryDetailBos);
 
-        });
+            String finalProj = proj;
+            analyze.forEach(item -> {
+                List<TrajectoryDetailBo> trajectoryDetailBos = new ArrayList<>();
+                long index = 1;
+                for (WoPostion wo : item.getWoPostionList()) {
+                    JSONObject retotrans = toBuildOpenXUtil.retotrans(Double.parseDouble(wo.getX()), Double.parseDouble(wo.getY()), finalProj, Double.parseDouble(wo.getH()));
+                    TrajectoryDetailBo trajectoryDetailBo = new TrajectoryDetailBo();
+                    trajectoryDetailBo.setLane("0");
+                    trajectoryDetailBo.setLongitude(retotrans.getString("longitude"));
+                    trajectoryDetailBo.setLatitude(retotrans.getString("latitude"));
+                    trajectoryDetailBo.setSpeed(0.0);
+                    trajectoryDetailBo.setHeading(retotrans.getString("degree"));
+                    Double time = Double.valueOf(wo.getTime());
+                    if (time < 0) {
+//                    System.out.println("时间"+item.getDuration());
+                        continue;
+                    }
+                    trajectoryDetailBo.setTime(wo.getTime());
+                    trajectoryDetailBo.setType("pathway");
+                    trajectoryDetailBo.setModel(wo.getType());
+                    trajectoryDetailBo.setFrameId(index);
+                    if (index == 1) {
+                        trajectoryDetailBo.setType("start");
+                        trajectoryDetailBos.add(trajectoryDetailBo);
+                    } else {
+                        trajectoryDetailBos.add(trajectoryDetailBo);
+                    }
+                    index++;
+
+                }
+                map.put(item.getId(), trajectoryDetailBos);
+
+            });
+        } catch (Exception e) {
+            throw new BusinessException("解析openx文件失败");
+        }
 
         final int[] i = {2};
         CaseTrajectoryDetailBo caseTrajectoryDetailBo = new CaseTrajectoryDetailBo();

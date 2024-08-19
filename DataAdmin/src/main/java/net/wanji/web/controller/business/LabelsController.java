@@ -211,7 +211,7 @@ public class LabelsController extends BaseController {
     public AjaxResult add(@RequestBody Label label) {
         labelsService.insertLabels(label);
         sceneLabelMap.reset(2l);
-        return AjaxResult.success(label.getId());
+        return AjaxResult.success(label);
     }
 
     @ApiOperationSort(5)
@@ -220,7 +220,7 @@ public class LabelsController extends BaseController {
     public AjaxResult edit(@RequestBody Label label) {
         labelsService.updateLabels(label);
         sceneLabelMap.reset(2l);
-        return AjaxResult.success();
+        return AjaxResult.success(label);
     }
 
     @ApiOperationSort(6)

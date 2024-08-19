@@ -169,7 +169,7 @@ public class ScenelibController extends BaseController {
     public AjaxResult saveTreeType(@Validated @RequestBody TreeTypeDto treeTypeDto) throws BusinessException {
         return scenelibTreeService.saveSceneTreeType(treeTypeDto)
                 ? AjaxResult.success("成功")
-                : AjaxResult.error("失败");
+                : AjaxResult.error("操作失败");
     }
 
     //@PreAuthorize("@ss.hasPermi('sceneBase:deleteTreeType')")
@@ -177,7 +177,7 @@ public class ScenelibController extends BaseController {
     public AjaxResult deleteTreeType(@PathVariable("dictCode") Long dictCode) throws BusinessException {
         return scenelibTreeService.deleteTreeType(dictCode)
                 ? AjaxResult.success("成功")
-                : AjaxResult.error("失败");
+                : AjaxResult.error("操作失败");
     }
 
     //@PreAuthorize("@ss.hasPermi('sceneBase:selectTree')")
@@ -200,7 +200,7 @@ public class ScenelibController extends BaseController {
     public AjaxResult saveSceneTree(@Validated @RequestBody TjFragmentedScenesDto fragmentedScenesDto) {
         return scenelibTreeService.saveSceneTree(fragmentedScenesDto)
                 ? AjaxResult.success("成功")
-                : AjaxResult.error("失败");
+                : AjaxResult.error("操作失败");
     }
 
     //@PreAuthorize("@ss.hasPermi('sceneBase:deleteScene')")
