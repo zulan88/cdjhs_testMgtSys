@@ -146,8 +146,8 @@ public class TaskController extends BaseController {
     public Map<String, Object> pageList(@Validated @RequestBody TaskDto taskDto, HttpServletRequest request) throws BusinessException {
         //taskDto.setCreatedBy(SecurityUtils.getUsername());
         Map<String, Object> result = new HashMap<>();
-        Map<String, Long> countMap = tjTaskService.selectCount(taskDto);
-        result.put("statistics", countMap);
+//        Map<String, Long> countMap = tjTaskService.selectCount(taskDto);
+//        result.put("statistics", countMap);
 
         PageHelper.startPage(taskDto.getPageNum(), taskDto.getPageSize());
         TableDataInfo tableDataInfo = new TableDataInfo();
