@@ -24,6 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="carCode != null  and carCode != ''"> and car_code = #{carCode}</if>
             <if test="deviceCode != null  and deviceCode != ''"> and device_code = #{deviceCode}</if>
         </where>
+        order by create_time desc
     </select>
 
     <select id="check" resultMap="CdjhsCarDetailResult">
