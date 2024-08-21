@@ -47,6 +47,8 @@ public interface TjTaskService extends IService<TjTask> {
      */
     List<TaskListVo> pageList(TaskDto in);
 
+    List<TaskListVo> pageListWeb(TaskDto in);
+
     /**
      * 查询任务用例
      * @param taskId

@@ -153,7 +153,7 @@ public class TaskController extends BaseController {
         TableDataInfo tableDataInfo = new TableDataInfo();
         tableDataInfo.setCode(HttpStatus.SUCCESS);
         tableDataInfo.setMsg("查询成功");
-        List<TaskListVo> list = tjTaskService.pageList(taskDto);
+        List<TaskListVo> list = tjTaskService.pageListWeb(taskDto);
         tableDataInfo.setData(list);
         tableDataInfo.setTotal(new PageInfo(list).getTotal());
         result.put("tableData", tableDataInfo);

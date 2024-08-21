@@ -279,6 +279,49 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         return pageList;
     }
 
+    @Override
+    public List<TaskListVo> pageListWeb(TaskDto in) {
+        QueryWrapper<TjTask> queryWrapper = new QueryWrapper<>();
+        if (in.getTaskCode() != null && !in.getTaskCode().isEmpty()){
+            queryWrapper.eq("task_code", in.getTaskCode());
+        }
+        if (in.getClient() != null && !in.getClient().isEmpty()){
+            queryWrapper.eq("client", in.getClient());
+        }
+        if (in.getConsigner() != null && !in.getConsigner().isEmpty()){
+            queryWrapper.eq("consigner", in.getConsigner());
+        }
+        if (in.getStartCreateTime() != null){
+            queryWrapper.ge("create_time", in.getStartCreateTime());
+        }
+        if (in.getEndCreateTime() != null){
+            queryWrapper.le("create_time", in.getEndCreateTime());
+        }
+        if (in.getTestType() != null && !in.getTestType().isEmpty()){
+            queryWrapper.eq("test_type", in.getTestType());
+        }
+        if (in.getStatus() != null && !in.getStatus().isEmpty()){
+            queryWrapper.eq("status", in.getStatus());
+        }
+        if (in.getMapId() != null){
+            queryWrapper.eq("map_id", in.getMapId());
+        }
+        List<TjTask> tasks = tjTaskMapper.selectList(queryWrapper);
+        List<TaskListVo> pageList = tasks.stream().map(task -> {
+            TaskListVo taskVo = new TaskListVo();
+            BeanUtils.copyBeanProp(taskVo, task);
+            // 测试类型名称
+            taskVo.setTestTypeName(dictDataService.selectDictLabel(SysType.TEST_TYPE, taskVo.getTestType()));
+            // 任务状态
+            taskVo.setStatusName(TaskStatusEnum.getValueByCode(taskVo.getStatus()));
+            // 已完成用例
+            taskVo.setFinishedCaseCount((int) CollectionUtils.emptyIfNull(taskVo.getTaskCaseVos()).stream()
+                    .filter(t -> TaskCaseStatusEnum.FINISHED.getCode().equals(t.getStatus())).count());
+            return taskVo;
+        }).collect(Collectors.toList());
+        return pageList;
+    }
+
     private List<Map<String, Object>> getTaskRecords(TaskListVo taskVo) {
         List<Map<String, Object>> records = taskCaseRecordService.selectTaskRecordInfo(
                 taskVo.getId(), taskVo.getSelectedRecordId());
