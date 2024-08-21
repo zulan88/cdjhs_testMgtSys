@@ -12,6 +12,7 @@ import net.wanji.business.domain.vo.TaskListVo;
 import net.wanji.business.entity.TjTask;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.common.core.domain.SimpleSelect;
+import net.wanji.common.core.page.TableDataInfo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,7 +48,7 @@ public interface TjTaskService extends IService<TjTask> {
      */
     List<TaskListVo> pageList(TaskDto in);
 
-    List<TaskListVo> pageListWeb(TaskDto in);
+    TableDataInfo pageListWeb(TaskDto in);
 
     /**
      * 查询任务用例

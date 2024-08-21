@@ -150,12 +150,7 @@ public class TaskController extends BaseController {
 //        result.put("statistics", countMap);
 
         PageHelper.startPage(taskDto.getPageNum(), taskDto.getPageSize());
-        TableDataInfo tableDataInfo = new TableDataInfo();
-        tableDataInfo.setCode(HttpStatus.SUCCESS);
-        tableDataInfo.setMsg("查询成功");
-        List<TaskListVo> list = tjTaskService.pageListWeb(taskDto);
-        tableDataInfo.setData(list);
-        tableDataInfo.setTotal(new PageInfo(list).getTotal());
+        TableDataInfo tableDataInfo = tjTaskService.pageListWeb(taskDto);
         result.put("tableData", tableDataInfo);
         // 添加测试报告的跳转外链
         result.put("testReportOuterChain", tjTaskService.getTestReportOuterChain(request));

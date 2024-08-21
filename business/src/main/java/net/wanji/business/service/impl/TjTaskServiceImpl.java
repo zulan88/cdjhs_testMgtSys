@@ -61,6 +61,7 @@ import net.wanji.business.trajectory.RoutingPlanConsumer;
 import net.wanji.business.util.CustomMergeStrategy;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.TrajectoryValueDto;
+import net.wanji.common.constant.HttpStatus;
 import net.wanji.common.core.domain.SimpleSelect;
 import net.wanji.common.core.domain.entity.SysDictData;
 import net.wanji.common.core.page.TableDataInfo;
@@ -280,7 +281,7 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
     }
 
     @Override
-    public List<TaskListVo> pageListWeb(TaskDto in) {
+    public TableDataInfo pageListWeb(TaskDto in) {
         QueryWrapper<TjTask> queryWrapper = new QueryWrapper<>();
         if (in.getTaskCode() != null && !in.getTaskCode().isEmpty()){
             queryWrapper.eq("task_code", in.getTaskCode());
@@ -306,6 +307,10 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         if (in.getMapId() != null){
             queryWrapper.eq("map_id", in.getMapId());
         }
+        if (in.getLastStatus() != null && !in.getLastStatus().isEmpty()){
+            queryWrapper.eq("last_status", in.getLastStatus());
+        }
+        queryWrapper.orderByDesc("create_time");
         List<TjTask> tasks = tjTaskMapper.selectList(queryWrapper);
         List<TaskListVo> pageList = tasks.stream().map(task -> {
             TaskListVo taskVo = new TaskListVo();
@@ -319,7 +324,12 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                     .filter(t -> TaskCaseStatusEnum.FINISHED.getCode().equals(t.getStatus())).count());
             return taskVo;
         }).collect(Collectors.toList());
-        return pageList;
+        TableDataInfo tableDataInfo = new TableDataInfo();
+        tableDataInfo.setCode(HttpStatus.SUCCESS);
+        tableDataInfo.setMsg("查询成功");
+        tableDataInfo.setData(pageList);
+        tableDataInfo.setTotal(new PageInfo(tasks).getTotal());
+        return tableDataInfo;
     }
 
     private List<Map<String, Object>> getTaskRecords(TaskListVo taskVo) {
