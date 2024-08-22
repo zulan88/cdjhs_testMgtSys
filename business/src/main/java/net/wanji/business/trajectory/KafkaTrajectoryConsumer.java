@@ -121,7 +121,7 @@ public class KafkaTrajectoryConsumer {
             toLocalDto.calculate(position);
             List<StartPoint> sceneStartPoints = toLocalDto.getStartPoints();
             //比赛任务推送孪生
-            int index = toLocalDto.getSequence() > -1 ? toLocalDto.getSequence(): 0;
+            int index = toLocalDto.getSequence() > -1 ? toLocalDto.getSequence() : 0;
             boolean qualified = toLocalDto.isCompetition();
             if(qualified){
                 String sceneName = sceneStartPoints.get(index).getName();

@@ -85,7 +85,7 @@ public class RealPlaybackDomain {
                 //当前场景
                 if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
                     for(int i = sequence + 1; i < Math.min(sequence + 5, sceneStartPoints.size()); i++){
-                        StartPoint startPoint = sceneStartPoints.get(sequence);
+                        StartPoint startPoint = sceneStartPoints.get(i);
                         Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
                         boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, radius);
                         if(arrivedSceneStartPos){
