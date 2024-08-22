@@ -5,7 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.service.record.impl.FileWriteRunnable;
+import net.wanji.business.util.LongitudeLatitudeUtils;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +38,6 @@ public class ToLocalDto {
     private int sequence;//当前场景
     private String mainChannel;
     private boolean isCompetition;
-    private String deviceId;
     private Logger logger;
 
     public ToLocalDto(Integer taskId, Integer caseId) {
@@ -61,7 +62,7 @@ public class ToLocalDto {
     public ToLocalDto(Integer taskId, Integer caseId, String fileName,
                       Integer fileId, String kafkaTopic, String username,
                       List<StartPoint> startPoints, double radius,
-                      String mainChannel, boolean isCompetition, String deviceId, Logger logger) {
+                      String mainChannel, boolean isCompetition, Logger logger) {
         this.taskId = taskId;
         this.caseId = caseId;
         this.fileName = fileName;
@@ -69,11 +70,10 @@ public class ToLocalDto {
         this.kafkaTopic = kafkaTopic;
         this.username = username;
         this.startPoints = startPoints;
-        this.sequence = 0;
+        this.sequence = -1;//起点
         this.radius = radius;
         this.mainChannel = mainChannel;
         this.isCompetition = isCompetition;
-        this.deviceId = deviceId;
         this.logger = logger;
     }
 
@@ -95,5 +95,20 @@ public class ToLocalDto {
 
     public void switchScene(){
         sequence++;
+    }
+
+    public void calculate(Point2D.Double position){
+        if(!startPoints.isEmpty() && sequence < startPoints.size()){
+            for(int i = sequence + 1; i < Math.min(sequence + 5, startPoints.size()); i++){
+                StartPoint startPoint = startPoints.get(i);
+                Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
+                boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, radius);
+                if(arrivedSceneStartPos){
+                    triggeredScenes.add(startPoint.getSequence());
+                    sequence = i;
+                    break;
+                }
+            }
+        }
     }
 }

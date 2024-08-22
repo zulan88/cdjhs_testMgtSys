@@ -1,4 +1,4 @@
-package net.wanji.business.exercise;
+package net.wanji.business.exercise.dto.luansheng;
 
 import net.wanji.common.common.TrajectoryValueDto;
 
@@ -25,6 +25,26 @@ public class ParticipantTrajectoryDto {
     private Long timestamp;
 
     private String sceneName;
+
+    private List<SceneInfo> scenes;
+
+    private String duration;
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
+    public List<SceneInfo> getScenes() {
+        return scenes;
+    }
+
+    public void setScenes(List<SceneInfo> scenes) {
+        this.scenes = scenes;
+    }
 
     public String getTimestampType() {
         return timestampType;

@@ -50,7 +50,7 @@ public class RealPlaybackDomain {
         this.running = true;
         this.index = 0;
         this.length = trajectories.size();
-        this.sequence = 0;
+        this.sequence = -1;
         this.sceneStartPoints = sceneStartPoints;
         this.radius = radius;
         this.triggeredScenes = new ArrayList<>();
@@ -84,18 +84,20 @@ public class RealPlaybackDomain {
                 Point2D.Double position = new Point2D.Double(longitude, latitude);
                 //当前场景
                 if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
-                    StartPoint startPoint = sceneStartPoints.get(sequence);
-                    Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
-                    boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, radius);
-                    if(arrivedSceneStartPos){
-                        triggeredScenes.add(startPoint.getSequence());
-                        sequence++;
+                    for(int i = sequence + 1; i < Math.min(sequence + 5, sceneStartPoints.size()); i++){
+                        StartPoint startPoint = sceneStartPoints.get(sequence);
+                        Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
+                        boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, radius);
+                        if(arrivedSceneStartPos){
+                            triggeredScenes.add(startPoint.getSequence());
+                            sequence = i;
+                            break;
+                        }
                     }
                 }
-
                 RealWebsocketMessage msg = new RealWebsocketMessage(RedisMessageType.TRAJECTORY, sceneStartPoints, data, duration, triggeredScenes);
                 WebSocketManage.sendInfo(key, JSONObject.toJSONString(msg));
-                index ++;
+                index++;
             } catch (Exception e) {
                 e.printStackTrace();
             }

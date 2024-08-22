@@ -103,7 +103,7 @@ public class TaskExercise implements Runnable{
 
     private MainCarTrajectoryListener trajectoryListener;
 
-    private int sceneIndex = 0;
+    private int current = -1;
 
     private long firstFrameTimestamp;
 
@@ -305,8 +305,7 @@ public class TaskExercise implements Runnable{
             Logger fusionAppender = AppenderManager.createAppender(record.getId(), LogTypeEnum.FUSION_TRAJECTORT.getName(), isCompetition);
             toLocalDto = new ToLocalDto(record.getId().intValue(), 0, dataFile.getFileName(),
                     dataFile.getId(), evaluationKafkaTopic, record.getUserName(),
-                    sceneStartPoints, paramConfig.radius, dataChannel, isCompetition,
-                    uniques, fusionAppender);
+                    sceneStartPoints, paramConfig.radius, dataChannel, isCompetition, fusionAppender);
             kafkaTrajectoryConsumer.subscribe(toLocalDto);
             //向kafka发送数据融合策略
             CaseStrategy caseStrategy = buildCaseStrategy(record.getId().intValue(), 1, detail);
@@ -411,56 +410,64 @@ public class TaskExercise implements Runnable{
                     stop(toLocalDto, detail, tessDataChannel);
                     break;
                 }
-                //判断主车位置是否到达场景起点和场景终点
-                if(!sceneSitePoints.isEmpty() && sceneIndex < sceneSitePoints.size()){
-                    SceneSitePoint sceneSitePoint = sceneSitePoints.get(sceneIndex);
-                    ScenePos startPoint = sceneSitePoint.getStartPoint();
-                    ScenePos siteEndPoint = sceneSitePoint.getEndPoint();
-                    Integer sequence = sceneSitePoint.getSequence();
-                    Point2D.Double sceneStartPoint = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
-                    boolean arrivedSceneStartPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPoint,
-                            position,
-                            paramConfig.radius);
-                    if(arrivedSceneStartPoint && !sceneStartTriggerMap.containsKey(sequence)){
-                        log.info("是否到达场景{}的开始触发点:{}", sequence, true);
+                //判断主车位置是否到达场景起点和场景终点 支持非连续场景触发，连续跳过场景不能超过3个
+                if(!sceneSitePoints.isEmpty() && current < sceneSitePoints.size()){
+                    int waiting = current;
+                    for(int i = current + 1; i < Math.min(sceneSitePoints.size(), current + 5); i++){
+                        SceneSitePoint sceneSitePoint = sceneSitePoints.get(i);
+                        ScenePos startPoint = sceneSitePoint.getStartPoint();
+                        Point2D.Double sceneStartPoint = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
+                        boolean arrivedSceneStartPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPoint,
+                                position,
+                                paramConfig.radius);
+                        if(arrivedSceneStartPoint){
+                            waiting = i;
+                            break;
+                        }
+                    }
+                    if(waiting > current && !sceneStartTriggerMap.containsKey(waiting)){
+                        log.info("是否到达场景{}的开始触发点:{}", waiting + 1, true);
                         Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
                         if(Objects.isNull(state) || state != 1){
-                            log.info("主车已行驶到场景{}开始触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
+                            log.info("主车已行驶到场景{}开始触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", waiting + 1);
                             stop(toLocalDto, detail, tessDataChannel);
                             break;
                         }
                         //当前场景开始指令数据组装
-                        SimulationSceneParticipant simulationSceneParticipant = simulationSceneInfo.getParams().getParam1().get(sceneIndex);
+                        SimulationSceneParticipant simulationSceneParticipant = simulationSceneInfo.getParams().getParam1().get(waiting);
                         String tessStart = JSONObject.toJSONString(simulationSceneParticipant);
                         JSONObject tessStartMessage = JSONObject.parseObject(tessStart);
 
                         redisCache.publishMessage(tessCommandChannel, tessStartMessage);
-                        sceneStartTriggerMap.put(sequence, true);
-                        log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, sequence, tessStart);
-                    }
-                    Point2D.Double sceneEndPoint = new Point2D.Double(siteEndPoint.getLongitude(), siteEndPoint.getLatitude());
-                    boolean arrivedSceneEndPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneEndPoint,
-                            position,
-                            paramConfig.radius);
-                    if(arrivedSceneEndPoint && !sceneEndTriggerMap.containsKey(sequence)){
-                        log.info("是否到达场景{}的结束触发点:{}", sequence, true);
-                        Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
-                        if(Objects.isNull(state) || state != 1){
-                            log.info("主车已行驶到场景{}结束触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", sequence);
-                            stop(toLocalDto, detail, tessDataChannel);
-                            break;
-                        }
-                        //当前场景结束数据组装
-                        SimulationSceneParticipant sceneEndReq = interactionFuc.createSceneEndReq("场景" + sequence);
-                        String tessSceneEnd = JSONObject.toJSONString(sceneEndReq);
-                        JSONObject tessEndMessage = JSONObject.parseObject(tessSceneEnd);
-                        redisCache.publishMessage(tessCommandChannel, tessEndMessage);
-                        sceneEndTriggerMap.put(sequence, true);
-                        log.info("开始给仿真指令通道-{}下发场景{}任务结束指令: {}", tessCommandChannel, sequence, tessSceneEnd);
+                        log.info("开始给仿真指令通道-{}下发场景{}任务开始指令: {}", tessCommandChannel, (waiting + 1), tessStart);
+                        sceneStartTriggerMap.put(waiting, true);
                         //场景切换
-                        sceneIndex++;
+                        current = waiting;
                     }
-
+                    if(current > -1 && !sceneEndTriggerMap.containsKey(current)){
+                        SceneSitePoint sceneSitePoint = sceneSitePoints.get(current);
+                        ScenePos siteEndPoint = sceneSitePoint.getEndPoint();
+                        Point2D.Double sceneEndPoint = new Point2D.Double(siteEndPoint.getLongitude(), siteEndPoint.getLatitude());
+                        boolean arrivedSceneEndPoint = LongitudeLatitudeUtils.isInCriticalDistance(sceneEndPoint,
+                                position,
+                                paramConfig.radius);
+                        if(arrivedSceneEndPoint){
+                            log.info("是否到达场景{}的结束触发点:{}", current + 1, true);
+                            Integer state = redisCache.getCacheObject(simulationPrepareStatusKey);
+                            if(Objects.isNull(state) || state != 1){
+                                log.info("主车已行驶到场景{}结束触发点,没有收到仿真心跳或仿真准备状态异常,仿真不具备继续测试条件,任务结束", current + 1);
+                                stop(toLocalDto, detail, tessDataChannel);
+                                break;
+                            }
+                            //当前场景结束数据组装
+                            SimulationSceneParticipant sceneEndReq = interactionFuc.createSceneEndReq("场景" + (current + 1));
+                            String tessSceneEnd = JSONObject.toJSONString(sceneEndReq);
+                            JSONObject tessEndMessage = JSONObject.parseObject(tessSceneEnd);
+                            redisCache.publishMessage(tessCommandChannel, tessEndMessage);
+                            log.info("开始给仿真指令通道-{}下发场景{}任务结束指令: {}", tessCommandChannel, current + 1, tessSceneEnd);
+                            sceneEndTriggerMap.put(current, true);
+                        }
+                    }
                 }
             }
             taskStatus = TaskExerciseEnum.TASK_IS_FINISHED.getStatus();

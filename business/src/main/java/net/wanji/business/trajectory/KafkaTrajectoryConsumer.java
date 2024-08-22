@@ -69,9 +69,6 @@ public class KafkaTrajectoryConsumer {
     private final KafkaProducer kafkaProducer;
     private final LuanshengDataSender luanshengDataSender;
 
-    @Value("${luansheng.send}")
-    private String tempLuanshengYK;
-
     @KafkaListener(id = "singleTrajectory",
             topics = { "${trajectory.fusion}" },
             groupId = "#{T(java.lang.String).valueOf(new java.util.Random().nextInt(1000))}")
@@ -120,21 +117,12 @@ public class KafkaTrajectoryConsumer {
             Double latitude = mainCar.getValue().get(0).getLatitude();
             Double longitude = mainCar.getValue().get(0).getLongitude();
             Point2D.Double position = new Point2D.Double(longitude, latitude);
-            //待触发场景
+            //计算待触发场景
+            toLocalDto.calculate(position);
             List<StartPoint> sceneStartPoints = toLocalDto.getStartPoints();
-            int sequence = toLocalDto.getSequence();
-            if(!sceneStartPoints.isEmpty() && sequence < sceneStartPoints.size()){
-                StartPoint startPoint = sceneStartPoints.get(sequence);
-                Point2D.Double sceneStartPos = new Point2D.Double(startPoint.getLongitude(), startPoint.getLatitude());
-                boolean arrivedSceneStartPos = LongitudeLatitudeUtils.isInCriticalDistance(sceneStartPos, position, toLocalDto.getRadius());
-                if(arrivedSceneStartPos){
-                    toLocalDto.getTriggeredScenes().add(startPoint.getSequence());
-                    toLocalDto.switchScene();
-                }
-            }
             //比赛任务推送孪生
-            int index = toLocalDto.getSequence() > 0 ? toLocalDto.getSequence() - 1 : 0;
-            boolean qualified = toLocalDto.getDeviceId().equals(tempLuanshengYK) || toLocalDto.isCompetition();
+            int index = toLocalDto.getSequence() > -1 ? toLocalDto.getSequence(): 0;
+            boolean qualified = toLocalDto.isCompetition();
             if(qualified){
                 String sceneName = sceneStartPoints.get(index).getName();
                 luanshengDataSender.send(data, taskId, sceneName);
