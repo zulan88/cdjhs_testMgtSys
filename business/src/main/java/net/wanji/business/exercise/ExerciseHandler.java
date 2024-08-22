@@ -25,7 +25,6 @@ import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
