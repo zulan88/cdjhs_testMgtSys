@@ -80,8 +80,10 @@ public class InteractionFuc {
             SceneDetailVo sceneDetailVo = new SceneDetailVo();
             BeanUtils.copyProperties(sceneDetail, sceneDetailVo);
             List<SitePoint> connect = gson.fromJson(taskCaseVo.getConnectInfo(), new TypeToken<List<SitePoint>>(){}.getType());
-            sceneDetailVo.setStartPoint(connect.get(0));
-            sceneDetailVo.setEndPoint(connect.get(connect.size()-1));
+            if (connect != null) {
+                sceneDetailVo.setStartPoint(connect.get(0));
+                sceneDetailVo.setEndPoint(connect.get(connect.size() - 1));
+            }
             sceneDetailVo.setEvoNum(Integer.valueOf(taskCaseVo.getEvaNum()));
             if (sceneDetailVo.getMapId() != null && sceneDetailVo.getMapId() == 21) {
                 sceneDetailVo.setMapBounds(MapBoundary.CHANGAN.getValues());
@@ -185,9 +187,7 @@ public class InteractionFuc {
                         startPoint.setName(sceneDetailVo.getTestSceneDesc());
                         startPoint.setLongitude(Double.parseDouble(sitePoint.getLongitude()));
                         startPoint.setLatitude(Double.parseDouble(sitePoint.getLatitude()));
-
                         startPoints.add(startPoint);
-
                     }
                 }
             }
