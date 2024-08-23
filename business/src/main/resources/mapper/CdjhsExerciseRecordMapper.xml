@@ -39,10 +39,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="userId"   column="user_id"/>
         <result property="teamId"   column="team_id"/>
+        <result property="isCollect"    column="is_colletc"/>
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time, user_id, team_id from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time, user_id, team_id, is_collect from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -75,6 +76,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="networkId != null and networkId != ''">and network_id = #{networkId}</if>
             <if test="evaluationUrl != null and evaluationUrl != ''">and evaluation_url = #{evaluationUrl}</if>
             <if test="evaluationTaskStatus != null and evaluationTaskStatus != ''">and evaluation_task_status = #{evaluationTaskStatus}</if>
+            <if test="isCollect !=null ">and is_collect = #{isCollect}</if>
         </where>
         order by create_time desc
     </select>
@@ -237,6 +239,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="teamId != null">team_id = #{teamId},</if>
             <if test="userId != null">user_id = #{userId},</if>
+            <if test="isCollect != null">is_collect = #{isCollect},</if>
         </trim>
         where id = #{id}
     </update>

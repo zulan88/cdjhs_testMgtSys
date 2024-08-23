@@ -112,7 +112,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/taskInfinite/shardingInOut").anonymous()
                 // 孪生接口
                 .antMatchers("/task/getStatusTW", "/task/pageListTW",
-                        "/case/selectDetailTW", "/case/getCasesByTaskIdTW",
+                        "/competition/listTW", "/competition/updateTW",
                         "/task/runningTaskTW", "/task/playbackTW",
                         "/taskInfinite/runningTaskTW","/taskInfinite/getStatusTW",
                         "/task/getEvaluationResultTW", "/taskInfinite/evaluationResultTW").anonymous()

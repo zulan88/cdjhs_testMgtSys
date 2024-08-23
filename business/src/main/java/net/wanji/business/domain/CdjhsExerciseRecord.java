@@ -104,6 +104,8 @@ public class CdjhsExerciseRecord extends BaseEntity
     @Excel(name = "评分")
     private Double score;
 
+    private Integer isCollect;
+
     //是否是比赛任务 0:否 1:是 默认值0
     private Integer isCompetition;
 
@@ -397,6 +399,14 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setIsCompetition(Integer isCompetition) {
         this.isCompetition = isCompetition;
+    }
+
+    public Integer getIsCollect() {
+        return isCollect;
+    }
+
+    public void setIsCollect(Integer isCollect) {
+        this.isCollect = isCollect;
     }
 
     @Override

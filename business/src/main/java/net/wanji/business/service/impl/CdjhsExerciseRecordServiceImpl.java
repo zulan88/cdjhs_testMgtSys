@@ -503,6 +503,14 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     }
 
     @Override
+    public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordListTW(CdjhsExerciseRecord cdjhsExerciseRecord){
+        cdjhsExerciseRecord.setIsCompetition(1);
+        return cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordList(cdjhsExerciseRecord);
+    }
+
+
+
+    @Override
     public int createCompetitionRecord(CdjhsExerciseRecord cdjhsExerciseRecord) {
         cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
         cdjhsExerciseRecord.setIsCompetition(1);//比赛任务

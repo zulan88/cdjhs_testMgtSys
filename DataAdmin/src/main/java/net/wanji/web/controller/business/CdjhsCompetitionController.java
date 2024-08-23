@@ -31,6 +31,22 @@ public class CdjhsCompetitionController extends BaseController {
         return getDataTable(list);
     }
 
+    //孪生专用
+    @CrossOrigin
+    @GetMapping("/listTW")
+    public TableDataInfo listTW(CdjhsExerciseRecord cdjhsExerciseRecord){
+        startPage();
+        List<CdjhsExerciseRecord> list = cdjhsExerciseRecordService.selectCdjhsCompetitionRecordListTW(cdjhsExerciseRecord);
+        return getDataTable(list);
+    }
+
+    @CrossOrigin
+    @PutMapping("/updateTW")
+    public AjaxResult edit(@RequestBody CdjhsExerciseRecord cdjhsExerciseRecord)
+    {
+        return toAjax(cdjhsExerciseRecordService.updateCdjhsExerciseRecord(cdjhsExerciseRecord));
+    }
+
     @PostMapping("/add")
     public AjaxResult add(@RequestBody CdjhsExerciseRecord cdjhsExerciseRecord){
         return toAjax(cdjhsExerciseRecordService.createCompetitionRecord(cdjhsExerciseRecord));

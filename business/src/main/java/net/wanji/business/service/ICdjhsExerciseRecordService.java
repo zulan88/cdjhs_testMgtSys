@@ -81,4 +81,6 @@ public interface ICdjhsExerciseRecordService
     public int deleteCompetitionRecordByIds(Long[] ids);
 
     public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord);
+
+    public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordListTW(CdjhsExerciseRecord cdjhsExerciseRecord);
 }
