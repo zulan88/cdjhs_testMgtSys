@@ -16,6 +16,7 @@ import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.wanji.business.common.Constants;
 import net.wanji.business.common.Constants.TaskStatusEnum;
 import net.wanji.business.domain.bo.*;
+import net.wanji.business.domain.dto.CaseTreeDto;
 import net.wanji.business.domain.dto.RoutingPlanDto;
 import net.wanji.business.domain.dto.TaskDto;
 import net.wanji.business.domain.dto.device.TaskSaveDto;
@@ -28,6 +29,7 @@ import net.wanji.business.domain.vo.task.infinity.SelectRecordIdVo;
 import net.wanji.business.entity.TjTask;
 import net.wanji.business.entity.TjTaskCase;
 import net.wanji.business.entity.TjTaskCaseRecord;
+import net.wanji.business.entity.TjTaskTree;
 import net.wanji.business.entity.infity.TjInfinityTask;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.service.*;
@@ -38,6 +40,7 @@ import net.wanji.common.constant.CacheConstants;
 import net.wanji.common.constant.HttpStatus;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
+import net.wanji.common.core.domain.entity.SysDictData;
 import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.SecurityUtils;
@@ -92,6 +95,15 @@ public class TaskController extends BaseController {
 
     @Autowired
     private InteractionFuc interactionFuc;
+
+    @Autowired
+    private TjTaskTreeService tjTaskTreeService;
+
+    @GetMapping("/init")
+    public AjaxResult init() {
+        return AjaxResult.success(tjTaskService.init());
+    }
+
 
     @ApiOperationSort(1)
     @ApiOperation(value = "1.节点初始化")
@@ -429,16 +441,16 @@ public class TaskController extends BaseController {
         return AjaxResult.success();
     }
 
-    @ApiOperationSort(25)
-    @ApiOperation(value = "25.查询任务用例树")
-    @GetMapping("/selectTree")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "type", value = "类型", required = true, dataType = "String", paramType = "query", example = "virtualRealFusion"),
-            @ApiImplicitParam(name = "taskId", value = "任务ID", required = true, dataType = "Integer", paramType = "query", example = "1")
-    })
-    public AjaxResult selectTree(String type, Integer taskId) {
-        return AjaxResult.success(taskCaseService.selectTree(type, taskId));
-    }
+//    @ApiOperationSort(25)
+//    @ApiOperation(value = "25.查询任务用例树")
+//    @GetMapping("/selectTree")
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "type", value = "类型", required = true, dataType = "String", paramType = "query", example = "virtualRealFusion"),
+//            @ApiImplicitParam(name = "taskId", value = "任务ID", required = true, dataType = "Integer", paramType = "query", example = "1")
+//    })
+//    public AjaxResult selectTree(String type, Integer taskId) {
+//        return AjaxResult.success(taskCaseService.selectTree(type, taskId));
+//    }
 
     @ApiOperationSort(26)
     @ApiOperation(value = "26.选择任务用例")
@@ -643,5 +655,34 @@ public class TaskController extends BaseController {
         }
         taskCaseService.playback(taskId, sceneTrajectoryBos, action);
         return AjaxResult.success(conTrace);
+    }
+
+
+    @GetMapping("/selectTree")
+    public AjaxResult selectTree(Integer dictCode) {
+        return AjaxResult.success(tjTaskTreeService.selectByParent(dictCode));
+    }
+
+    @PostMapping("/saveParentTree")
+    public AjaxResult saveParentTree(@Validated @RequestBody SysDictData sysDictData) throws BusinessException {
+        return AjaxResult.success(tjTaskTreeService.saveParentTree(sysDictData));
+    }
+
+    @DeleteMapping("/deleteParentTree/{dictCode}")
+    public AjaxResult deleteTreeType(@PathVariable("dictCode") Long dictCode) throws BusinessException {
+        return tjTaskTreeService.deleteParentTree(dictCode)
+                ? AjaxResult.success("成功")
+                : AjaxResult.error("操作失败");
+    }
+
+    @PostMapping("/saveTree")
+    public AjaxResult saveTree(@Validated @RequestBody TjTaskTree tjTaskTree) throws BusinessException {
+        return AjaxResult.success(tjTaskTreeService.saveTree(tjTaskTree));
+    }
+
+
+    @DeleteMapping("/deleteTree")
+    public AjaxResult deleteTree(Integer treeId) throws BusinessException {
+        return AjaxResult.success(tjTaskTreeService.deleteTree(treeId));
     }
 }
