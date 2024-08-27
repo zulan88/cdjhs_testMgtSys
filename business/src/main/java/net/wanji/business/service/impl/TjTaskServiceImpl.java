@@ -310,6 +310,9 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
         if (in.getLastStatus() != null && !in.getLastStatus().isEmpty()){
             queryWrapper.eq("last_status", in.getLastStatus());
         }
+        if (in.getTreeId() != null){
+            queryWrapper.eq("tree_id", in.getTreeId());
+        }
         queryWrapper.orderByDesc("create_time");
         List<TjTask> tasks = tjTaskMapper.selectList(queryWrapper);
         List<TaskListVo> pageList = tasks.stream().map(task -> {
@@ -381,6 +384,15 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
                 break;
         }
 
+        return result;
+    }
+
+    @Override
+    public Map<String, List<SimpleSelect>> init() {
+        List<SysDictData> testType = dictTypeService.selectDictDataByType(SysType.TASK_TYPE);
+        Map<String, List<SimpleSelect>> result = new HashMap<>(1);
+        result.put(SysType.TEST_TYPE, CollectionUtils.emptyIfNull(testType).stream()
+                .map(SimpleSelect::new).collect(Collectors.toList()));
         return result;
     }
 
@@ -1263,6 +1275,17 @@ public class TjTaskServiceImpl extends ServiceImpl<TjTaskMapper, TjTask>
 
         return true;
     }
+
+    @Override
+    public List<TjTask> selectByTreeId(Integer treeId) {
+        QueryWrapper<TjTask> queryWrapper = new QueryWrapper<>();
+        if (treeId != null) {
+            queryWrapper.eq("tree_id", treeId);
+        }
+        return baseMapper.selectList(queryWrapper);
+    }
+
+
 }
 
 

@@ -63,6 +63,8 @@ public interface TjTaskService extends IService<TjTask> {
      */
     Object initProcessed(Integer processNode);
 
+    Map<String, List<SimpleSelect>> init();
+
     /**
      * 任务节点信息
      * @param taskSaveDto
@@ -118,4 +120,7 @@ public interface TjTaskService extends IService<TjTask> {
     TjTask selectOneById(Integer id);
 
     boolean taskDelete(Integer id);
+
+    List<TjTask> selectByTreeId(Integer treeId);
+
 }

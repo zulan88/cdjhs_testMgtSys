@@ -454,6 +454,9 @@ public interface Constants {
          * 测试类型
          */
         public static final String TEST_TYPE = "test_type";
+
+        public static final String TASK_TYPE = "task_type";
+
         /**
          * 用例状态
          */

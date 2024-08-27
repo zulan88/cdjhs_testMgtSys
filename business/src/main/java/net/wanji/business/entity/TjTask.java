@@ -28,6 +28,12 @@ public class TjTask implements Serializable {
     private Integer id;
 
     /**
+     * 测试树ID
+     */
+    @TableField(value = "tree_id")
+    private Integer TreeId;
+
+    /**
      * 测试用例名称
      */
     @TableField(value = "test_case_name")

@@ -28,6 +28,8 @@ public class TaskDto {
     @ApiModelProperty(value = "流程编号", dataType = "String", example = "2023-11", position = 3)
     private String taskCode;
 
+    private Integer TreeId;
+
     @ApiModelProperty(value = "车牌号", dataType = "String", example = "京A****", position = 4)
     private String plateNumber;
 

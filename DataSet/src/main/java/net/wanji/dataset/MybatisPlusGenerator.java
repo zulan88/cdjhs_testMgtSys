@@ -7,12 +7,12 @@ public class MybatisPlusGenerator {
     //    private static final String PROJECT_PATH = System.getProperty("user.dir");
     private static final String OUTPUT_DIR = "DataOnsite/src/main/java";
     private static final String AUTHOR = "wj";
-    private static final String URL = "jdbc:mysql://10.102.1.157:3306/wanji_cdjhs_test_management?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
+    private static final String URL = "jdbc:mysql://10.102.1.115:3306/wanji_cdjhs_test_management?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
     //    private static final String DRIVER_NAME = "com.mysql.cj.jdbc.Driver";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "Wanji123456";
     private static final String[] TABLES = {
-            "cdjhs_oss_info"
+            "tj_task_tree"
     };
     //    private static final String TEMPLATE_PATH = "/templates/mapper.xml.ftl";
     private static final String MAPPER_PATH = "business/src/main/resources/mapper";
