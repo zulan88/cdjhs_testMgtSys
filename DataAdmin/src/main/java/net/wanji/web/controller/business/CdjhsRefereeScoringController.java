@@ -9,12 +9,15 @@ import net.wanji.business.entity.CdjhsRefereeScoring;
 import net.wanji.business.service.CdjhsRefereeScoringService;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
+import net.wanji.common.core.domain.entity.SysRole;
+import net.wanji.common.core.domain.model.LoginUser;
 import net.wanji.system.service.ISysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * <p>
@@ -62,7 +65,9 @@ public class CdjhsRefereeScoringController extends BaseController {
     @ApiOperation(value = "裁判员：打分进度")
     @PostMapping("/getScoreData")
     public AjaxResult getScoreData(Integer taskId, Integer teamId) {
-        return AjaxResult.success(refereeScoringService.getScoreData(taskId, teamId));
+        LoginUser loginUser = getLoginUser();
+        List<SysRole> roles = loginUser.getUser().getRoles();
+        return AjaxResult.success(refereeScoringService.getScoreData(taskId, teamId, roles));
     }
 
 }

@@ -7,8 +7,10 @@ import net.wanji.business.entity.TjAtlasTree;
 import net.wanji.business.mapper.CdjhsRefereeScoringMapper;
 import net.wanji.business.service.CdjhsRefereeScoringService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import net.wanji.common.core.domain.entity.SysRole;
 import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.utils.StringUtils;
+import net.wanji.system.service.ISysRoleService;
 import net.wanji.system.service.ISysUserService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,9 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
     @Autowired
     private ISysUserService userService;
 
+    @Autowired
+    private ISysRoleService roleService;
+
     @Override
     public List<CdjhsRefereeScoring> list(Integer taskId, Integer teamId) {
         LambdaQueryWrapper<CdjhsRefereeScoring> queryWrapper = new LambdaQueryWrapper<>();
@@ -42,10 +47,10 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
     }
 
     @Override
-    public Map<String, Object> getScoreData(Integer taskId, Integer teamId) {
+    public Map<String, Object> getScoreData(Integer taskId, Integer teamId, List<SysRole> roles) {
 
         SysUser sysUser = new SysUser();
-        //  TODO 根据“裁判”角色获取应提交人数 sysUser.setRoleId();
+        sysUser.setRoleIds(ArrayUtils.toArray(roles.stream().map(SysRole::getRoleId).toArray(Long[]::new)));
         List<SysUser> refereeList = userService.selectUserList(sysUser);
         Integer submit = refereeList == null ? 0 : refereeList.size();
 
