@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public interface CdjhsRefereeScoringService extends IService<CdjhsRefereeScoring> {
 
-    List<CdjhsRefereeScoring> list(Integer taskId, Integer teamId);
+    Integer buildScoreData(Integer taskId, Integer teamId, Integer entryOrder);
 
-    Map<String, Object> getScoreData(Integer taskId, Integer teamId, List<SysRole> roles);
+    Map<String, Object> getScoreData(Integer userId);
 }

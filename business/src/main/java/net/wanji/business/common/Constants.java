@@ -461,6 +461,11 @@ public interface Constants {
          * 用例状态
          */
         public static final String CASE_STATUS = "case_status";
+
+        /**
+         * 得分权重
+         */
+        public static final String SORCE_WEIGHT = "sorce_weight";
     }
 
 

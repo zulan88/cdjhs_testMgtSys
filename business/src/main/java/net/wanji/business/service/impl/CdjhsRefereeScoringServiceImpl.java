@@ -10,12 +10,19 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import net.wanji.common.core.domain.entity.SysRole;
 import net.wanji.common.core.domain.entity.SysUser;
 import net.wanji.common.utils.StringUtils;
+import net.wanji.common.utils.bean.BeanUtils;
+import net.wanji.onsite.entity.CdjhsRefereeMembers;
+import net.wanji.onsite.entity.CdjhsRefereeScoringHistory;
+import net.wanji.onsite.service.CdjhsRefereeMembersService;
+import net.wanji.onsite.service.CdjhsRefereeScoringHistoryService;
 import net.wanji.system.service.ISysRoleService;
 import net.wanji.system.service.ISysUserService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,41 +39,85 @@ import java.util.Map;
 public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScoringMapper, CdjhsRefereeScoring> implements CdjhsRefereeScoringService {
 
     @Autowired
-    private ISysUserService userService;
+    private CdjhsRefereeScoringHistoryService cdjhsRefereeScoringHistoryService;
 
     @Autowired
-    private ISysRoleService roleService;
+    private CdjhsRefereeMembersService cdjhsRefereeMembersService;
 
     @Override
-    public List<CdjhsRefereeScoring> list(Integer taskId, Integer teamId) {
-        LambdaQueryWrapper<CdjhsRefereeScoring> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(CdjhsRefereeScoring::getTaskId, taskId);
-        queryWrapper.eq(CdjhsRefereeScoring::getTeamId, teamId);
-        queryWrapper.orderByAsc(CdjhsRefereeScoring::getUserId);
-        return this.list(queryWrapper);
+    public Integer buildScoreData(Integer taskId, Integer teamId, Integer entryOrder) {
+        List<CdjhsRefereeMembers> members = cdjhsRefereeMembersService.list();
+        if (ArrayUtils.isEmpty(members.toArray())) {
+            return 0;
+        }
+        List<CdjhsRefereeScoring> list = this.list();
+        Integer submitted = Math.toIntExact(list.stream().filter(item -> item.getScorePoint1() == null || item.getScorePoint2() == null).count());
+        if (submitted > 0) {
+            return 1;
+        }
+        List<CdjhsRefereeScoringHistory> histories = new ArrayList<>();
+        for (CdjhsRefereeScoring item : list) {
+            CdjhsRefereeScoringHistory history = new CdjhsRefereeScoringHistory();
+            BeanUtils.copyBeanProp(history, item);
+            history.setId(null);
+            history.setRecordDate(LocalDateTime.now());
+            histories.add(history);
+        }
+        cdjhsRefereeScoringHistoryService.saveBatch(histories);
+        this.removeBatchByIds(list);
+        List<CdjhsRefereeScoring> newList = new ArrayList<>();
+        int id = 1;
+        for (CdjhsRefereeMembers member : members) {
+            CdjhsRefereeScoring scoring = new CdjhsRefereeScoring();
+            scoring.setId(id);
+            scoring.setUserId(member.getUserId());
+            scoring.setEntryOrder(String.valueOf(entryOrder));
+            scoring.setTaskId(taskId);
+            scoring.setTeamId(teamId);
+            scoring.setUserName(member.getUserName());
+            newList.add(scoring);
+            id++;
+        }
+        this.saveBatch(newList);
+        return 0;
     }
 
     @Override
-    public Map<String, Object> getScoreData(Integer taskId, Integer teamId, List<SysRole> roles) {
-
-        SysUser sysUser = new SysUser();
-        sysUser.setRoleIds(ArrayUtils.toArray(roles.stream().map(SysRole::getRoleId).toArray(Long[]::new)));
-        List<SysUser> refereeList = userService.selectUserList(sysUser);
-        Integer submit = refereeList == null ? 0 : refereeList.size();
-
-        // 已提交
-        List<CdjhsRefereeScoring> list = this.list(taskId, teamId);
-        Integer submitted = list == null ? 0 : list.size();
-
-        return new HashMap<String, Object>() {{
-            put("teamId", teamId);
-            put("taskId", taskId);
-            // 应提交
-            put("submit", submit);
-            // 已提交
-            put("submitted", submitted);
-            // 未提交
-            put("notSubmitted", submit - submitted);
-        }};
+    public Map<String, Object> getScoreData(Integer userId) {
+        List<CdjhsRefereeScoring> list = this.list();
+        if (ArrayUtils.isEmpty(list.toArray())) {
+            return new HashMap<String, Object>() {
+                {
+                    put("data", "等待比赛开始");
+                }
+            };
+        } else {
+            String sort = list.get(0).getEntryOrder();
+            Integer submit = list.size();
+            Integer status = 0;
+            Integer submitted = Math.toIntExact(list.stream().filter(item -> item.getScorePoint1() != null && item.getScorePoint2() != null).count());
+            CdjhsRefereeScoring cdjhsRefereeScoring = list.stream().filter(item -> item.getUserId().equals(userId)).findFirst().orElse(null);
+            if (cdjhsRefereeScoring != null) {
+                if (cdjhsRefereeScoring.getScorePoint1() != null && cdjhsRefereeScoring.getScorePoint2() != null) {
+                    status = 1;
+                }
+                Integer finalStatus = status;
+                return new HashMap<String, Object>() {{
+                    put("entryOrder", sort);
+                    // 应提交
+                    put("submit", submit);
+                    // 已提交
+                    put("submitted", submitted);
+                    // 未提交
+                    put("notSubmitted", submit - submitted);
+                    put("status", finalStatus);
+                    put("data", cdjhsRefereeScoring);
+                }};
+            } else {
+                return new HashMap<String, Object>() {{
+                    put("data", "等待比赛开始");
+                }};
+            }
+        }
     }
 }

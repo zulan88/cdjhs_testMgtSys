@@ -1,6 +1,7 @@
 package net.wanji.web.controller.business;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiOperationSort;
 import net.wanji.business.common.Constants;
@@ -35,39 +36,37 @@ public class CdjhsRefereeScoringController extends BaseController {
     private CdjhsRefereeScoringService refereeScoringService;
 
 
-    @ApiOperationSort(1)
-    @ApiOperation(value = "定时调用 根据任务表中任务状态，获取正在进行的任务")
-    @GetMapping("/getPageShowType")
-    public AjaxResult list() {
-        // Integer taskId, Integer teamId
-        // TODO 根据任务表中任务状态，获取正在进行的任务，有且只有一个，返回taskId,teamId
-        // TODO taskId,teamId为空，裁判显示等待比赛开始页面，裁判长清空打分明细列表
+    @GetMapping("/test")
+    public AjaxResult test(Integer taskId, Integer teamId, Integer entryOrder) {
+        refereeScoringService.buildScoreData(taskId,teamId,entryOrder);
         return AjaxResult.success();
     }
 
     @ApiOperationSort(1)
     @ApiOperation(value = "裁判长：根据 getPageShowType 获取任务id，队伍id，获取打分明细")
     @GetMapping("/list")
-    public AjaxResult list(Integer taskId, Integer teamId) {
-        return AjaxResult.success(refereeScoringService.list(taskId, teamId));
+    public AjaxResult listMaster() {
+        LambdaQueryWrapper<CdjhsRefereeScoring> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.orderByAsc(CdjhsRefereeScoring::getUserId);
+        return AjaxResult.success(refereeScoringService.list(queryWrapper));
     }
 
     @ApiOperationSort(2)
     @ApiOperation(value = "裁判员：打分")
     @PostMapping("/save")
     public AjaxResult saveTree(@RequestBody CdjhsRefereeScoring refereeScoring) {
-        return refereeScoringService.save(refereeScoring)
+        return refereeScoringService.saveOrUpdate(refereeScoring)
                 ? AjaxResult.success("成功")
                 : AjaxResult.error("失败");
     }
 
     @ApiOperationSort(3)
     @ApiOperation(value = "裁判员：打分进度")
-    @PostMapping("/getScoreData")
-    public AjaxResult getScoreData(Integer taskId, Integer teamId) {
+    @GetMapping("/getScoreData")
+    public AjaxResult getScoreData() {
         LoginUser loginUser = getLoginUser();
-        List<SysRole> roles = loginUser.getUser().getRoles();
-        return AjaxResult.success(refereeScoringService.getScoreData(taskId, teamId, roles));
+        Long userId = loginUser.getUserId();
+        return AjaxResult.success(refereeScoringService.getScoreData(Math.toIntExact(userId)));
     }
 
 }
