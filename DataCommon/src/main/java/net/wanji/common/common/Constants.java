@@ -371,4 +371,10 @@ public class Constants {
     public static final String SIMULATION = "仿真软件";
 
     public static final String YUKONG = "域控制器";
+
+    public static final String LIMIT = "limit";
+
+    public static final String OVER_LIMIT = "OverLimit";
+
+    public static final String SPEED = "speed";
 }

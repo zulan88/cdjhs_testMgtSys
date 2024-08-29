@@ -26,8 +26,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
 
-    <select id="selectTeamNameByUserName" parameterType="string" resultType="string">
-        select ti.team_name
+    <select id="selectTeamByUserName" parameterType="string" resultType="net.wanji.business.domain.CdjhsTeamInfo">
+        select ti.*
         from cdjhs_user_team ut
         LEFT JOIN cdjhs_team_info ti
         on ut.team_id = ti.id

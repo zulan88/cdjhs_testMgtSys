@@ -1,6 +1,7 @@
 package net.wanji.business.mapper;
 
 import net.wanji.business.domain.CdjhsTeamInfo;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -59,4 +60,8 @@ public interface CdjhsTeamInfoMapper
      * @return 结果
      */
     public int deleteCdjhsTeamInfoByIds(Long[] ids);
+
+    public int updateStatusByTeamName(@Param("teamId") Long teamId, @Param("status") Integer status);
+
+    public List<CdjhsTeamInfo> getScoreRank();
 }

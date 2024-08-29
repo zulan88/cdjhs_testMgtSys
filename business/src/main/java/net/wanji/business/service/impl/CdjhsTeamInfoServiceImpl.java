@@ -1,6 +1,8 @@
 package net.wanji.business.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.mapper.CdjhsTeamInfoMapper;
@@ -42,7 +44,12 @@ public class CdjhsTeamInfoServiceImpl implements ICdjhsTeamInfoService
     @Override
     public List<CdjhsTeamInfo> selectCdjhsTeamInfoList(CdjhsTeamInfo cdjhsTeamInfo)
     {
-        return cdjhsTeamInfoMapper.selectCdjhsTeamInfoList(cdjhsTeamInfo);
+        List<CdjhsTeamInfo> list = cdjhsTeamInfoMapper.selectCdjhsTeamInfoList(cdjhsTeamInfo);
+        //按照比赛顺序增序排列
+        list = list.stream()
+                .sorted(Comparator.comparingInt(CdjhsTeamInfo::getSequence))
+                .collect(Collectors.toList());
+        return list;
     }
 
     /**
@@ -93,5 +100,10 @@ public class CdjhsTeamInfoServiceImpl implements ICdjhsTeamInfoService
     public int deleteCdjhsTeamInfoById(Long id)
     {
         return cdjhsTeamInfoMapper.deleteCdjhsTeamInfoById(id);
+    }
+
+    @Override
+    public List<CdjhsTeamInfo> getScoreRank() {
+        return cdjhsTeamInfoMapper.getScoreRank();
     }
 }

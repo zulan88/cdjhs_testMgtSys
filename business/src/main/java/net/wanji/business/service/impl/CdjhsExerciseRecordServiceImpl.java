@@ -1,6 +1,7 @@
 package net.wanji.business.service.impl;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -17,24 +18,33 @@ import net.wanji.business.exception.BusinessException;
 import net.wanji.business.exercise.BindingConfig;
 import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.evaluation.*;
+import net.wanji.business.exercise.dto.luansheng.StatDto;
+import net.wanji.business.exercise.dto.luansheng.StatResult;
+import net.wanji.business.exercise.dto.luansheng.StatThresoldEnum;
+import net.wanji.business.exercise.dto.luansheng.TWPlaybackSchedule;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
 import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.schedule.RealPlaybackSchedule;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
+import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.RestService;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
+import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.config.WanjiConfig;
 import net.wanji.common.core.domain.entity.SysUser;
+import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.DateUtils;
+import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.common.utils.SecurityUtils;
 import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.file.FileUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +80,12 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Autowired
     private ExerciseHandler exerciseHandler;
+
+    @Autowired
+    private RedisCache redisCache;
+
+    @Autowired
+    private KafkaProducer kafkaProducer;
     /**
      * 查询练习记录
      * 
@@ -510,6 +526,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
 
 
+    @Transactional(rollbackFor = {Exception.class})
     @Override
     public int createCompetitionRecord(CdjhsExerciseRecord cdjhsExerciseRecord) {
         cdjhsExerciseRecord.setCreateTime(DateUtils.getNowDate());
@@ -529,5 +546,100 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     @Override
     public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord) {
         return cdjhsExerciseRecordMapper.selectSortByScore(cdjhsExerciseRecord);
+    }
+
+    @Override
+    public StatResult stat(Long taskId) {
+        StatResult result = new StatResult();
+        String statKey = RedisKeyUtils.getCdjhsLuanshengStatKey(taskId.intValue());
+        Set<ZSetOperations.TypedTuple<TrajectoryValueDto>> typedTuples = redisCache.range(statKey, 0, -1);
+        if(StringUtils.isNotEmpty(typedTuples)){
+            List<ZSetOperations.TypedTuple<TrajectoryValueDto>> list = new ArrayList<>(typedTuples);
+            long timestamp = Objects.requireNonNull(list.get(list.size() - 1).getScore()).longValue();
+            for (ZSetOperations.TypedTuple<TrajectoryValueDto> tuple : list) {
+                long score = Objects.requireNonNull(tuple.getScore()).longValue();
+                int diff = Math.toIntExact(timestamp - score);
+                TrajectoryValueDto current = tuple.getValue();
+                assert current != null;
+                result.getSpeed().add(new StatDto(diff, current.getSpeed().doubleValue()));//速度
+                result.getLonAcc().add(new StatDto(diff, current.getLonAcc()));//纵向加速度
+                result.getLatAcc().add(new StatDto(diff, current.getLatAcc()));//横向加速度
+                result.getAngularVelocity().add(new StatDto(diff, current.getAngularVelocityX()));//横摆角速度
+                if (Objects.nonNull(current.getLonAcc2())) {
+                    result.getLonAcc2().add(new StatDto(diff, current.getLonAcc2()));
+                }
+                if (Objects.nonNull(current.getLatAcc2())) {
+                    result.getLatAcc2().add(new StatDto(diff, current.getLatAcc2()));
+                }
+            }
+            Field[] declaredFields = result.getClass().getDeclaredFields();
+            for(Field field: declaredFields){
+                field.setAccessible(true);
+                String fieldName = field.getName();
+                if(!fieldName.toLowerCase().contains(net.wanji.common.common.Constants.LIMIT)
+                && !fieldName.equals(net.wanji.common.common.Constants.SPEED)){
+                    try {
+                        //计算超出阈值时长
+                        String json = JSONObject.toJSONString(field.get(result));
+                        List<StatDto> sorted = JSONArray.parseArray(json, StatDto.class);
+                        double[] thresold = StatThresoldEnum.getThresoldByName(fieldName);
+                        assert thresold != null;
+                        double min = thresold[0];
+                        double max = thresold[1];
+                        int sum = 0;
+                        boolean isOverLimit = false;
+                        int startTime = sorted.get(0).getTime();
+                        for(StatDto statDto: sorted){
+                            if(statDto.getValue() < min || statDto.getValue() > max){
+                                if(!isOverLimit){
+                                    isOverLimit = true;
+                                    startTime = statDto.getTime();
+                                }
+                            }else{
+                                if(isOverLimit){
+                                    isOverLimit = false;
+                                    sum += startTime - statDto.getTime();
+                                }
+                            }
+                        }
+                        String thresoldFiledName = fieldName + net.wanji.common.common.Constants.OVER_LIMIT;
+                        Field declaredField = result.getClass().getDeclaredField(thresoldFiledName);
+                        declaredField.setAccessible(true);
+                        declaredField.set(result, sum);
+
+                    } catch (IllegalAccessException | NoSuchFieldException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void playbackTW(Long taskId, String topic, Integer action) throws BusinessException, IOException {
+        switch (action) {
+            case Constants.PlaybackAction.START:
+                CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(taskId);
+                if(Objects.isNull(record) || StringUtils.isEmpty(record.getFusionFilePath())){
+                    throw new BusinessException("未查询到练习记录或任何可用的轨迹文件");
+                }
+                String fusionFilePath = record.getFusionFilePath();
+                List<List<ClientSimulationTrajectoryDto>> trajectories = FileUtils.readRealRouteFile2(fusionFilePath);
+                // 2.数据校验
+                if (CollectionUtils.isEmpty(trajectories)) {
+                    throw new BusinessException("未查询到任何可用轨迹文件，请先进行试验");
+                }
+                //场景起点列表
+                List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
+                //开始场景回放
+                TWPlaybackSchedule.startSendingData(taskId, topic, trajectories, sceneStartPoints, radius, kafkaProducer);
+                break;
+            case Constants.PlaybackAction.STOP:
+                TWPlaybackSchedule.stopSendingData(taskId);
+                break;
+            default:
+                break;
+        }
     }
 }

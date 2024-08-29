@@ -3,6 +3,8 @@ package net.wanji.web.controller.business;
 import lombok.extern.slf4j.Slf4j;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.vo.CdjhsErSort;
+import net.wanji.business.exception.BusinessException;
+import net.wanji.business.exercise.dto.luansheng.StatResult;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.core.controller.BaseController;
@@ -11,6 +13,7 @@ import net.wanji.common.core.page.TableDataInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -49,7 +52,11 @@ public class CdjhsCompetitionController extends BaseController {
 
     @PostMapping("/add")
     public AjaxResult add(@RequestBody CdjhsExerciseRecord cdjhsExerciseRecord){
-        return toAjax(cdjhsExerciseRecordService.createCompetitionRecord(cdjhsExerciseRecord));
+        try {
+            return toAjax(cdjhsExerciseRecordService.createCompetitionRecord(cdjhsExerciseRecord));
+        }catch (Exception e){
+            return AjaxResult.error("创建比赛任务失败");
+        }
     }
 
     @DeleteMapping("/{ids}")
@@ -66,5 +73,21 @@ public class CdjhsCompetitionController extends BaseController {
     public AjaxResult getsort(CdjhsExerciseRecord cdjhsExerciseRecord){
         List<CdjhsErSort> list = cdjhsExerciseRecordService.selectSortByScore(cdjhsExerciseRecord);
         return AjaxResult.success(list);
+    }
+
+    @GetMapping("/statTW")
+    public AjaxResult stat(Long taskId){
+        StatResult stat = cdjhsExerciseRecordService.stat(taskId);
+        return AjaxResult.success(stat);
+    }
+
+    @GetMapping("/playbackTW")
+    public AjaxResult playbackTW(Long taskId, String topic, Integer action){
+        try {
+            cdjhsExerciseRecordService.playbackTW(taskId, topic, action);
+        } catch (BusinessException | IOException e) {
+            return AjaxResult.error("回放失败");
+        }
+        return AjaxResult.success();
     }
 }

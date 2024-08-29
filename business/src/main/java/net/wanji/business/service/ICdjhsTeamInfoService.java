@@ -59,4 +59,6 @@ public interface ICdjhsTeamInfoService
      * @return 结果
      */
     public int deleteCdjhsTeamInfoById(Long id);
+
+    public List<CdjhsTeamInfo> getScoreRank();
 }

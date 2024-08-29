@@ -4,9 +4,12 @@ import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.evaluation.EvaluationReport;
 import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.exception.BusinessException;
+import net.wanji.business.exercise.dto.luansheng.StatDto;
+import net.wanji.business.exercise.dto.luansheng.StatResult;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 练习记录Service接口
@@ -83,4 +86,8 @@ public interface ICdjhsExerciseRecordService
     public List<CdjhsErSort> selectSortByScore(CdjhsExerciseRecord cdjhsExerciseRecord);
 
     public List<CdjhsExerciseRecord> selectCdjhsCompetitionRecordListTW(CdjhsExerciseRecord cdjhsExerciseRecord);
+
+    public StatResult stat(Long taskId);
+
+    public void playbackTW(Long taskId, String topic, Integer action) throws BusinessException, IOException;
 }

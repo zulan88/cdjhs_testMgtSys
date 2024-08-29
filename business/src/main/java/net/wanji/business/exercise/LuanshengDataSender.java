@@ -3,8 +3,6 @@ package net.wanji.business.exercise;
 import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.common.Constants;
 import net.wanji.business.exercise.dto.luansheng.ParticipantTrajectoryDto;
-import net.wanji.business.exercise.dto.evaluation.StartPoint;
-import net.wanji.business.exercise.dto.luansheng.SceneInfo;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
@@ -33,6 +31,14 @@ public class LuanshengDataSender {
 
     @Async("luanShengHandlePool")
     public void send(List<ClientSimulationTrajectoryDto> participants, Integer taskId, String sceneName){
+        ParticipantTrajectoryDto trajectoryDto = getParticipantTrajectoryDto(participants, sceneName);
+
+        String message = JSONObject.toJSONString(trajectoryDto);
+        String key = StringUtils.format(Constants.ChannelBuilder.CDJHS_LUANSHENG_TASK_KEY_TEMPLATE, taskId);
+        kafkaProducer.sendMessage(luanshengTopic, key, message);
+    }
+
+    public static ParticipantTrajectoryDto getParticipantTrajectoryDto(List<ClientSimulationTrajectoryDto> participants, String sceneName) {
         List<TrajectoryValueDto> value = new ArrayList<>();
         for(ClientSimulationTrajectoryDto participant: participants){
             boolean isMainCar = participant.getRole().equals(Constants.PartRole.AV);
@@ -55,29 +61,6 @@ public class LuanshengDataSender {
         trajectoryDto.setTimestamp(System.currentTimeMillis());
         trajectoryDto.setTimestampType("CREATE_TIME");
         trajectoryDto.setSceneName(sceneName);
-
-        String message = JSONObject.toJSONString(trajectoryDto);
-        String key = StringUtils.format(Constants.ChannelBuilder.CDJHS_LUANSHENG_TASK_KEY_TEMPLATE, taskId);
-        kafkaProducer.sendMessage(luanshengTopic, key, message);
-    }
-
-    private void organize(List<StartPoint> sceneStartPoints, List<Integer> triggeredScenes, Integer index, String duration, ParticipantTrajectoryDto trajectoryDto) {
-        List<SceneInfo> scenes = sceneStartPoints.stream()
-                .map(scene -> {
-                    SceneInfo sceneInfo = new SceneInfo();
-                    sceneInfo.setSceneName(scene.getName());
-                    if (triggeredScenes.contains(scene.getSequence())) {
-                        if (scene.getSequence() - 1 == index) {
-                            sceneInfo.setStatus(1);//正在触发
-                        } else {
-                            sceneInfo.setStatus(0);//已触发
-                        }
-                    } else {
-                        sceneInfo.setStatus(2);//待触发
-                    }
-                    return sceneInfo;
-                }).collect(Collectors.toList());
-        trajectoryDto.setScenes(scenes);
-        trajectoryDto.setDuration(duration);
+        return trajectoryDto;
     }
 }

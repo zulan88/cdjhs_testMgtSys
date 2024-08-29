@@ -34,6 +34,8 @@ public class RedisKeyUtils {
 
     public static final String CDJHS_YKSC_RESULT = "CDJHS_YKSC_RESULT";
 
+    public static final String CDJHS_LUANSHENG_STAT = "CDJHS_LUANSHENG_STAT";
+
     //设备状态连接符
     public static final String DEVICE_STATUS_PRE_LINK = ":";
 
@@ -103,5 +105,9 @@ public class RedisKeyUtils {
 
     public static String getCdjhsYkscResultKey(String deviceId){
         return CDJHS_YKSC_RESULT + DEVICE_STATUS_PRE_LINK + deviceId;
+    }
+
+    public static String getCdjhsLuanshengStatKey(Integer taskId){
+        return CDJHS_LUANSHENG_STAT + DEVICE_STATUS_PRE_LINK + taskId;
     }
 }

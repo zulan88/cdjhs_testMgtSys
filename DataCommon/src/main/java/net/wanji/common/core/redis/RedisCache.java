@@ -313,8 +313,23 @@ public class RedisCache {
         return zSetOperations.rangeWithScores(key, start, end);
     }
 
+    public <T> Set<ZSetOperations.TypedTuple<T>> revRangeWithScores(final String key, long start, long end){
+        ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
+        return zSetOperations.reverseRangeWithScores(key, start, end);
+    }
+
     public <T> Long removeRange(final String key, double min, double max){
         ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
         return zSetOperations.removeRangeByScore(key, min, max);
+    }
+
+    public <T> Long zCard(final String key){
+        ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
+        return zSetOperations.zCard(key);
+    }
+
+    public <T> Long remove(final String key, long start, long end){
+        ZSetOperations<String, T> zSetOperations = redisTemplate.opsForZSet();
+        return zSetOperations.removeRange(key, start, end);
     }
 }

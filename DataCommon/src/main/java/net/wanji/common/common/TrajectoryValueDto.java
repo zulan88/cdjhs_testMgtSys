@@ -33,6 +33,10 @@ TrajectoryValueDto {
     private Double lonAcc;
     private Double latAcc;
     private Double angularVelocityX;
+    //纵向加加速度
+    private Double lonAcc2;
+    //横向加加速度
+    private Double latAcc2;
     private Integer gear;
     private Integer steeringWheelAngle;
     private Integer acceleratorPedal;
@@ -329,5 +333,21 @@ TrajectoryValueDto {
 
     public void setCarSource(Integer carSource) {
         this.carSource = carSource;
+    }
+
+    public Double getLonAcc2() {
+        return lonAcc2;
+    }
+
+    public void setLonAcc2(Double lonAcc2) {
+        this.lonAcc2 = lonAcc2;
+    }
+
+    public Double getLatAcc2() {
+        return latAcc2;
+    }
+
+    public void setLatAcc2(Double latAcc2) {
+        this.latAcc2 = latAcc2;
     }
 }

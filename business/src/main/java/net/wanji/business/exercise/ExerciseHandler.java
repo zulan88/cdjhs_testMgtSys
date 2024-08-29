@@ -12,10 +12,7 @@ import net.wanji.business.listener.ImageDelResultListener;
 import net.wanji.business.listener.ImageIssueResultListener;
 import net.wanji.business.listener.ImageListReportListener;
 import net.wanji.business.listener.TestIssueResultListener;
-import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
-import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
-import net.wanji.business.mapper.TjDeviceDetailMapper;
-import net.wanji.business.mapper.TjTaskMapper;
+import net.wanji.business.mapper.*;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.record.DataFileService;
@@ -107,6 +104,9 @@ public class ExerciseHandler {
 
     @Autowired
     private TjTaskMapper tjTaskMapper;
+
+    @Autowired
+    private CdjhsTeamInfoMapper cdjhsTeamInfoMapper;
 
     @Autowired
     private InteractionFuc interactionFuc;
@@ -211,7 +211,7 @@ public class ExerciseHandler {
                 imageIssueResultListener, testIssueResultListener,
                 restService, tjDeviceDetailMapper, redisMessageListenerContainer,
                 kafkaProducer, dataFileService, kafkaTrajectoryConsumer,
-                tjTaskMapper, interactionFuc, timeoutConfig, paramConfig, logger);
+                tjTaskMapper, interactionFuc, timeoutConfig, paramConfig, logger, cdjhsTeamInfoMapper);
         Future<?> future = executor.submit(taskExercise);
         taskThreadMap.put(record.getId(), future);
     }

@@ -30,6 +30,8 @@ public class CdjhsCarDetail extends BaseEntity
 
     private String teamName;
 
+    private Long teamId;
+
     private String imageId;
 
     private String imageName;
@@ -123,6 +125,14 @@ public class CdjhsCarDetail extends BaseEntity
 
     public void setImageId(String imageId) {
         this.imageId = imageId;
+    }
+
+    public Long getTeamId() {
+        return teamId;
+    }
+
+    public void setTeamId(Long teamId) {
+        this.teamId = teamId;
     }
 
     @Override

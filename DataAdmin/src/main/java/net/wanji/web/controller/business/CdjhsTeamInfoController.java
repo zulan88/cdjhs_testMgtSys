@@ -7,9 +7,9 @@ import net.wanji.business.service.ICdjhsTeamInfoService;
 import net.wanji.common.annotation.Log;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
-import net.wanji.common.core.page.TableDataInfo;
 import net.wanji.common.enums.BusinessType;
 import net.wanji.common.utils.poi.ExcelUtil;
+import org.aspectj.weaver.loadtime.Aj;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @date 2024-08-02
  */
 @RestController
-@RequestMapping("/system/info")
+@RequestMapping("/team")
 public class CdjhsTeamInfoController extends BaseController
 {
     @Autowired
@@ -36,13 +36,20 @@ public class CdjhsTeamInfoController extends BaseController
     /**
      * 查询团队信息列表
      */
-    // @PreAuthorize("@ss.hasPermi('system:info:list')")
     @GetMapping("/list")
-    public TableDataInfo list(CdjhsTeamInfo cdjhsTeamInfo)
+    public AjaxResult list(CdjhsTeamInfo cdjhsTeamInfo)
     {
-        startPage();
         List<CdjhsTeamInfo> list = cdjhsTeamInfoService.selectCdjhsTeamInfoList(cdjhsTeamInfo);
-        return getDataTable(list);
+        return AjaxResult.success(list);
+    }
+
+    /**
+     * 获取比赛评分排行榜
+     */
+    @GetMapping("/getScoreRank")
+    public AjaxResult getScoreRank(){
+        List<CdjhsTeamInfo> list = cdjhsTeamInfoService.getScoreRank();
+        return AjaxResult.success(list);
     }
 
     /**

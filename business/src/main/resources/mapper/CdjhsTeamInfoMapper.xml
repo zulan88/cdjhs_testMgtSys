@@ -7,6 +7,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="net.wanji.business.domain.CdjhsTeamInfo" id="CdjhsTeamInfoResult">
         <result property="id"    column="id"    />
         <result property="teamName"    column="team_name"    />
+        <result property="universityName" column="university_name"/>
+        <result property="sequence" column="sequence"/>
+        <result property="status" column="status"/>
+        <result property="score" column="score"/>
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -14,13 +18,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectCdjhsTeamInfoVo">
-        select id, team_name, create_by, create_time, update_by, update_time from cdjhs_team_info
+        select id, team_name, university_name, sequence, status, score, create_by, create_time, update_by, update_time from cdjhs_team_info
     </sql>
 
     <select id="selectCdjhsTeamInfoList" parameterType="net.wanji.business.domain.CdjhsTeamInfo" resultMap="CdjhsTeamInfoResult">
         <include refid="selectCdjhsTeamInfoVo"/>
         <where>  
             <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
+            <if test="universityName != null and universityName != ''">and university_name like concat ('%', #{universityName}, '%')</if>
+            <if test="sequence != null">and sequence = #{sequence}</if>
+            <if test="status != null">and status = #{status}</if>
+            <if test="score != null">and score = #{score}</if>
         </where>
     </select>
     
@@ -28,11 +36,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectCdjhsTeamInfoVo"/>
         where id = #{id}
     </select>
+
+    <select id="getScoreRank" resultMap="CdjhsTeamInfoResult">
+        <include refid="selectCdjhsTeamInfoVo"/>
+        where status = 3 and score is not null
+        order by score desc
+    </select>
         
     <insert id="insertCdjhsTeamInfo" parameterType="net.wanji.business.domain.CdjhsTeamInfo" useGeneratedKeys="true" keyProperty="id">
         insert into cdjhs_team_info
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="teamName != null and teamName != ''">team_name,</if>
+            <if test="universityName != null and universityName != ''">university_name,</if>
+            <if test="sequence != null">sequence,</if>
+            <if test="status != null">status,</if>
+            <if test="score != null">score,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -40,6 +58,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="teamName != null and teamName != ''">#{teamName},</if>
+            <if test="universityName != null and universityName != ''">#{universityName},</if>
+            <if test="sequence != null">#{sequence},</if>
+            <if test="status != null">#{status},</if>
+            <if test="score != null">#{score},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -51,12 +73,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update cdjhs_team_info
         <trim prefix="SET" suffixOverrides=",">
             <if test="teamName != null and teamName != ''">team_name = #{teamName},</if>
+            <if test="universityName != null and universityName != ''">university_name = #{universityName},</if>
+            <if test="sequence != null">sequence = #{sequence},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="score != null">score = #{score},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id}
+    </update>
+
+    <update id="updateStatusByTeamName">
+        update cdjhs_team_info set status = #{status} where id = #{teamId}
     </update>
 
     <delete id="deleteCdjhsTeamInfoById" parameterType="Long">

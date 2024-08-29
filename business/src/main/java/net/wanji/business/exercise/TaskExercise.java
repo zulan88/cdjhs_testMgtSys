@@ -27,10 +27,7 @@ import net.wanji.business.exercise.dto.strategy.Strategy;
 import net.wanji.business.exercise.enums.*;
 import net.wanji.business.exercise.utils.SimulationAreaCalculator;
 import net.wanji.business.listener.*;
-import net.wanji.business.mapper.CdjhsDeviceImageRecordMapper;
-import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
-import net.wanji.business.mapper.TjDeviceDetailMapper;
-import net.wanji.business.mapper.TjTaskMapper;
+import net.wanji.business.mapper.*;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.service.RestService;
 import net.wanji.business.service.record.DataFileService;
@@ -88,6 +85,8 @@ public class TaskExercise implements Runnable{
 
     private TjTaskMapper tjTaskMapper;
 
+    private CdjhsTeamInfoMapper cdjhsTeamInfoMapper;
+
     private InteractionFuc interactionFuc;
 
     private CdjhsExerciseRecord record;
@@ -126,7 +125,7 @@ public class TaskExercise implements Runnable{
                         RedisCache redisCache, ImageListReportListener imageListReportListener, ImageDelResultListener imageDelResultListener, ImageIssueResultListener imageIssueResultListener,
                         TestIssueResultListener testIssueResultListener, RestService restService, TjDeviceDetailMapper tjDeviceDetailMapper, RedisMessageListenerContainer redisMessageListenerContainer,
                         KafkaProducer kafkaProducer, DataFileService dataFileService, KafkaTrajectoryConsumer kafkaTrajectoryConsumer, TjTaskMapper tjTaskMapper, InteractionFuc interactionFuc,
-                        TimeoutConfig timeoutConfig, ParamConfig paramConfig, Logger logger){
+                        TimeoutConfig timeoutConfig, ParamConfig paramConfig, Logger logger, CdjhsTeamInfoMapper cdjhsTeamInfoMapper){
         this.record = record;
         this.uniques = uniques;
         this.cdjhsExerciseRecordMapper = cdjhsExerciseRecordMapper;
@@ -147,17 +146,23 @@ public class TaskExercise implements Runnable{
         this.timeoutConfig = timeoutConfig;
         this.paramConfig = paramConfig;
         this.log = logger;
+        this.cdjhsTeamInfoMapper = cdjhsTeamInfoMapper;
         this.taskStatus = TaskExerciseEnum.START_INTERACTION.getStatus();
     }
 
     @Override
     public void run() {
         try{
+            //给孪生发送比赛开始进程信息
             log.info("开始准备与域控{}进行交互...", uniques);
             record.setDeviceId(uniques);
             record.setWaitingNum(0);
             record.setStatus(TaskStatusEnum.RUNNING.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+            //更新团队比赛状态
+            if(Objects.nonNull(record.getTestId())){
+                cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
+            }
             //查询域控和仿真设备通道信息
             detail = tjDeviceDetailMapper.selectByUniques(uniques);
             if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
@@ -491,6 +496,10 @@ public class TaskExercise implements Runnable{
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } finally {
+            //更新团队比赛状态
+            if(Objects.nonNull(record.getTeamId())){
+                cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.FINISHED.getStatus());
+            }
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
             ExerciseHandler.taskThreadMap.remove(record.getId());

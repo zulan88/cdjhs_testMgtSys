@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import net.wanji.business.domain.CdjhsCarDetail;
+import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.YkscResultDto;
 import net.wanji.business.exercise.enums.CarStatusEnum;
@@ -143,9 +144,12 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
             YkscResultDto ykReportInfo = redisCache.getCacheObject(key);
             if(Objects.nonNull(ykReportInfo)){
                 String username = ykReportInfo.getTeamName();
-                String teamName = cdjhsUserTeamMapper.selectTeamNameByUserName(username);
+                CdjhsTeamInfo teamInfo = cdjhsUserTeamMapper.selectTeamByUserName(username);
                 carDetail.setUserName(username);
-                carDetail.setTeamName(Objects.isNull(teamName) ? username : teamName);
+                carDetail.setTeamName(Objects.isNull(teamInfo) ? username : teamInfo.getTeamName());
+                if(Objects.nonNull(teamInfo)){
+                    cdjhsCarDetail.setTeamId(teamInfo.getId());
+                }
                 carDetail.setImageId(ykReportInfo.getImageId());
                 carDetail.setImageName(ykReportInfo.getImageName());
                 carDetail.setMd5(ykReportInfo.getMd5());

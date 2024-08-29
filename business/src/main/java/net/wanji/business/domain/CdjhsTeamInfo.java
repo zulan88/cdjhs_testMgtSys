@@ -23,6 +23,15 @@ public class CdjhsTeamInfo extends BaseEntity
     @Excel(name = "团队名称")
     private String teamName;
 
+    private String universityName;
+
+    private Integer sequence;
+
+    //比赛状态 1: 待开始 2: 进行中 3: 已完成
+    private Integer status;
+
+    private Double score;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -40,6 +49,38 @@ public class CdjhsTeamInfo extends BaseEntity
     public String getTeamName() 
     {
         return teamName;
+    }
+
+    public String getUniversityName() {
+        return universityName;
+    }
+
+    public void setUniversityName(String universityName) {
+        this.universityName = universityName;
+    }
+
+    public Integer getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(Integer sequence) {
+        this.sequence = sequence;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public Double getScore() {
+        return score;
+    }
+
+    public void setScore(Double score) {
+        this.score = score;
     }
 
     @Override

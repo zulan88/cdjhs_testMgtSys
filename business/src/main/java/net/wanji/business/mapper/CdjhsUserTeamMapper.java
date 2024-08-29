@@ -1,5 +1,6 @@
 package net.wanji.business.mapper;
 
+import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.domain.CdjhsUserTeam;
 
 import java.util.List;
@@ -60,5 +61,5 @@ public interface CdjhsUserTeamMapper
      */
     public int deleteCdjhsUserTeamByIds(Long[] ids);
 
-    public String selectTeamNameByUserName(String userName);
+    public CdjhsTeamInfo selectTeamByUserName(String userName);
 }

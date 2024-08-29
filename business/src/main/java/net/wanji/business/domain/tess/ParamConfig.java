@@ -44,4 +44,7 @@ public class ParamConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     public String kafkaHost;
+
+    @Value("${trajectory.process}")
+    public String luanshengProcess;
 }

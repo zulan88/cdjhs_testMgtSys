@@ -39,6 +39,7 @@ public class ToLocalDto {
     private String mainChannel;
     private boolean isCompetition;
     private Logger logger;
+    private Long lastTimestamp;
 
     public ToLocalDto(Integer taskId, Integer caseId) {
         this.taskId = taskId;
