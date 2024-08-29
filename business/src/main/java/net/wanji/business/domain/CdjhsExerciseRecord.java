@@ -104,6 +104,10 @@ public class CdjhsExerciseRecord extends BaseEntity
     @Excel(name = "评分")
     private Double score;
 
+    private Double subScore;
+
+    private Double totalScore;
+
     private Integer isCollect;
 
     //是否是比赛任务 0:否 1:是 默认值0
@@ -407,6 +411,22 @@ public class CdjhsExerciseRecord extends BaseEntity
 
     public void setIsCollect(Integer isCollect) {
         this.isCollect = isCollect;
+    }
+
+    public Double getSubSorce() {
+        return subScore;
+    }
+
+    public void setSubSorce(Double subScore) {
+        this.subScore = subScore;
+    }
+
+    public Double getTotalScore() {
+        return totalScore;
+    }
+
+    public void setTotalScore(Double totalScore) {
+        this.totalScore = totalScore;
     }
 
     @Override

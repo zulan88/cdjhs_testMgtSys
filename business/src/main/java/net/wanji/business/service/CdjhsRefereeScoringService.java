@@ -2,9 +2,7 @@ package net.wanji.business.service;
 
 import net.wanji.business.entity.CdjhsRefereeScoring;
 import com.baomidou.mybatisplus.extension.service.IService;
-import net.wanji.common.core.domain.entity.SysRole;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,7 +15,9 @@ import java.util.Map;
  */
 public interface CdjhsRefereeScoringService extends IService<CdjhsRefereeScoring> {
 
-    Integer buildScoreData(Integer taskId, Integer teamId, Integer entryOrder);
+    Integer buildScoreData(Integer recordId, Integer teamId, Integer entryOrder);
 
     Map<String, Object> getScoreData(Integer userId);
+
+    boolean submitScore(CdjhsRefereeScoring refereeScoring);
 }

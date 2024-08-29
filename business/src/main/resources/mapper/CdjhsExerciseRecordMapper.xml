@@ -29,6 +29,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="duration"    column="duration"    />
         <result property="isCompetition" column="is_competition"/>
         <result property="score"    column="score"    />
+        <result property="subScore"    column="sub_score"    />
+        <result property="totalScore"    column="total_score"    />
         <result property="taskCaseVos" column="task_case_vos"/>
         <result property="fusionFilePath" column="fusion_file_path"/>
         <result property="evaluationOutput" column="evaluation_output"/>
@@ -43,7 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
-        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time, user_id, team_id, is_collect from cdjhs_exercise_record
+        select id, test_id, test_case_code, test_case_name, test_paper_type, test_place, user_name, team_name, mirror_name, mirror_version, mirror_id, mirror_path, md5, car_code, device_id, status, waiting_num, check_result, check_msg, start_time, end_time, duration, is_competition, score, sub_score, total_score, task_case_vos, fusion_file_path, evaluation_output, network_id, evaluation_url, evaluation_task_status, create_time, update_time, user_id, team_id, is_collect from cdjhs_exercise_record
     </sql>
 
     <select id="selectCdjhsExerciseRecordList" parameterType="net.wanji.business.domain.CdjhsExerciseRecord" resultMap="CdjhsExerciseRecordResult">
@@ -229,6 +231,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="duration != null">duration = #{duration},</if>
             <if test="isCompetition != null">is_competition = #{isCompetition},</if>
             <if test="score != null">score = #{score},</if>
+            <if test="subScore != null">sub_score = #{subScore},</if>
+            <if test="totalScore != null">total_score = #{totalScore},</if>
             <if test="taskCaseVos != null and taskCaseVos != ''">task_case_vos = #{taskCaseVos},</if>
             <if test="fusionFilePath != null">fusion_file_path = #{fusionFilePath},</if>
             <if test="evaluationOutput != null and evaluationOutput != ''">evaluation_output = #{evaluationOutput},</if>

@@ -1,12 +1,16 @@
 package net.wanji.business.schedule;
 
+import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.service.RestService;
+import net.wanji.common.core.domain.entity.SysDictData;
 import net.wanji.onsite.entity.Evaluation;
 import net.wanji.onsite.service.EvaluationService;
+import net.wanji.system.service.ISysDictTypeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +26,9 @@ public class SynchronousScoring {
 
     @Autowired
     private RestService restService;
+
+    @Autowired
+    private ISysDictTypeService dictTypeService;
 
     @Scheduled(fixedDelayString = "${scheduled.interval:30000}")
     public void synchronousScoring() throws Exception {
@@ -42,6 +49,14 @@ public class SynchronousScoring {
                         Double score = restService.getEvaluationResult(taskID);
                         if(score!=null){
                             record.setScore(score);
+                            if(record.getSubSorce() != null && record.getTotalScore() == null){
+                                List<SysDictData> testType = dictTypeService.selectDictDataByType(Constants.SysType.SORCE_WEIGHT);
+                                if(testType.size()>0){
+                                    Integer value = Integer.parseInt(testType.get(0).getDictValue());
+                                    Double totalScore = (score * value + record.getSubSorce() * (100 - value)) / 100.0;
+                                    record.setTotalScore(totalScore);
+                                }
+                            }
                             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
                         }
                     }
@@ -66,6 +81,24 @@ public class SynchronousScoring {
         }
 
         return parameters;
+    }
+
+    @Async
+    public void takeTotalScore(Integer recordId, Double subScore){
+        CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(Long.valueOf(recordId));
+        if(record!=null){
+            record.setSubSorce(subScore);
+            if(record.getScore() != null && record.getTotalScore() == null){
+                Double score = record.getScore();
+                List<SysDictData> testType = dictTypeService.selectDictDataByType(Constants.SysType.SORCE_WEIGHT);
+                if(testType.size()>0){
+                    Integer value = Integer.parseInt(testType.get(0).getDictValue());
+                    Double totalScore = (score * value + record.getSubSorce() * (100 - value)) / 100.0;
+                    record.setTotalScore(totalScore);
+                }
+            }
+            cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
+        }
     }
 
 }

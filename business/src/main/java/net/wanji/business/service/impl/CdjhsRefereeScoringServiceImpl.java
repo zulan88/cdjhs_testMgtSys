@@ -1,22 +1,15 @@
 package net.wanji.business.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import net.wanji.business.common.Constants;
 import net.wanji.business.entity.CdjhsRefereeScoring;
-import net.wanji.business.entity.TjAtlasTree;
 import net.wanji.business.mapper.CdjhsRefereeScoringMapper;
+import net.wanji.business.schedule.SynchronousScoring;
 import net.wanji.business.service.CdjhsRefereeScoringService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import net.wanji.common.core.domain.entity.SysRole;
-import net.wanji.common.core.domain.entity.SysUser;
-import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.bean.BeanUtils;
 import net.wanji.onsite.entity.CdjhsRefereeMembers;
 import net.wanji.onsite.entity.CdjhsRefereeScoringHistory;
 import net.wanji.onsite.service.CdjhsRefereeMembersService;
 import net.wanji.onsite.service.CdjhsRefereeScoringHistoryService;
-import net.wanji.system.service.ISysRoleService;
-import net.wanji.system.service.ISysUserService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,8 +37,11 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
     @Autowired
     private CdjhsRefereeMembersService cdjhsRefereeMembersService;
 
+    @Autowired
+    private SynchronousScoring synchronousScoring;
+
     @Override
-    public Integer buildScoreData(Integer taskId, Integer teamId, Integer entryOrder) {
+    public Integer buildScoreData(Integer recordId, Integer teamId, Integer entryOrder) {
         List<CdjhsRefereeMembers> members = cdjhsRefereeMembersService.list();
         if (ArrayUtils.isEmpty(members.toArray())) {
             return 0;
@@ -72,7 +68,7 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
             scoring.setId(id);
             scoring.setUserId(member.getUserId());
             scoring.setEntryOrder(String.valueOf(entryOrder));
-            scoring.setTaskId(taskId);
+            scoring.setTaskId(recordId);
             scoring.setTeamId(teamId);
             scoring.setUserName(member.getUserName());
             newList.add(scoring);
@@ -119,5 +115,17 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
                 }};
             }
         }
+    }
+
+    @Override
+    public boolean submitScore(CdjhsRefereeScoring refereeScoring) {
+        boolean res = this.updateById(refereeScoring);
+        List<CdjhsRefereeScoring> list = this.list();
+        if (list.size() == list.stream().filter(item -> item.getScorePoint1() != null && item.getScorePoint2() != null).count()) {
+            // TODO: 确认计算方法，目前为求平均
+            Double subScore = list.stream().mapToDouble(item -> item.getScorePoint1() + item.getScorePoint2()).sum()/(list.size()*2);
+            synchronousScoring.takeTotalScore(refereeScoring.getTaskId(),subScore);
+        }
+        return res;
     }
 }
