@@ -37,6 +37,16 @@ public class TrajectoryDetailBo implements Serializable {
 
     private String heading;
 
+    private Double courseAngle;
+
+    private Double carSource;
+
+    private Double size_length;
+
+    private Double size_width;
+
+    private Double size_height;
+
     public void setPosition(String position) {
         if (StringUtils.isNotEmpty(position)) {
             this.position = position;

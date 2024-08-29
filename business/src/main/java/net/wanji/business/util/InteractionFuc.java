@@ -28,6 +28,8 @@ import net.wanji.common.utils.StringUtils;
 import net.wanji.common.utils.bean.BeanUtils;
 import net.wanji.common.utils.file.FileUploadUtils;
 import net.wanji.common.utils.file.FileUtils;
+import net.wanji.onsite.entity.CdjhsStaticElement;
+import net.wanji.onsite.service.CdjhsStaticElementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -49,6 +51,9 @@ public class InteractionFuc {
 
     @Autowired
     private SceneLabelMap sceneLabelMap;
+
+    @Autowired
+    private CdjhsStaticElementService cdjhsStaticElementService;
 
     /**
      * 根据任务ID查询场景详情。
@@ -163,6 +168,18 @@ public class InteractionFuc {
             for(SceneDetailVo sceneDetailVo: sceneDetails){
                 try {
                     SceneTrajectoryBo sceneTrajectory = getSceneTrajectory(sceneDetailVo.getId(), false);
+                    if (sceneDetailVo.getHazardIndex()!=null){
+                        CdjhsStaticElement hazardIndex = cdjhsStaticElementService.getById(sceneDetailVo.getHazardIndex());
+                        if (hazardIndex != null) {
+                            Gson gson = new Gson();
+                            SceneTrajectoryBo staticdata =  gson.fromJson(hazardIndex.getData(), SceneTrajectoryBo.class);
+                            List<ParticipantTrajectoryBo> trajectorys = staticdata.getParticipantTrajectories();
+                            if (trajectorys != null && trajectorys.size() > 0) {
+                                ParticipantTrajectoryBo trajectory = trajectorys.get(0);
+                                sceneTrajectory.getParticipantTrajectories().add(trajectory);
+                            }
+                         }
+                    }
                     sceneDetailVo.setSceneTrajectoryBo(sceneTrajectory);
                 } catch (IOException e) {
                     e.printStackTrace();

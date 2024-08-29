@@ -49,17 +49,18 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
         List<CdjhsRefereeScoring> list = this.list();
         Integer submitted = Math.toIntExact(list.stream().filter(item -> item.getScorePoint1() == null || item.getScorePoint2() == null).count());
         if (submitted > 0) {
-            return 1;
+            //TODO: 若需要添加裁判未打分校验，加在此处
+        }else {
+            List<CdjhsRefereeScoringHistory> histories = new ArrayList<>();
+            for (CdjhsRefereeScoring item : list) {
+                CdjhsRefereeScoringHistory history = new CdjhsRefereeScoringHistory();
+                BeanUtils.copyBeanProp(history, item);
+                history.setId(null);
+                history.setRecordDate(LocalDateTime.now());
+                histories.add(history);
+            }
+            cdjhsRefereeScoringHistoryService.saveBatch(histories);
         }
-        List<CdjhsRefereeScoringHistory> histories = new ArrayList<>();
-        for (CdjhsRefereeScoring item : list) {
-            CdjhsRefereeScoringHistory history = new CdjhsRefereeScoringHistory();
-            BeanUtils.copyBeanProp(history, item);
-            history.setId(null);
-            history.setRecordDate(LocalDateTime.now());
-            histories.add(history);
-        }
-        cdjhsRefereeScoringHistoryService.saveBatch(histories);
         this.removeBatchByIds(list);
         List<CdjhsRefereeScoring> newList = new ArrayList<>();
         int id = 1;

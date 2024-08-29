@@ -11,6 +11,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.domain.evaluation.*;
 import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.entity.TjDeviceDetail;
@@ -27,9 +28,7 @@ import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.mapper.TjDeviceDetailMapper;
 import net.wanji.business.pdf.enums.IndexTypeEnum;
 import net.wanji.business.schedule.RealPlaybackSchedule;
-import net.wanji.business.service.ICdjhsExerciseRecordService;
-import net.wanji.business.service.KafkaProducer;
-import net.wanji.business.service.RestService;
+import net.wanji.business.service.*;
 import net.wanji.business.util.InteractionFuc;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import net.wanji.common.common.TrajectoryValueDto;
@@ -86,6 +85,13 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Autowired
     private KafkaProducer kafkaProducer;
+
+    @Autowired
+    CdjhsRefereeScoringService refereeScoringService;
+
+    @Autowired
+    ICdjhsTeamInfoService teamInfoService;
+
     /**
      * 查询练习记录
      * 
@@ -535,6 +541,14 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
         //任务下发域控
         exerciseHandler.run(cdjhsExerciseRecord, cdjhsExerciseRecord.getDeviceId());
+        //告知主观评分
+        CdjhsTeamInfo teamInfo = new CdjhsTeamInfo();
+        teamInfo.setTeamName(cdjhsExerciseRecord.getTeamName());
+        List<CdjhsTeamInfo> teamInfoList = teamInfoService.selectCdjhsTeamInfoList(teamInfo);
+        if(CollectionUtils.isNotEmpty(teamInfoList)){
+            teamInfo = teamInfoList.get(0);
+            refereeScoringService.buildScoreData(Math.toIntExact(cdjhsExerciseRecord.getId()), Math.toIntExact(teamInfo.getId()),teamInfo.getSequence());
+        }
         return i;
     }
 

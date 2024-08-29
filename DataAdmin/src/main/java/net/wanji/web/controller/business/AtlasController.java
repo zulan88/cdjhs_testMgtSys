@@ -116,8 +116,7 @@ public class AtlasController extends BaseController {
 
     @GetMapping("/test")
     public AjaxResult test(Integer id) throws IOException {
-        interactionFuc.dualwithMainTrace(id);
-        return AjaxResult.success();
+        return AjaxResult.success(interactionFuc.getSceneDetails(id));
     }
 
 }

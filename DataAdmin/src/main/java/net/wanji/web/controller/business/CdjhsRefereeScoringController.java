@@ -55,7 +55,7 @@ public class CdjhsRefereeScoringController extends BaseController {
     @ApiOperation(value = "裁判员：打分")
     @PostMapping("/save")
     public AjaxResult saveTree(@RequestBody CdjhsRefereeScoring refereeScoring) {
-        return refereeScoringService.saveOrUpdate(refereeScoring)
+        return refereeScoringService.submitScore(refereeScoring)
                 ? AjaxResult.success("成功")
                 : AjaxResult.error("失败");
     }
