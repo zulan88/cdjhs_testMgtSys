@@ -2,9 +2,11 @@ package net.wanji.business.service.impl;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import net.wanji.business.domain.CdjhsTeamInfo;
+import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.mapper.CdjhsTeamInfoMapper;
 import net.wanji.business.service.ICdjhsTeamInfoService;
 import net.wanji.common.utils.DateUtils;
@@ -104,6 +106,16 @@ public class CdjhsTeamInfoServiceImpl implements ICdjhsTeamInfoService
 
     @Override
     public List<CdjhsTeamInfo> getScoreRank() {
-        return cdjhsTeamInfoMapper.getScoreRank();
+        CdjhsTeamInfo teamInfo = new CdjhsTeamInfo();
+        List<CdjhsTeamInfo> list = selectCdjhsTeamInfoList(teamInfo);
+        return list.stream()
+                .sorted(Comparator.comparingDouble((CdjhsTeamInfo item) -> {
+                    if (Objects.nonNull(item.getScore())) {
+                        return item.getScore();
+                    } else {
+                        return -1;
+                    }
+                }).reversed().thenComparingInt(CdjhsTeamInfo::getSequence))
+                .collect(Collectors.toList());
     }
 }

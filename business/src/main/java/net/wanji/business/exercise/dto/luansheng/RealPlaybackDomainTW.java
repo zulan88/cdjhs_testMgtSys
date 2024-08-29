@@ -30,6 +30,18 @@ public class RealPlaybackDomainTW implements Runnable{
     private double radius;
     private KafkaProducer kafkaProducer;
     private Long lastTimestamp;
+    private boolean isSpeedOverLimit;
+    private Long startTimeOfSpeed;
+    private boolean isLonAccOverLimit;
+    private Long startTimeOfLonAcc;
+    private boolean isLonAcc2OverLimit;
+    private Long startTimeOfLonAcc2;
+    private boolean isLatAccOverLimit;
+    private Long startTimeOfLatAcc;
+    private boolean isLatAcc2OverLimit;
+    private Long startTimeOfLatAcc2;
+    private boolean isAngularOverLimit;
+    private Long  startTimeOfAngular;
 
     public RealPlaybackDomainTW(Long taskId, String topic, List<List<ClientSimulationTrajectoryDto>> trajectories,
                                 List<StartPoint> sceneStartPoints, double radius,

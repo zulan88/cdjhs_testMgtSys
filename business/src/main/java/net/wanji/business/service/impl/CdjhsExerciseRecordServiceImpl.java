@@ -566,7 +566,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
     public StatResult stat(Long taskId) {
         StatResult result = new StatResult();
         String statKey = RedisKeyUtils.getCdjhsLuanshengStatKey(taskId.intValue());
-        Set<ZSetOperations.TypedTuple<TrajectoryValueDto>> typedTuples = redisCache.range(statKey, 0, -1);
+        Set<ZSetOperations.TypedTuple<TrajectoryValueDto>> typedTuples = redisCache.rangeWithScores(statKey, 0, -1);
         if(StringUtils.isNotEmpty(typedTuples)){
             List<ZSetOperations.TypedTuple<TrajectoryValueDto>> list = new ArrayList<>(typedTuples);
             long timestamp = Objects.requireNonNull(list.get(list.size() - 1).getScore()).longValue();
