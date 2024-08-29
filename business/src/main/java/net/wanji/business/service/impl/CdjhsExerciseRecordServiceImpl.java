@@ -633,6 +633,8 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 //场景起点列表
                 List<StartPoint> sceneStartPoints = interactionFuc.getSceneStartPoints(record.getTestId().intValue());
                 //开始场景回放
+                String statKey = RedisKeyUtils.getCdjhsLuanshengStatKey(taskId.intValue());
+                redisCache.deleteObject(statKey);
                 TWPlaybackSchedule.startSendingData(taskId, topic, trajectories, sceneStartPoints, radius, kafkaProducer);
                 break;
             case Constants.PlaybackAction.STOP:

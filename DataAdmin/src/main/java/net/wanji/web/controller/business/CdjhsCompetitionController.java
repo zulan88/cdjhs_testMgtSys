@@ -5,16 +5,20 @@ import net.wanji.business.domain.CdjhsExerciseRecord;
 import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.exception.BusinessException;
 import net.wanji.business.exercise.dto.luansheng.StatResult;
+import net.wanji.business.exercise.dto.luansheng.TaskCacheDto;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.service.ICdjhsExerciseRecordService;
 import net.wanji.common.core.controller.BaseController;
 import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.page.TableDataInfo;
+import net.wanji.common.core.redis.RedisCache;
+import net.wanji.common.utils.RedisKeyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author: jenny
@@ -26,6 +30,9 @@ import java.util.List;
 public class CdjhsCompetitionController extends BaseController {
     @Autowired
     private ICdjhsExerciseRecordService cdjhsExerciseRecordService;
+
+    @Autowired
+    private RedisCache redisCache;
 
     @GetMapping("/list")
     public TableDataInfo list(CdjhsExerciseRecord cdjhsExerciseRecord){
@@ -53,6 +60,14 @@ public class CdjhsCompetitionController extends BaseController {
     @PostMapping("/add")
     public AjaxResult add(@RequestBody CdjhsExerciseRecord cdjhsExerciseRecord){
         try {
+            //判断当前任务缓存是否打分完成
+            TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
+            if(Objects.nonNull(cache)){
+                Integer scoreStatus = cache.getScoreStatus();
+                if(scoreStatus != 1){
+                    return AjaxResult.error("当前任务打分未完成,请等待...");
+                }
+            }
             return toAjax(cdjhsExerciseRecordService.createCompetitionRecord(cdjhsExerciseRecord));
         }catch (Exception e){
             return AjaxResult.error("创建比赛任务失败");

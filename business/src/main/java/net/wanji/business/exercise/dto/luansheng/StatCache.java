@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.ZSetOperations;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author: jenny
@@ -57,6 +58,7 @@ public class StatCache {
             if(redisCache.zCard(statKey) > 31){
                 redisCache.remove(statKey, 0, 0);
             }
+            redisCache.expire(statKey, 30, TimeUnit.MINUTES);
         }
     }
 }

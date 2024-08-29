@@ -18,6 +18,7 @@ import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreat
 import net.wanji.business.exercise.dto.jidaevaluation.evaluation.KafkaTopic;
 import net.wanji.business.exercise.dto.jidaevaluation.network.*;
 import net.wanji.business.exercise.dto.luansheng.CAMatchProcess;
+import net.wanji.business.exercise.dto.luansheng.TaskCacheDto;
 import net.wanji.business.exercise.dto.report.ReportCurrentPointInfo;
 import net.wanji.business.exercise.dto.report.ReportData;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
@@ -161,9 +162,12 @@ public class TaskExercise implements Runnable{
                 CAMatchProcess process = CAMatchProcess.buildRunning(record.getId(), record.getTeamId());
                 sendProcess(process);
                 //更新团队比赛状态
-                cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
+                if(Objects.nonNull(record.getTeamId())){
+                    cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
+                }
                 //更新任务缓存
-
+                TaskCacheDto cache = new TaskCacheDto(record.getId(), record.getTeamId(), TaskStatusEnum.RUNNING.getStatus(), 0);
+                redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
             }
             record.setDeviceId(uniques);
             record.setWaitingNum(0);
@@ -507,7 +511,12 @@ public class TaskExercise implements Runnable{
                 CAMatchProcess process = CAMatchProcess.buildFinished(record.getId(), record.getTeamId(), paramConfig.objectivePercent, paramConfig.subjectivePercent);
                 sendProcess(process);
                 //更新团队比赛状态
-                cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.FINISHED.getStatus());
+                if(Objects.nonNull(record.getTeamId())){
+                    cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.FINISHED.getStatus());
+                }
+                //更新任务缓存状态
+                TaskCacheDto cache = new TaskCacheDto(record.getId(), record.getTeamId(), TaskStatusEnum.FINISHED.getStatus(), 0);
+                redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
             }
             //释放域控设备的占用
             ExerciseHandler.occupationMap.remove(uniques);
