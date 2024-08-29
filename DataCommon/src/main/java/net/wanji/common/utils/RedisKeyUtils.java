@@ -36,6 +36,8 @@ public class RedisKeyUtils {
 
     public static final String CDJHS_LUANSHENG_STAT = "CDJHS_LUANSHENG_STAT";
 
+    public static final String CDJHS_CURRENT_TASK_CACHE = "CDJHS_CURRENT_TASK_CACHE";
+
     //设备状态连接符
     public static final String DEVICE_STATUS_PRE_LINK = ":";
 

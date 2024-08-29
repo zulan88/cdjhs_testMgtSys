@@ -47,4 +47,10 @@ public class ParamConfig {
 
     @Value("${trajectory.process}")
     public String luanshengProcess;
+
+    @Value("${trajectory.objectivePercent}")
+    public Integer objectivePercent;
+
+    @Value("${trajectory.subjectivePercent}")
+    public Integer subjectivePercent;
 }

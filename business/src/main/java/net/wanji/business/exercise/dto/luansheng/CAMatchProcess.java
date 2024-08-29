@@ -1,6 +1,7 @@
 package net.wanji.business.exercise.dto.luansheng;
 
 import lombok.Data;
+import net.wanji.business.exercise.enums.TWProcessStatusEnum;
 
 /**
  * @author: jenny
@@ -33,4 +34,24 @@ public class CAMatchProcess {
 
     //总得分
     private Double totalScore;
+
+    public static CAMatchProcess buildRunning(Long taskId, Long teamId){
+        CAMatchProcess process = new CAMatchProcess();
+        process.setStatus(TWProcessStatusEnum.RUNNING.getStatus());
+        process.setDatetime(System.currentTimeMillis());
+        process.setTaskId(taskId);
+        process.setTeamId(teamId);
+        return process;
+    }
+
+    public static CAMatchProcess buildFinished(Long taskId, Long teamId, Integer objectivePercent, Integer subjectivePercent){
+        CAMatchProcess process = new CAMatchProcess();
+        process.setStatus(TWProcessStatusEnum.FINISHED.getStatus());
+        process.setDatetime(System.currentTimeMillis());
+        process.setTaskId(taskId);
+        process.setTeamId(teamId);
+        process.setObjectivePercent(objectivePercent);
+        process.setSubjectivePercent(subjectivePercent);
+        return process;
+    }
 }

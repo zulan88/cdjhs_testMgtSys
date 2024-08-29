@@ -17,6 +17,7 @@ import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreat
 import net.wanji.business.exercise.dto.jidaevaluation.evaluation.EvaluationCreateDto;
 import net.wanji.business.exercise.dto.jidaevaluation.evaluation.KafkaTopic;
 import net.wanji.business.exercise.dto.jidaevaluation.network.*;
+import net.wanji.business.exercise.dto.luansheng.CAMatchProcess;
 import net.wanji.business.exercise.dto.report.ReportCurrentPointInfo;
 import net.wanji.business.exercise.dto.report.ReportData;
 import net.wanji.business.exercise.dto.simulation.SimulationSceneDto;
@@ -153,16 +154,22 @@ public class TaskExercise implements Runnable{
     @Override
     public void run() {
         try{
-            //给孪生发送比赛开始进程信息
             log.info("开始准备与域控{}进行交互...", uniques);
+            boolean isCompetition = record.getIsCompetition() == 1;
+            if(isCompetition){
+                //给孪生发送比赛开始进程信息
+                CAMatchProcess process = CAMatchProcess.buildRunning(record.getId(), record.getTeamId());
+                sendProcess(process);
+                //更新团队比赛状态
+                cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
+                //更新任务缓存
+
+            }
             record.setDeviceId(uniques);
             record.setWaitingNum(0);
             record.setStatus(TaskStatusEnum.RUNNING.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
-            //更新团队比赛状态
-            if(Objects.nonNull(record.getTestId())){
-                cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
-            }
+
             //查询域控和仿真设备通道信息
             detail = tjDeviceDetailMapper.selectByUniques(uniques);
             if(Objects.isNull(detail) || StringUtils.isEmpty(detail.getDataChannel()) || StringUtils.isEmpty(detail.getCommandChannel())){
@@ -182,7 +189,6 @@ public class TaskExercise implements Runnable{
             tessDataChannel = tessStartReq.getData().getInteractiveConfig().getTessngChannel();
             String tessStatusChannel = tessStartReq.getData().getInteractiveConfig().getHeartChannel();
 
-            boolean isCompetition = record.getIsCompetition() == 1;
             String mirrorId = record.getMirrorId();
             if(!isCompetition){
                 //获取镜像列表
@@ -496,8 +502,11 @@ public class TaskExercise implements Runnable{
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } finally {
-            //更新团队比赛状态
-            if(Objects.nonNull(record.getTeamId())){
+            if(record.getIsCompetition() == 1){
+                //给孪生发送比赛结束进程信息
+                CAMatchProcess process = CAMatchProcess.buildFinished(record.getId(), record.getTeamId(), paramConfig.objectivePercent, paramConfig.subjectivePercent);
+                sendProcess(process);
+                //更新团队比赛状态
                 cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.FINISHED.getStatus());
             }
             //释放域控设备的占用
@@ -509,6 +518,11 @@ public class TaskExercise implements Runnable{
             //自定义appender销毁
             AppenderManager.destroyAppender(record.getId(), LogTypeEnum.COMMAND.getName());
         }
+    }
+
+    private void sendProcess(CAMatchProcess process) {
+        String json = JSONObject.toJSONString(process);
+        kafkaProducer.sendMessage(paramConfig.luanshengProcess, json);
     }
 
     private void processAfterTaskEnd() {
