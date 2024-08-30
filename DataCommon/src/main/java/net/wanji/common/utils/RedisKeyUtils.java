@@ -36,6 +36,8 @@ public class RedisKeyUtils {
 
     public static final String CDJHS_LUANSHENG_STAT = "CDJHS_LUANSHENG_STAT";
 
+    public static final String CDJHS_LUANSHENG_STAT_THRESOLD = "CDJHS_LUANSHENG_STAT_THRESOLD";
+
     public static final String CDJHS_CURRENT_TASK_CACHE = "CDJHS_CURRENT_TASK_CACHE";
 
     //设备状态连接符
@@ -111,5 +113,9 @@ public class RedisKeyUtils {
 
     public static String getCdjhsLuanshengStatKey(Integer taskId){
         return CDJHS_LUANSHENG_STAT + DEVICE_STATUS_PRE_LINK + taskId;
+    }
+
+    public static String getCdjhsLuanshengStatThresoldKey(Integer taskId){
+        return CDJHS_LUANSHENG_STAT_THRESOLD + DEVICE_STATUS_PRE_LINK + taskId;
     }
 }

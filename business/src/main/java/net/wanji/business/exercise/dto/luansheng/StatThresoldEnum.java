@@ -5,7 +5,9 @@ package net.wanji.business.exercise.dto.luansheng;
  * @create: 2024-08-28 2:15 下午
  */
 public enum StatThresoldEnum {
-    ANGULAR_VELOCITY("angularVelocity", new double[]{0, 0.5}),
+    SPEED("speed", new double[]{0, 30}),
+
+    ANGULAR_VELOCITY("angularVelocityX", new double[]{0, 0.5}),
 
     LAT_ACC("latAcc", new double[]{-0.5, 0.5}),
 

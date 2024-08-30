@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
+import net.wanji.business.exercise.dto.luansheng.CommonField;
 import net.wanji.business.service.record.impl.FileWriteRunnable;
 import net.wanji.business.util.LongitudeLatitudeUtils;
 
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 @Data
 @NoArgsConstructor
-public class ToLocalDto {
+public class ToLocalDto extends CommonField {
     private Integer taskId;
     private Integer caseId;
     private String fileName;
@@ -39,7 +40,6 @@ public class ToLocalDto {
     private String mainChannel;
     private boolean isCompetition;
     private Logger logger;
-    private Long lastTimestamp;
 
     public ToLocalDto(Integer taskId, Integer caseId) {
         this.taskId = taskId;

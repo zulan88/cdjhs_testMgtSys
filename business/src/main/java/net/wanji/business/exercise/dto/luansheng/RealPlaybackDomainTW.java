@@ -8,7 +8,6 @@ import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.business.util.LongitudeLatitudeUtils;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
-import net.wanji.common.core.redis.RedisCache;
 
 import java.awt.geom.Point2D;
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
  * @create: 2024-08-28 5:29 下午
  */
 @Data
-public class RealPlaybackDomainTW implements Runnable{
+public class RealPlaybackDomainTW extends CommonField implements Runnable {
     private Long taskId;
     private String topic;
     private List<List<ClientSimulationTrajectoryDto>> trajectories;
@@ -29,19 +28,6 @@ public class RealPlaybackDomainTW implements Runnable{
     private List<StartPoint> sceneStartPoints;
     private double radius;
     private KafkaProducer kafkaProducer;
-    private Long lastTimestamp;
-    private boolean isSpeedOverLimit;
-    private Long startTimeOfSpeed;
-    private boolean isLonAccOverLimit;
-    private Long startTimeOfLonAcc;
-    private boolean isLonAcc2OverLimit;
-    private Long startTimeOfLonAcc2;
-    private boolean isLatAccOverLimit;
-    private Long startTimeOfLatAcc;
-    private boolean isLatAcc2OverLimit;
-    private Long startTimeOfLatAcc2;
-    private boolean isAngularOverLimit;
-    private Long  startTimeOfAngular;
 
     public RealPlaybackDomainTW(Long taskId, String topic, List<List<ClientSimulationTrajectoryDto>> trajectories,
                                 List<StartPoint> sceneStartPoints, double radius,

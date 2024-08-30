@@ -20,4 +20,14 @@ public class TrajectoryPoint {
     //类型
     //（初始点：start；途径点：pathway；冲突点：conflict；结束点：end）
     private String type;
+
+    private Double courseAngle;
+
+    private Double carSource;
+
+    private Double size_length;
+
+    private Double size_width;
+
+    private Double size_height;
 }

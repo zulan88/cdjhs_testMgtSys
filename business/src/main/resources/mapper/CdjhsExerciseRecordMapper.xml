@@ -69,7 +69,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="waitingNum != null "> and waiting_num = #{waitingNum}</if>
             <if test="checkResult != null "> and check_result = #{checkResult}</if>
             <if test="checkMsg != null  and checkMsg != ''"> and check_msg = #{checkMsg}</if>
-            <if test="startTime != null "> and end_time >= #{startTime}</if>
+            <if test="startTime != null "> and end_time <![CDATA[ >= #{startTime}]]></if>
             <if test="endTime != null "> and end_time <![CDATA[ <= #{endTime}]]></if>
             <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
             <if test="isCompetition != null">and is_competition = #{isCompetition}</if>
@@ -104,7 +104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="waitingNum != null "> and waiting_num = #{waitingNum}</if>
             <if test="checkResult != null "> and check_result = #{checkResult}</if>
             <if test="checkMsg != null  and checkMsg != ''"> and check_msg = #{checkMsg}</if>
-            <if test="startTime != null "> and end_time >= #{startTime}</if>
+            <if test="startTime != null "> and end_time <![CDATA[ >= #{startTime}]]></if>
             <if test="endTime != null "> and end_time <![CDATA[ <= #{endTime}]]></if>
             <if test="duration != null  and duration != ''"> and duration = #{duration}</if>
             <if test="isCompetition != null">and is_competition = #{isCompetition}</if>
