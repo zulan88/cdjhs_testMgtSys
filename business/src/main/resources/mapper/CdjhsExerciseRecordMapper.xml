@@ -41,7 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="userId"   column="user_id"/>
         <result property="teamId"   column="team_id"/>
-        <result property="isCollect"    column="is_colletc"/>
+        <result property="isCollect"    column="is_collect"/>
     </resultMap>
 
     <sql id="selectCdjhsExerciseRecordVo">
