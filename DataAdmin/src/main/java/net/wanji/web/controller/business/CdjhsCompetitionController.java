@@ -94,6 +94,9 @@ public class CdjhsCompetitionController extends BaseController {
 
     @GetMapping("/statTW")
     public AjaxResult stat(Long taskId){
+        if(Objects.isNull(taskId)){
+            return AjaxResult.error("任务id不能为空");
+        }
         StatResult stat = cdjhsExerciseRecordService.stat(taskId);
         return AjaxResult.success(stat);
     }
@@ -101,6 +104,9 @@ public class CdjhsCompetitionController extends BaseController {
     @GetMapping("/playbackTW")
     public AjaxResult playbackTW(Long taskId, String topic, Integer action){
         try {
+            if(Objects.isNull(taskId) || Objects.isNull(action)){
+                return AjaxResult.error("参数错误");
+            }
             cdjhsExerciseRecordService.playbackTW(taskId, topic, action);
         } catch (BusinessException | IOException e) {
             return AjaxResult.error("回放失败");

@@ -2,19 +2,17 @@ package net.wanji.business.schedule;
 
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.exercise.dto.luansheng.CAMatchProcess;
 import net.wanji.business.exercise.dto.luansheng.TaskCacheDto;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
+import net.wanji.business.mapper.CdjhsTeamInfoMapper;
 import net.wanji.business.service.RestService;
-import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.domain.entity.SysDictData;
 import net.wanji.common.core.redis.RedisCache;
 import net.wanji.common.utils.RedisKeyUtils;
-import net.wanji.onsite.entity.Evaluation;
-import net.wanji.onsite.service.EvaluationService;
 import net.wanji.system.service.ISysDictTypeService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -28,6 +26,9 @@ public class SynchronousScoring {
 
     @Autowired
     private CdjhsExerciseRecordMapper cdjhsExerciseRecordMapper;
+
+    @Autowired
+    private CdjhsTeamInfoMapper cdjhsTeamInfoMapper;
 
     @Autowired
     private RestService restService;
@@ -72,6 +73,11 @@ public class SynchronousScoring {
                                         redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
                                         CAMatchProcess caMatchProcess = CAMatchProcess.buildSorceFinished(record.getId(), record.getTeamId(), value, score, record.getSubScore(), totalScore);
                                         twinsPlayback.sendCAMatchProcess("CAMatchProcess", caMatchProcess);
+                                        if(Objects.nonNull(cache.getTeamId())){
+                                            CdjhsTeamInfo teamInfo = new CdjhsTeamInfo();
+                                            teamInfo.setScore(totalScore);
+                                            cdjhsTeamInfoMapper.updateCdjhsTeamInfo(teamInfo);
+                                        }
                                     }
                                 }
                             }
