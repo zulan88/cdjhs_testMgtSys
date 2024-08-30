@@ -3,6 +3,7 @@ package net.wanji.business.schedule;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.wanji.business.exercise.dto.luansheng.CAMatchProcess;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,11 @@ public class TwinsPlayback {
             kafkaProducer.sendMessage(topic, jsonObject.toString());
             Thread.sleep(99);
         }
+    }
+
+    public void sendCAMatchProcess(String topic, CAMatchProcess camatchProcessDto){
+        Gson gson = new Gson();
+        kafkaProducer.sendMessage(topic, gson.toJson(camatchProcessDto));
     }
 
 }

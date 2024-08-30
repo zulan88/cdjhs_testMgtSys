@@ -54,4 +54,18 @@ public class CAMatchProcess {
         process.setSubjectivePercent(subjectivePercent);
         return process;
     }
+
+    public static CAMatchProcess buildSorceFinished(Long taskId, Long teamId, Integer objectivePercent, Double objectiveScore, Double subjectiveScore, Double totalScore){
+        CAMatchProcess process = new CAMatchProcess();
+        process.setStatus(TWProcessStatusEnum.SCORE_COMPLETED.getStatus());
+        process.setDatetime(System.currentTimeMillis());
+        process.setTaskId(taskId);
+        process.setTeamId(teamId);
+        process.setObjectivePercent(objectivePercent);
+        process.setSubjectivePercent(100-objectivePercent);
+        process.setObjectiveScore(objectiveScore);
+        process.setSubjectiveScore(subjectiveScore);
+        process.setTotalScore(totalScore);
+        return process;
+    }
 }

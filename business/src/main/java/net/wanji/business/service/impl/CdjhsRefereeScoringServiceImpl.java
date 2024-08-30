@@ -125,7 +125,7 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
         if (list.size() == list.stream().filter(item -> item.getScorePoint1() != null && item.getScorePoint2() != null).count()) {
             // TODO: 确认计算方法，目前为求平均
             Double subScore = list.stream().mapToDouble(item -> item.getScorePoint1() + item.getScorePoint2()).sum()/(list.size()*2);
-            synchronousScoring.takeTotalScore(refereeScoring.getTaskId(),subScore);
+            synchronousScoring.takeTotalScore(refereeScoring.getTaskId(), subScore, refereeScoring.getTeamId());
         }
         return res;
     }

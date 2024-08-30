@@ -2,9 +2,14 @@ package net.wanji.business.schedule;
 
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
+import net.wanji.business.exercise.dto.luansheng.CAMatchProcess;
+import net.wanji.business.exercise.dto.luansheng.TaskCacheDto;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
 import net.wanji.business.service.RestService;
+import net.wanji.common.core.domain.AjaxResult;
 import net.wanji.common.core.domain.entity.SysDictData;
+import net.wanji.common.core.redis.RedisCache;
+import net.wanji.common.utils.RedisKeyUtils;
 import net.wanji.onsite.entity.Evaluation;
 import net.wanji.onsite.service.EvaluationService;
 import net.wanji.system.service.ISysDictTypeService;
@@ -29,6 +34,12 @@ public class SynchronousScoring {
 
     @Autowired
     private ISysDictTypeService dictTypeService;
+
+    @Autowired
+    private TwinsPlayback twinsPlayback;
+
+    @Autowired
+    private RedisCache redisCache;
 
     @Scheduled(fixedDelayString = "${scheduled.interval:30000}")
     public void synchronousScoring() throws Exception {
@@ -55,6 +66,13 @@ public class SynchronousScoring {
                                     Integer value = Integer.parseInt(testType.get(0).getDictValue());
                                     Double totalScore = (score * value + record.getSubSorce() * (100 - value)) / 100.0;
                                     record.setTotalScore(totalScore);
+                                    TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
+                                    if(Objects.nonNull(cache)){
+                                        cache.setScoreStatus(1);
+                                        redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
+                                        CAMatchProcess caMatchProcess = CAMatchProcess.buildSorceFinished(record.getId(), record.getTeamId(), value, score, record.getSubSorce(), totalScore);
+                                        twinsPlayback.sendCAMatchProcess("CAMatchProcess", caMatchProcess);
+                                    }
                                 }
                             }
                             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
@@ -84,7 +102,7 @@ public class SynchronousScoring {
     }
 
     @Async
-    public void takeTotalScore(Integer recordId, Double subScore){
+    public void takeTotalScore(Integer recordId, Double subScore, Integer teamId){
         CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(Long.valueOf(recordId));
         if(record!=null){
             record.setSubSorce(subScore);
@@ -95,6 +113,13 @@ public class SynchronousScoring {
                     Integer value = Integer.parseInt(testType.get(0).getDictValue());
                     Double totalScore = (score * value + record.getSubSorce() * (100 - value)) / 100.0;
                     record.setTotalScore(totalScore);
+                    TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
+                    if(Objects.nonNull(cache)){
+                        cache.setScoreStatus(1);
+                        redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
+                        CAMatchProcess caMatchProcess = CAMatchProcess.buildSorceFinished(record.getId(), Long.valueOf(teamId), value, score, subScore, totalScore);
+                        twinsPlayback.sendCAMatchProcess("CAMatchProcess", caMatchProcess);
+                    }
                 }
             }
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
