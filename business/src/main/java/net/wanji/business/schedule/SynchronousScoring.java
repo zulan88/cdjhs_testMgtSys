@@ -60,17 +60,17 @@ public class SynchronousScoring {
                         Double score = restService.getEvaluationResult(taskID);
                         if(score!=null){
                             record.setScore(score);
-                            if(record.getSubSorce() != null && record.getTotalScore() == null){
+                            if(record.getSubScore() != null && record.getTotalScore() == null){
                                 List<SysDictData> testType = dictTypeService.selectDictDataByType(Constants.SysType.SORCE_WEIGHT);
                                 if(testType.size()>0){
                                     Integer value = Integer.parseInt(testType.get(0).getDictValue());
-                                    Double totalScore = (score * value + record.getSubSorce() * (100 - value)) / 100.0;
+                                    Double totalScore = (score * value + record.getSubScore() * (100 - value)) / 100.0;
                                     record.setTotalScore(totalScore);
                                     TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
                                     if(Objects.nonNull(cache)){
                                         cache.setScoreStatus(1);
                                         redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
-                                        CAMatchProcess caMatchProcess = CAMatchProcess.buildSorceFinished(record.getId(), record.getTeamId(), value, score, record.getSubSorce(), totalScore);
+                                        CAMatchProcess caMatchProcess = CAMatchProcess.buildSorceFinished(record.getId(), record.getTeamId(), value, score, record.getSubScore(), totalScore);
                                         twinsPlayback.sendCAMatchProcess("CAMatchProcess", caMatchProcess);
                                     }
                                 }
@@ -105,13 +105,13 @@ public class SynchronousScoring {
     public void takeTotalScore(Integer recordId, Double subScore, Integer teamId){
         CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(Long.valueOf(recordId));
         if(record!=null){
-            record.setSubSorce(subScore);
+            record.setSubScore(subScore);
             if(record.getScore() != null && record.getTotalScore() == null){
                 Double score = record.getScore();
                 List<SysDictData> testType = dictTypeService.selectDictDataByType(Constants.SysType.SORCE_WEIGHT);
                 if(testType.size()>0){
                     Integer value = Integer.parseInt(testType.get(0).getDictValue());
-                    Double totalScore = (score * value + record.getSubSorce() * (100 - value)) / 100.0;
+                    Double totalScore = (score * value + record.getSubScore() * (100 - value)) / 100.0;
                     record.setTotalScore(totalScore);
                     TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
                     if(Objects.nonNull(cache)){
