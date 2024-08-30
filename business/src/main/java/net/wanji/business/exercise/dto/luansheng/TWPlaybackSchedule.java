@@ -5,7 +5,6 @@ import net.wanji.business.exception.BusinessException;
 import net.wanji.business.exercise.dto.evaluation.StartPoint;
 import net.wanji.business.service.KafkaProducer;
 import net.wanji.common.common.ClientSimulationTrajectoryDto;
-import net.wanji.common.core.redis.RedisCache;
 import net.wanji.framework.manager.AsyncManager;
 
 import java.io.IOException;

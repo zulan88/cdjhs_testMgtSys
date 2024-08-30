@@ -7,17 +7,17 @@ package net.wanji.business.exercise.dto.luansheng;
 public class CommonField {
     private Long lastTimestamp;
     private boolean speedExceedLimit;
-    private Long speedStarTime;
+    private Long speedStartTime;
     private boolean lonAccExceedLimit;
-    private Long lonAccStarTime;
+    private Long lonAccStartTime;
     private boolean lonAcc2ExceedLimit;
-    private Long lonAcc2StarTime;
+    private Long lonAcc2StartTime;
     private boolean latAccExceedLimit;
-    private Long latAccStarTime;
+    private Long latAccStartTime;
     private boolean latAcc2ExceedLimit;
-    private Long latAcc2StarTime;
+    private Long latAcc2StartTime;
     private boolean angularVelocityXExceedLimit;
-    private Long  angularVelocityXStarTime;
+    private Long  angularVelocityXStartTime;
 
     public Long getLastTimestamp() {
         return lastTimestamp;
@@ -35,12 +35,12 @@ public class CommonField {
         this.speedExceedLimit = speedExceedLimit;
     }
 
-    public Long getSpeedStarTime() {
-        return speedStarTime;
+    public Long getSpeedStartTime() {
+        return speedStartTime;
     }
 
-    public void setSpeedStarTime(Long speedStarTime) {
-        this.speedStarTime = speedStarTime;
+    public void setSpeedStartTime(Long speedStartTime) {
+        this.speedStartTime = speedStartTime;
     }
 
     public boolean isLonAccExceedLimit() {
@@ -51,12 +51,12 @@ public class CommonField {
         this.lonAccExceedLimit = lonAccExceedLimit;
     }
 
-    public Long getLonAccStarTime() {
-        return lonAccStarTime;
+    public Long getLonAccStartTime() {
+        return lonAccStartTime;
     }
 
-    public void setLonAccStarTime(Long lonAccStarTime) {
-        this.lonAccStarTime = lonAccStarTime;
+    public void setLonAccStartTime(Long lonAccStartTime) {
+        this.lonAccStartTime = lonAccStartTime;
     }
 
     public boolean isLonAcc2ExceedLimit() {
@@ -67,12 +67,12 @@ public class CommonField {
         this.lonAcc2ExceedLimit = lonAcc2ExceedLimit;
     }
 
-    public Long getLonAcc2StarTime() {
-        return lonAcc2StarTime;
+    public Long getLonAcc2StartTime() {
+        return lonAcc2StartTime;
     }
 
-    public void setLonAcc2StarTime(Long lonAcc2StarTime) {
-        this.lonAcc2StarTime = lonAcc2StarTime;
+    public void setLonAcc2StartTime(Long lonAcc2StartTime) {
+        this.lonAcc2StartTime = lonAcc2StartTime;
     }
 
     public boolean isLatAccExceedLimit() {
@@ -83,12 +83,12 @@ public class CommonField {
         this.latAccExceedLimit = latAccExceedLimit;
     }
 
-    public Long getLatAccStarTime() {
-        return latAccStarTime;
+    public Long getLatAccStartTime() {
+        return latAccStartTime;
     }
 
-    public void setLatAccStarTime(Long latAccStarTime) {
-        this.latAccStarTime = latAccStarTime;
+    public void setLatAccStartTime(Long latAccStartTime) {
+        this.latAccStartTime = latAccStartTime;
     }
 
     public boolean isLatAcc2ExceedLimit() {
@@ -99,12 +99,12 @@ public class CommonField {
         this.latAcc2ExceedLimit = latAcc2ExceedLimit;
     }
 
-    public Long getLatAcc2StarTime() {
-        return latAcc2StarTime;
+    public Long getLatAcc2StartTime() {
+        return latAcc2StartTime;
     }
 
-    public void setLatAcc2StarTime(Long latAcc2StarTime) {
-        this.latAcc2StarTime = latAcc2StarTime;
+    public void setLatAcc2StartTime(Long latAcc2StartTime) {
+        this.latAcc2StartTime = latAcc2StartTime;
     }
 
     public boolean isAngularVelocityXExceedLimit() {
@@ -115,11 +115,11 @@ public class CommonField {
         this.angularVelocityXExceedLimit = angularVelocityXExceedLimit;
     }
 
-    public Long getAngularVelocityXStarTime() {
-        return angularVelocityXStarTime;
+    public Long getAngularVelocityXStartTime() {
+        return angularVelocityXStartTime;
     }
 
-    public void setAngularVelocityXStarTime(Long angularVelocityXStarTime) {
-        this.angularVelocityXStarTime = angularVelocityXStarTime;
+    public void setAngularVelocityXStartTime(Long angularVelocityXStartTime) {
+        this.angularVelocityXStartTime = angularVelocityXStartTime;
     }
 }

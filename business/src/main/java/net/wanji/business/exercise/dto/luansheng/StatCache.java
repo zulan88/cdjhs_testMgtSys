@@ -1,7 +1,6 @@
 package net.wanji.business.exercise.dto.luansheng;
 
 import lombok.extern.slf4j.Slf4j;
-import net.wanji.business.domain.dto.ToLocalDto;
 import net.wanji.common.common.Constants;
 import net.wanji.common.common.TrajectoryValueDto;
 import net.wanji.common.core.redis.RedisCache;
@@ -52,6 +51,12 @@ public class StatCache {
                     dto.setLonAcc2((dto.getLonAcc() - lastValue.getLonAcc()) / (currentTimestamp - preTimestamp));
                     dto.setLatAcc2((dto.getLatAcc() - lastValue.getLatAcc()) / (currentTimestamp - preTimestamp));
                 }
+                if(Objects.isNull(dto.getLonAcc2())){
+                    dto.setLonAcc2(0.0);
+                }
+                if(Objects.isNull(dto.getLatAcc2())){
+                    dto.setLatAcc2(0.0);
+                }
                 //计算超出阈值时长
                 String thresoldKey = RedisKeyUtils.getCdjhsLuanshengStatThresoldKey(taskId);
                 StatResult statResult = redisCache.getCacheObject(thresoldKey);
@@ -68,12 +73,12 @@ public class StatCache {
                         double value = Double.parseDouble(field.get(dto).toString());
                         //是否超出阈值
                         String isExceedFieldName = name + Constants.Exceed_Limit;
-                        Field isExceedField = object.getClass().getDeclaredField(isExceedFieldName);
+                        Field isExceedField = object.getClass().getSuperclass().getDeclaredField(isExceedFieldName);
                         isExceedField.setAccessible(true);
                         boolean isExceed = (Boolean) isExceedField.get(object);
                         //超出阈值开始时间
-                        String startTimeFiledName = name + Constants.Star_Time;
-                        Field startTimeField = object.getClass().getDeclaredField(startTimeFiledName);
+                        String startTimeFiledName = name + Constants.Start_Time;
+                        Field startTimeField = object.getClass().getSuperclass().getDeclaredField(startTimeFiledName);
                         startTimeField.setAccessible(true);
                         Long startTime = (Long) startTimeField.get(object);
                         //超出阈值时长

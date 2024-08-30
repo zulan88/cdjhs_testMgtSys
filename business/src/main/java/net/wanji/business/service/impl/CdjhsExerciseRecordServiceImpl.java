@@ -1,7 +1,6 @@
 package net.wanji.business.service.impl;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,7 +20,6 @@ import net.wanji.business.exercise.ExerciseHandler;
 import net.wanji.business.exercise.dto.evaluation.*;
 import net.wanji.business.exercise.dto.luansheng.StatDto;
 import net.wanji.business.exercise.dto.luansheng.StatResult;
-import net.wanji.business.exercise.dto.luansheng.StatThresoldEnum;
 import net.wanji.business.exercise.dto.luansheng.TWPlaybackSchedule;
 import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.mapper.CdjhsExerciseRecordMapper;
