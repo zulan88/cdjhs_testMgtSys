@@ -60,12 +60,14 @@ public class CdjhsCompetitionController extends BaseController {
     @PostMapping("/add")
     public AjaxResult add(@RequestBody CdjhsExerciseRecord cdjhsExerciseRecord){
         try {
-            //判断当前任务缓存是否打分完成
-            TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
-            if(Objects.nonNull(cache)){
-                Integer scoreStatus = cache.getScoreStatus();
-                if(scoreStatus != 1){
-                    return AjaxResult.error("当前任务打分未完成,请等待...");
+            //当是C卷时判断当前任务缓存是否打分完成
+            if(cdjhsExerciseRecord.getTestPaperType() == 3){
+                TaskCacheDto cache = redisCache.getCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE);
+                if(Objects.nonNull(cache)){
+                    Integer scoreStatus = cache.getScoreStatus();
+                    if(scoreStatus != 1){
+                        return AjaxResult.error("当前任务打分未完成,请等待...");
+                    }
                 }
             }
             return toAjax(cdjhsExerciseRecordService.createCompetitionRecord(cdjhsExerciseRecord));

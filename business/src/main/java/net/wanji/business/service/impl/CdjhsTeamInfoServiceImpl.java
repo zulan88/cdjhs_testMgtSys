@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import net.wanji.business.domain.CdjhsTeamInfo;
-import net.wanji.business.exercise.enums.TaskStatusEnum;
 import net.wanji.business.mapper.CdjhsTeamInfoMapper;
 import net.wanji.business.service.ICdjhsTeamInfoService;
 import net.wanji.common.utils.DateUtils;

@@ -377,4 +377,8 @@ public class Constants {
     public static final String OVER_LIMIT = "OverLimit";
 
     public static final String SPEED = "speed";
+
+    public static final String Exceed_Limit = "ExceedLimit";
+
+    public static final String Star_Time = "StarTime";
 }

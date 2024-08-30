@@ -13,6 +13,8 @@ import java.util.List;
 public class StatResult {
     private List<StatDto> speed = new ArrayList<>();
 
+    private int speedOverLimit = 0;
+
     private List<StatDto> lonAcc = new ArrayList<>();
 
     private int lonAccOverLimit = 0;
@@ -29,7 +31,7 @@ public class StatResult {
 
     private int latAcc2OverLimit = 0;
 
-    private List<StatDto> angularVelocity = new ArrayList<>();
+    private List<StatDto> angularVelocityX = new ArrayList<>();
 
-    private int angularVelocityOverLimit = 0;
+    private int angularVelocityXOverLimit = 0;
 }

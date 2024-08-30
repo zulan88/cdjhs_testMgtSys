@@ -413,20 +413,20 @@ public class CdjhsExerciseRecord extends BaseEntity
         this.isCollect = isCollect;
     }
 
-    public Double getSubSorce() {
-        return subScore;
-    }
-
-    public void setSubSorce(Double subScore) {
-        this.subScore = subScore;
-    }
-
     public Double getTotalScore() {
         return totalScore;
     }
 
     public void setTotalScore(Double totalScore) {
         this.totalScore = totalScore;
+    }
+
+    public Double getSubScore() {
+        return subScore;
+    }
+
+    public void setSubScore(Double subScore) {
+        this.subScore = subScore;
     }
 
     @Override

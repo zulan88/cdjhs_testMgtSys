@@ -161,13 +161,15 @@ public class TaskExercise implements Runnable{
                 //给孪生发送比赛开始进程信息
                 CAMatchProcess process = CAMatchProcess.buildRunning(record.getId(), record.getTeamId());
                 sendProcess(process);
-                //更新团队比赛状态
-                if(Objects.nonNull(record.getTeamId())){
-                    cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
+                if(record.getTestPaperType() == 3){
+                    //更新团队比赛状态
+                    if(Objects.nonNull(record.getTeamId())){
+                        cdjhsTeamInfoMapper.updateStatusByTeamName(record.getTeamId(), TaskStatusEnum.RUNNING.getStatus());
+                    }
+                    //更新任务缓存
+                    TaskCacheDto cache = new TaskCacheDto(record.getId(), record.getTeamId(), TaskStatusEnum.RUNNING.getStatus(), 0);
+                    redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
                 }
-                //更新任务缓存
-                TaskCacheDto cache = new TaskCacheDto(record.getId(), record.getTeamId(), TaskStatusEnum.RUNNING.getStatus(), 0);
-                redisCache.setCacheObject(RedisKeyUtils.CDJHS_CURRENT_TASK_CACHE, cache);
             }
             record.setDeviceId(uniques);
             record.setWaitingNum(0);
@@ -506,7 +508,7 @@ public class TaskExercise implements Runnable{
             record.setStatus(TaskStatusEnum.FINISHED.getStatus());
             cdjhsExerciseRecordMapper.updateCdjhsExerciseRecord(record);
         } finally {
-            if(record.getIsCompetition() == 1){
+            if(record.getIsCompetition() == 1 && record.getTestPaperType() == 3){
                 //给孪生发送比赛结束进程信息
                 CAMatchProcess process = CAMatchProcess.buildFinished(record.getId(), record.getTeamId(), paramConfig.objectivePercent, paramConfig.subjectivePercent);
                 sendProcess(process);

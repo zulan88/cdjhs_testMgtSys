@@ -564,7 +564,11 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Override
     public StatResult stat(Long taskId) {
-        StatResult result = new StatResult();
+        String thresoldKey = RedisKeyUtils.getCdjhsLuanshengStatThresoldKey(taskId.intValue());
+        StatResult result = redisCache.getCacheObject(thresoldKey);
+        if(Objects.isNull(result)){
+            result = new StatResult();
+        }
         String statKey = RedisKeyUtils.getCdjhsLuanshengStatKey(taskId.intValue());
         Set<ZSetOperations.TypedTuple<TrajectoryValueDto>> typedTuples = redisCache.rangeWithScores(statKey, 0, -1);
         if(StringUtils.isNotEmpty(typedTuples)){
@@ -578,53 +582,9 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
                 result.getSpeed().add(new StatDto(diff, current.getSpeed().doubleValue()));//速度
                 result.getLonAcc().add(new StatDto(diff, current.getLonAcc()));//纵向加速度
                 result.getLatAcc().add(new StatDto(diff, current.getLatAcc()));//横向加速度
-                result.getAngularVelocity().add(new StatDto(diff, current.getAngularVelocityX()));//横摆角速度
-                if (Objects.nonNull(current.getLonAcc2())) {
-                    result.getLonAcc2().add(new StatDto(diff, current.getLonAcc2()));
-                }
-                if (Objects.nonNull(current.getLatAcc2())) {
-                    result.getLatAcc2().add(new StatDto(diff, current.getLatAcc2()));
-                }
-            }
-            Field[] declaredFields = result.getClass().getDeclaredFields();
-            for(Field field: declaredFields){
-                field.setAccessible(true);
-                String fieldName = field.getName();
-                if(!fieldName.toLowerCase().contains(net.wanji.common.common.Constants.LIMIT)
-                && !fieldName.equals(net.wanji.common.common.Constants.SPEED)){
-                    try {
-                        //计算超出阈值时长
-                        String json = JSONObject.toJSONString(field.get(result));
-                        List<StatDto> sorted = JSONArray.parseArray(json, StatDto.class);
-                        double[] thresold = StatThresoldEnum.getThresoldByName(fieldName);
-                        assert thresold != null;
-                        double min = thresold[0];
-                        double max = thresold[1];
-                        int sum = 0;
-                        boolean isOverLimit = false;
-                        int startTime = sorted.get(0).getTime();
-                        for(StatDto statDto: sorted){
-                            if(statDto.getValue() < min || statDto.getValue() > max){
-                                if(!isOverLimit){
-                                    isOverLimit = true;
-                                    startTime = statDto.getTime();
-                                }
-                            }else{
-                                if(isOverLimit){
-                                    isOverLimit = false;
-                                    sum += startTime - statDto.getTime();
-                                }
-                            }
-                        }
-                        String thresoldFiledName = fieldName + net.wanji.common.common.Constants.OVER_LIMIT;
-                        Field declaredField = result.getClass().getDeclaredField(thresoldFiledName);
-                        declaredField.setAccessible(true);
-                        declaredField.set(result, sum);
-
-                    } catch (IllegalAccessException | NoSuchFieldException e) {
-                        e.printStackTrace();
-                    }
-                }
+                result.getAngularVelocityX().add(new StatDto(diff, current.getAngularVelocityX()));//横摆角速度
+                result.getLonAcc2().add(new StatDto(diff, current.getLonAcc2()));
+                result.getLatAcc2().add(new StatDto(diff, current.getLatAcc2()));
             }
         }
         return result;
