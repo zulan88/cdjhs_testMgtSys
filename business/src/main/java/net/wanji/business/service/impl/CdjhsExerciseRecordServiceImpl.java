@@ -547,7 +547,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         List<CdjhsTeamInfo> teamInfoList = teamInfoService.selectCdjhsTeamInfoList(teamInfo);
         if(CollectionUtils.isNotEmpty(teamInfoList)){
             teamInfo = teamInfoList.get(0);
-            refereeScoringService.buildScoreData(Math.toIntExact(cdjhsExerciseRecord.getId()), Math.toIntExact(teamInfo.getId()),teamInfo.getSequence());
+            refereeScoringService.buildScoreData(Math.toIntExact(cdjhsExerciseRecord.getId()), Math.toIntExact(teamInfo.getId()),cdjhsExerciseRecord.getTeamName(),teamInfo.getSequence());
         }
         return i;
     }

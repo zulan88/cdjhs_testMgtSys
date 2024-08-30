@@ -41,7 +41,7 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
     private SynchronousScoring synchronousScoring;
 
     @Override
-    public Integer buildScoreData(Integer recordId, Integer teamId, Integer entryOrder) {
+    public Integer buildScoreData(Integer recordId, Integer teamId, String teamName, Integer entryOrder) {
         List<CdjhsRefereeMembers> members = cdjhsRefereeMembersService.list();
         if (ArrayUtils.isEmpty(members.toArray())) {
             return 0;
@@ -71,6 +71,7 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
             scoring.setEntryOrder(String.valueOf(entryOrder));
             scoring.setTaskId(recordId);
             scoring.setTeamId(teamId);
+            scoring.setTeamName(teamName);
             scoring.setUserName(member.getUserName());
             newList.add(scoring);
             id++;

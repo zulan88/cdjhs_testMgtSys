@@ -41,6 +41,9 @@ public class CdjhsRefereeScoringHistory implements Serializable {
     @TableField("team_id")
     private Integer teamId;
 
+    @TableField("team_name")
+    private String teamName;
+
     /**
      * 出场顺序
      */

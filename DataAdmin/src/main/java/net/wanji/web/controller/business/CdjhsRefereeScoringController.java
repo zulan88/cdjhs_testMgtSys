@@ -38,7 +38,7 @@ public class CdjhsRefereeScoringController extends BaseController {
 
     @GetMapping("/test")
     public AjaxResult test(Integer taskId, Integer teamId, Integer entryOrder) {
-        refereeScoringService.buildScoreData(taskId,teamId,entryOrder);
+        refereeScoringService.buildScoreData(taskId,teamId, "test",entryOrder);
         return AjaxResult.success();
     }
 
