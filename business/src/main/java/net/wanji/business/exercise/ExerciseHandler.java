@@ -203,7 +203,8 @@ public class ExerciseHandler {
     }
 
     public void run(CdjhsExerciseRecord record, String uniques) {
-        occupationMap.put(uniques, record.getId());//占用该域控
+        //占用该域控
+        occupationMap.put(uniques, record.getId());
         Logger logger = AppenderManager.createAppender(record.getId(), LogTypeEnum.COMMAND.getName(), record.getIsCompetition() == 1);
         TaskExercise taskExercise = new TaskExercise(record, uniques,
                 cdjhsExerciseRecordMapper, cdjhsDeviceImageRecordMapper,

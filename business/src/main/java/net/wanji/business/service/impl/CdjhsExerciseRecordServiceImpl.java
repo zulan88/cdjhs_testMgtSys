@@ -10,7 +10,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import net.wanji.business.common.Constants;
 import net.wanji.business.domain.CdjhsExerciseRecord;
-import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.domain.evaluation.*;
 import net.wanji.business.domain.vo.CdjhsErSort;
 import net.wanji.business.entity.TjDeviceDetail;
@@ -86,9 +85,6 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
 
     @Autowired
     CdjhsRefereeScoringService refereeScoringService;
-
-    @Autowired
-    ICdjhsTeamInfoService teamInfoService;
 
     /**
      * 查询练习记录
@@ -539,13 +535,11 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         int i = cdjhsExerciseRecordMapper.insertCdjhsExerciseRecord(cdjhsExerciseRecord);
         //任务下发域控
         exerciseHandler.run(cdjhsExerciseRecord, cdjhsExerciseRecord.getDeviceId());
-        //告知主观评分
-        CdjhsTeamInfo teamInfo = new CdjhsTeamInfo();
-        teamInfo.setTeamName(cdjhsExerciseRecord.getTeamName());
-        List<CdjhsTeamInfo> teamInfoList = teamInfoService.selectCdjhsTeamInfoList(teamInfo);
-        if(CollectionUtils.isNotEmpty(teamInfoList)){
-            teamInfo = teamInfoList.get(0);
-            refereeScoringService.buildScoreData(Math.toIntExact(cdjhsExerciseRecord.getId()), Math.toIntExact(teamInfo.getId()),cdjhsExerciseRecord.getTeamName(),teamInfo.getSequence());
+        if(cdjhsExerciseRecord.getTestPaperType() == 3){
+            //告知裁判开始打分
+            Integer teamId = Objects.nonNull(cdjhsExerciseRecord.getTeamId()) ? Math.toIntExact(cdjhsExerciseRecord.getTeamId()) : null;
+            refereeScoringService.notice(Math.toIntExact(cdjhsExerciseRecord.getId()),
+                    teamId, cdjhsExerciseRecord.getTeamName());
         }
         return i;
     }

@@ -41,7 +41,6 @@ public class CdjhsCompetitionController extends BaseController {
         return getDataTable(list);
     }
 
-    //孪生专用
     @CrossOrigin
     @GetMapping("/listTW")
     public TableDataInfo listTW(CdjhsExerciseRecord cdjhsExerciseRecord){

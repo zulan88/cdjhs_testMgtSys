@@ -1,17 +1,21 @@
 package net.wanji.business.service.impl;
 
+import net.wanji.business.domain.CdjhsTeamInfo;
 import net.wanji.business.entity.CdjhsRefereeScoring;
 import net.wanji.business.mapper.CdjhsRefereeScoringMapper;
 import net.wanji.business.schedule.SynchronousScoring;
 import net.wanji.business.service.CdjhsRefereeScoringService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import net.wanji.business.service.ICdjhsTeamInfoService;
 import net.wanji.common.utils.bean.BeanUtils;
 import net.wanji.onsite.entity.CdjhsRefereeMembers;
 import net.wanji.onsite.entity.CdjhsRefereeScoringHistory;
 import net.wanji.onsite.service.CdjhsRefereeMembersService;
 import net.wanji.onsite.service.CdjhsRefereeScoringHistoryService;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -39,6 +43,22 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
 
     @Autowired
     private SynchronousScoring synchronousScoring;
+
+    @Autowired
+    ICdjhsTeamInfoService teamInfoService;
+
+    @Async
+    @Override
+    public void notice(Integer recordId, Integer teamId, String teamName) {
+        //告知主观评分
+        CdjhsTeamInfo teamInfo = new CdjhsTeamInfo();
+        teamInfo.setTeamName(teamName);
+        List<CdjhsTeamInfo> teamInfoList = teamInfoService.selectCdjhsTeamInfoList(teamInfo);
+        if(CollectionUtils.isNotEmpty(teamInfoList)){
+            teamInfo = teamInfoList.get(0);
+            buildScoreData(recordId, teamId, teamName, teamInfo.getSequence());
+        }
+    }
 
     @Override
     public Integer buildScoreData(Integer recordId, Integer teamId, String teamName, Integer entryOrder) {
