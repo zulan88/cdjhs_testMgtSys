@@ -112,6 +112,7 @@ public class SynchronousScoring {
         CdjhsExerciseRecord record = cdjhsExerciseRecordMapper.selectCdjhsExerciseRecordById(Long.valueOf(recordId));
         if(record!=null){
             record.setSubScore(subScore);
+            record.setTeamId(Long.valueOf(teamId));
             if(record.getScore() != null && record.getTotalScore() == null){
                 Double score = record.getScore();
                 List<SysDictData> testType = dictTypeService.selectDictDataByType(Constants.SysType.SORCE_WEIGHT);
