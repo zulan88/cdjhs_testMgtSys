@@ -51,6 +51,8 @@ public class SimulationDataListener implements MessageListener {
                 return;
             }
             String channelTopic = new String(message.getChannel());
+            int index = channelTopic.indexOf("_");
+            channelTopic = channelTopic.substring(index + 1);
             String kafkaTopic = StringUtils.format(Constants.ChannelBuilder.CDJHS_TESS_DATA_TOPIC_TEMPLATE, channelTopic);
             kafkaProducer.sendMessage(kafkaTopic, body);
         }catch (Exception e){

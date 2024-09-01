@@ -59,7 +59,7 @@ public class SynchronousScoring {
                     String taskID = params.get("taskID");
                     if(taskID!=null){
                         Double score = restService.getEvaluationResult(taskID);
-                        if(score!=null){
+                        if(score!=null && score>0){
                             record.setScore(score);
                             if(record.getSubScore() != null && record.getTotalScore() == null){
                                 List<SysDictData> testType = dictTypeService.selectDictDataByType(Constants.SysType.SORCE_WEIGHT);
