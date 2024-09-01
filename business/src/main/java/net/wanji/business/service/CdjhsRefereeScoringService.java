@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public interface CdjhsRefereeScoringService extends IService<CdjhsRefereeScoring> {
 
-    void notice(Integer recordId, Integer teamId, String teamName);
+    void notice(Integer recordId, String teamName);
 
     Integer buildScoreData(Integer recordId, Integer teamId, String teamName, Integer entryOrder);
 

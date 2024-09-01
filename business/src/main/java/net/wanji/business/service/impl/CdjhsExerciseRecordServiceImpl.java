@@ -537,9 +537,7 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         exerciseHandler.run(cdjhsExerciseRecord, cdjhsExerciseRecord.getDeviceId());
         if(cdjhsExerciseRecord.getTestPaperType() == 3){
             //告知裁判开始打分
-            Integer teamId = Objects.nonNull(cdjhsExerciseRecord.getTeamId()) ? Math.toIntExact(cdjhsExerciseRecord.getTeamId()) : null;
-            refereeScoringService.notice(Math.toIntExact(cdjhsExerciseRecord.getId()),
-                    teamId, cdjhsExerciseRecord.getTeamName());
+            refereeScoringService.notice(Math.toIntExact(cdjhsExerciseRecord.getId()), cdjhsExerciseRecord.getTeamName());
         }
         return i;
     }
@@ -565,18 +563,18 @@ public class CdjhsExerciseRecordServiceImpl implements ICdjhsExerciseRecordServi
         Set<ZSetOperations.TypedTuple<TrajectoryValueDto>> typedTuples = redisCache.rangeWithScores(statKey, 0, -1);
         if(StringUtils.isNotEmpty(typedTuples)){
             List<ZSetOperations.TypedTuple<TrajectoryValueDto>> list = new ArrayList<>(typedTuples);
-            long timestamp = Objects.requireNonNull(list.get(list.size() - 1).getScore()).longValue();
-            for (ZSetOperations.TypedTuple<TrajectoryValueDto> tuple : list) {
+            for (ZSetOperations.TypedTuple<TrajectoryValueDto> tuple: list){
                 long score = Objects.requireNonNull(tuple.getScore()).longValue();
-                int diff = Math.toIntExact(timestamp - score);
                 TrajectoryValueDto current = tuple.getValue();
                 assert current != null;
-                result.getSpeed().add(new StatDto(diff, current.getSpeed().doubleValue()));//速度
-                result.getLonAcc().add(new StatDto(diff, current.getLonAcc()));//纵向加速度
-                result.getLatAcc().add(new StatDto(diff, current.getLatAcc()));//横向加速度
-                result.getAngularVelocityX().add(new StatDto(diff, current.getAngularVelocityX()));//横摆角速度
-                result.getLonAcc2().add(new StatDto(diff, current.getLonAcc2()));
-                result.getLatAcc2().add(new StatDto(diff, current.getLatAcc2()));
+                String time = DateUtils.getTimeString(new Date(score * 1000));
+
+                result.getSpeed().add(new StatDto(time, Double.parseDouble(String.format("%.2f", current.getSpeed().doubleValue()))));//速度
+                result.getLonAcc().add(new StatDto(time, Double.parseDouble(String.format("%.2f", current.getLonAcc()))));//纵向加速度
+                result.getLatAcc().add(new StatDto(time, Double.parseDouble(String.format("%.2f", current.getLatAcc()))));//横向加速度
+                result.getAngularVelocityX().add(new StatDto(time, Double.parseDouble(String.format("%.2f", current.getAngularVelocityX()))));//横摆角速度
+                result.getLonAcc2().add(new StatDto(time, Double.parseDouble(String.format("%.2f", current.getLonAcc2()))));
+                result.getLatAcc2().add(new StatDto(time, Double.parseDouble(String.format("%.2f", current.getLatAcc2()))));
             }
         }
         return result;

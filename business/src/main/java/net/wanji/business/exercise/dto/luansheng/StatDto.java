@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StatDto {
-    private Integer time;
+    private String time;
 
     private Double value;
 }

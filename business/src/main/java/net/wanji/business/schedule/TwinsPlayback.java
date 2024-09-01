@@ -34,6 +34,7 @@ public class TwinsPlayback {
     public void sendCAMatchProcess(String topic, CAMatchProcess camatchProcessDto){
         Gson gson = new Gson();
         kafkaProducer.sendMessage(topic, gson.toJson(camatchProcessDto));
+        System.out.println("CAMatchProcess发送成功");
     }
 
 }

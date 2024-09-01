@@ -45,18 +45,18 @@ public class CdjhsRefereeScoringServiceImpl extends ServiceImpl<CdjhsRefereeScor
     private SynchronousScoring synchronousScoring;
 
     @Autowired
-    ICdjhsTeamInfoService teamInfoService;
+    private ICdjhsTeamInfoService teamInfoService;
 
     @Async
     @Override
-    public void notice(Integer recordId, Integer teamId, String teamName) {
+    public void notice(Integer recordId, String teamName) {
         //告知主观评分
         CdjhsTeamInfo teamInfo = new CdjhsTeamInfo();
         teamInfo.setTeamName(teamName);
         List<CdjhsTeamInfo> teamInfoList = teamInfoService.selectCdjhsTeamInfoList(teamInfo);
         if(CollectionUtils.isNotEmpty(teamInfoList)){
             teamInfo = teamInfoList.get(0);
-            buildScoreData(recordId, teamId, teamName, teamInfo.getSequence());
+            buildScoreData(recordId, Math.toIntExact(teamInfo.getId()), teamName, teamInfo.getSequence());
         }
     }
 

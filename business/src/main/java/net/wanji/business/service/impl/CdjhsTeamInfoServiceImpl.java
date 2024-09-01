@@ -115,6 +115,12 @@ public class CdjhsTeamInfoServiceImpl implements ICdjhsTeamInfoService
                         return -1;
                     }
                 }).reversed().thenComparingInt(CdjhsTeamInfo::getSequence))
+                .peek(team -> {
+                    if (Objects.isNull(team.getScore())) {
+                        team.setTeamName("-");
+                        team.setUniversityName("-");
+                    }
+                })
                 .collect(Collectors.toList());
     }
 }
