@@ -148,7 +148,7 @@ public class CdjhsCarDetailServiceImpl implements ICdjhsCarDetailService
                 carDetail.setUserName(username);
                 carDetail.setTeamName(Objects.isNull(teamInfo) ? username : teamInfo.getTeamName());
                 if(Objects.nonNull(teamInfo)){
-                    cdjhsCarDetail.setTeamId(teamInfo.getId());
+                    carDetail.setTeamId(teamInfo.getId());
                 }
                 carDetail.setImageId(ykReportInfo.getImageId());
                 carDetail.setImageName(ykReportInfo.getImageName());
